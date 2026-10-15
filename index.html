@@ -3,76 +3,87 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Трекер детского сада PRO (Cloud)</title>
-  <!-- PWA Мета-теги для установки на рабочий стол телефона как нативного приложения -->
+  <title>Трекер детского сада PRO</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#4f46e5">
-  <link rel="manifest" href='data:application/manifest+json,{"name":"Детский сад PRO","short_name":"Детсад","start_url":".","display":"standalone","background_color":"#f1f5f9","theme_color":"#4f46e5"}'>
+  <!-- Подключение внешнего манифеста для установки PWA в Chrome -->
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2821/2821637.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .day-card { transition: all 0.15s ease-in-out; }
-    .day-card:hover { transform: translateY(-2px); }
+    .day-card { transition: transform 0.12s ease, background-color 0.12s ease; }
+    .day-card:active { transform: scale(0.95); }
+    @media (min-width: 768px) {
+      .day-card:hover { transform: translateY(-2px); }
+    }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen p-3 md:p-6 font-sans">
+<body class="bg-slate-100 text-slate-800 min-h-screen p-2.5 sm:p-4 md:p-6 font-sans">
 
-  <div class="max-w-6xl mx-auto space-y-5">
+  <div class="max-w-6xl mx-auto space-y-4">
+
+    <!-- Кнопка прямой установки PWA (появляется автоматически, когда Chrome видит manifest.json + sw.js) -->
+    <div id="pwaInstallBanner" class="hidden bg-indigo-600 text-white rounded-2xl p-3.5 shadow-md flex justify-between items-center gap-3">
+      <div class="text-xs sm:text-sm font-bold flex items-center gap-2">
+        <span class="text-lg">📲</span>
+        <span>Установите трекер как приложение на главный экран телефона!</span>
+      </div>
+      <button onclick="installPWA()" class="shrink-0 px-3.5 py-1.5 bg-white text-indigo-700 text-xs font-extrabold rounded-xl shadow hover:bg-indigo-50 transition">
+        Установить
+      </button>
+    </div>
 
     <!-- Баннер уведомлений об оплате (за 5, 3, 1 день) -->
-    <div id="paymentAlertBanner" class="hidden rounded-2xl p-4 shadow-md border-l-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"></div>
+    <div id="paymentAlertBanner" class="hidden rounded-2xl p-3.5 sm:p-4 shadow-md border-l-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-3"></div>
 
     <!-- Шапка и панель управления -->
-    <header class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-      <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+    <header class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3.5">
+      <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
         <div>
-          <div class="flex flex-wrap items-center gap-2">
-            <h1 class="text-2xl font-extrabold text-slate-900">Трекер детского сада</h1>
-            <span id="fileSyncBadge" class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-slate-100 text-slate-600 border border-slate-300">
+          <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900">Трекер детского сада</h1>
+            <span id="fileSyncBadge" class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-slate-100 text-slate-600 border border-slate-300">
               Локальная память
             </span>
-            <span id="cloudSyncBadge" onclick="openCloudModal()" class="cursor-pointer px-2.5 py-0.5 text-xs font-bold rounded-full bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 transition">
+            <span id="cloudSyncBadge" onclick="openCloudModal()" class="cursor-pointer px-2 py-0.5 text-[11px] font-bold rounded-full bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 transition">
               ☁️ Облако не подключено
             </span>
           </div>
-          <p class="text-xs text-slate-500 mt-1">
-            Клик по рабочему дню: <b>Посещение</b> → <b>Пропуск (+1 день)</b> → <b>Выходной сада</b>. Скрытие периода автоматически сжимает календарную сетку.
+          <p class="text-[11px] sm:text-xs text-slate-500 mt-1">
+            Тап по дню: <b>Посещение</b> → <b>Пропуск (+1 дн.)</b> → <b>Выходной</b>.
           </p>
         </div>
 
         <!-- Финансовые настройки и Дата -->
-        <div class="flex flex-wrap items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 w-full lg:w-auto justify-between lg:justify-end">
+        <div class="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3 bg-slate-50 p-2.5 sm:p-3 rounded-xl border border-slate-200 w-full lg:w-auto">
           <div>
-            <label class="block text-[11px] text-slate-500 font-semibold">Базовая цена (20 дн.)</label>
+            <label class="block text-[10px] sm:text-[11px] text-slate-500 font-semibold">Абонемент (20 дн.)</label>
             <div class="flex items-center gap-1 mt-0.5">
               <input type="number" id="basePriceInput" value="28800" step="100"
-                     class="w-24 px-2 py-1 text-sm font-bold bg-white border border-slate-300 rounded focus:outline-none focus:border-indigo-500"
+                     class="w-20 sm:w-24 px-1.5 py-1 text-xs sm:text-sm font-bold bg-white border border-slate-300 rounded focus:outline-none focus:border-indigo-500"
                      onchange="updateBasePrice(this.value)">
               <span class="text-xs font-bold text-slate-600">₽</span>
             </div>
           </div>
-          <div class="border-l border-slate-300 pl-3">
-            <span class="block text-[11px] text-slate-500 font-semibold">Цена 1 дня</span>
-            <span id="pricePerDayDisplay" class="text-sm font-extrabold text-indigo-600">1 440 ₽</span>
+          <div class="border-l border-slate-300 pl-2.5 sm:pl-3">
+            <span class="block text-[10px] sm:text-[11px] text-slate-500 font-semibold">Цена 1 дня</span>
+            <span id="pricePerDayDisplay" class="text-xs sm:text-sm font-extrabold text-indigo-600">1 440 ₽</span>
           </div>
-          <div class="border-l border-slate-300 pl-3">
-            <label class="block text-[11px] text-slate-500 font-semibold" title="Для проверки скрытия прошлых периодов и уведомлений">Дата «Сегодня»</label>
+          <div class="border-l border-slate-300 pl-2.5 sm:pl-3">
+            <label class="block text-[10px] sm:text-[11px] text-slate-500 font-semibold">«Сегодня»</label>
             <input type="date" id="simulatedTodayInput"
-                   class="px-2 py-0.5 text-xs font-semibold bg-white border border-slate-300 rounded focus:outline-none focus:border-indigo-500"
+                   class="w-full px-1 sm:px-2 py-0.5 text-[11px] sm:text-xs font-semibold bg-white border border-slate-300 rounded focus:outline-none focus:border-indigo-500"
                    onchange="updateSimulatedToday(this.value)">
           </div>
         </div>
       </div>
 
       <!-- Панель инструментов -->
-      <div class="pt-3 border-t border-slate-100 flex flex-wrap justify-between items-center gap-3">
-        <!-- Левая группа: Синхронизация и файлы -->
-        <div class="flex flex-wrap items-center gap-2">
-          <button onclick="openCloudModal()" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-lg shadow-sm transition flex items-center gap-1.5">
+      <div class="pt-2.5 border-t border-slate-100 flex flex-wrap justify-between items-center gap-2">
+        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <button onclick="openCloudModal()" class="px-2.5 sm:px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-lg shadow-sm transition flex items-center gap-1">
             ☁️ Облако (ПК ↔ Телефон)
-          </button>
-          <button onclick="connectLocalFile()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-lg shadow-sm transition hidden sm:flex items-center gap-1.5" title="Автосохранение напрямую в файл kg-data.json в папке с кодом">
-            🔗 Привязать файл
           </button>
           <button onclick="exportJsonFile()" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg border border-slate-300 transition">
             ⬇ .json
@@ -83,86 +94,83 @@
           </label>
         </div>
 
-        <!-- Правая группа: Скрытие сетки, Отчет, Уведомления -->
-        <div class="flex flex-wrap items-center gap-2">
-          <label class="flex items-center gap-1.5 text-xs font-bold text-indigo-900 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-200 cursor-pointer select-none hover:bg-indigo-100 transition">
-            <input type="checkbox" id="hidePastCheckbox" onchange="toggleHidePast(this.checked)" class="rounded text-indigo-600 focus:ring-indigo-500">
-            Скрыть сетку прошедших периодов
+        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <label class="flex items-center gap-1.5 text-xs font-bold text-indigo-900 bg-indigo-50 px-2.5 py-1.5 rounded-lg border border-indigo-200 cursor-pointer select-none">
+            <input type="checkbox" id="hidePastCheckbox" onchange="toggleHidePast(this.checked)" class="rounded text-indigo-600">
+            Скрыть прошедшие
           </label>
 
-          <button onclick="openReportModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+          <button onclick="openReportModal()" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
             📋 Отчет
           </button>
 
-          <button onclick="openNotificationsModal()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+          <button onclick="openNotificationsModal()" class="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">
             🔔 Уведомления
           </button>
 
-          <button onclick="addSubscription()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition">
-            + Новый период
+          <button onclick="addSubscription()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition">
+            + Период
           </button>
         </div>
       </div>
     </header>
 
     <!-- Карточки абонементов -->
-    <section id="subscriptionsContainer" class="grid grid-cols-1 md:grid-cols-3 gap-4"></section>
+    <section id="subscriptionsContainer" class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4"></section>
 
-    <!-- Легенда календаря и управление скрытыми периодами -->
-    <div class="bg-white px-4 py-3 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-3 text-xs">
-      <div class="flex flex-wrap items-center gap-4 font-medium">
-        <span class="text-slate-400 font-bold uppercase">Сетка:</span>
-        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-500 inline-block"></span> Посещение</span>
-        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-amber-500 inline-block"></span> Пропуск (+1 день)</span>
-        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-purple-500 inline-block"></span> Выходной сада</span>
-        <span class="flex items-center gap-1.5"><span class="px-1.5 py-0.5 text-[10px] font-extrabold bg-slate-900 text-white rounded">СТАРТ / ФИНИШ</span> Границы</span>
+    <!-- Легенда календаря и переключатель Сб/Вс для мобильных -->
+    <div class="bg-white px-3.5 py-2.5 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-2 text-xs">
+      <div class="flex flex-wrap items-center gap-2.5 sm:gap-4 font-medium text-[11px] sm:text-xs">
+        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-indigo-500 inline-block"></span> Посещение</span>
+        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-amber-500 inline-block"></span> Пропуск (+1)</span>
+        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-purple-500 inline-block"></span> Выходной</span>
+        <span class="flex items-center gap-1"><span class="px-1 py-0.2 text-[9px] font-black bg-slate-900 text-white rounded">🚀/🏁</span> Старт/Финиш</span>
       </div>
-      <div class="flex items-center gap-3">
-        <span id="activeFilterLabel" class="text-indigo-600 font-bold hidden"></span>
-        <button id="clearFilterBtn" onclick="selectSubHighlight(null)" class="hidden text-xs text-slate-500 underline hover:text-slate-800">Показать все</button>
-        <button onclick="resetToDefault()" class="text-xs text-rose-500 hover:underline">Сброс</button>
+      <div class="flex items-center gap-2">
+        <label class="flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded border border-slate-300 cursor-pointer select-none" title="Скрыть субботу и воскресенье для крупных карточек на телефоне">
+          <input type="checkbox" id="hideWeekendsCheckbox" onchange="toggleHideWeekends(this.checked)" class="rounded text-indigo-600">
+          Только Пн–Пт
+        </label>
+        <span id="activeFilterLabel" class="text-indigo-600 font-bold hidden text-[11px]"></span>
+        <button id="clearFilterBtn" onclick="selectSubHighlight(null)" class="hidden text-[11px] text-slate-500 underline">Все</button>
+        <button onclick="resetToDefault()" class="text-[11px] text-rose-500 hover:underline">Сброс</button>
       </div>
     </div>
 
     <!-- Календарная сетка -->
-    <section id="calendarContainer" class="space-y-6"></section>
+    <section id="calendarContainer" class="space-y-4 sm:space-y-6"></section>
   </div>
 
-  <!-- МОДАЛЬНОЕ ОКНО: ОБЛАЧНАЯ СИНХРОНИЗАЦИЯ (ПК <-> ТЕЛЕФОН) -->
-  <div id="cloudModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+  <!-- МОДАЛЬНОЕ ОКНО: ОБЛАЧНАЯ СИНХРОНИЗАЦИЯ -->
+  <div id="cloudModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-3 z-50">
+    <div class="bg-white rounded-2xl max-w-xl w-full p-5 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center">
-        <h3 class="text-lg font-bold text-slate-900">☁️ Облачная синхронизация (ПК ↔ Телефон)</h3>
+        <h3 class="text-base sm:text-lg font-bold text-slate-900">☁️ Облачная синхронизация (ПК ↔ Телефон)</h3>
         <button onclick="closeCloudModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
       </div>
 
-      <p class="text-xs text-slate-600 leading-relaxed">
-        Чтобы данные автоматически синхронизировались между компьютером и телефоном без пересылки файлов, подключите бесплатное облачное JSON-хранилище:
-      </p>
-
-      <div class="bg-sky-50 border border-sky-200 rounded-xl p-3.5 text-xs text-sky-950 space-y-1.5">
-        <div class="font-bold">Как получить ключи за 30 секунд (Бесплатно на JSONBin.io):</div>
+      <div class="bg-sky-50 border border-sky-200 rounded-xl p-3 text-xs text-sky-950 space-y-1">
+        <div class="font-bold">Быстрая настройка через JSONBin.io (бесплатно):</div>
         <ol class="list-decimal list-inside space-y-1 text-slate-700">
-          <li>Зайдите на <a href="https://jsonbin.io" target="_blank" class="text-indigo-600 underline font-semibold">jsonbin.io</a> (вход через Google/GitHub в 1 клик).</li>
-          <li>В меню <b>API Keys</b> скопируйте ваш <code>X-Master-Key</code> и вставьте ниже.</li>
-          <li>Нажмите кнопку <b>«Создать новую базу в облаке»</b> ниже — приложение само создаст Bin ID!</li>
-          <li>Скопируйте эти же два поля на телефоне — готово, устройства синхронизированы!</li>
+          <li>Войдите на <a href="https://jsonbin.io" target="_blank" class="text-indigo-600 underline font-semibold">jsonbin.io</a> → вкладка <b>API Keys</b> → скопируйте <code>X-Master-Key</code>.</li>
+          <li>Вставьте ключ ниже и нажмите <b>«+ Создать новый Bin ID»</b>.</li>
+          <li>На втором устройстве вставьте эти же 2 строчки и нажмите «Загрузить из облака».</li>
         </ol>
       </div>
 
       <div class="space-y-3 text-xs">
         <div>
-          <label class="block text-slate-700 font-bold mb-1">API Ключ (X-Master-Key от JSONBin.io):</label>
+          <label class="block text-slate-700 font-bold mb-1">API Ключ (X-Master-Key):</label>
           <input type="password" id="cloudApiKeyInput" placeholder="$2a$10$..."
                  class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-indigo-500 font-mono">
         </div>
         <div>
           <label class="block text-slate-700 font-bold mb-1">ID вашей базы (Bin ID):</label>
           <div class="flex gap-2">
-            <input type="text" id="cloudBinIdInput" placeholder="Например: 6710a8b2e41b4d34e44..."
+            <input type="text" id="cloudBinIdInput" placeholder="6710a8b..."
                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-indigo-500 font-mono">
             <button onclick="createNewCloudBin()" class="shrink-0 px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg transition">
-              + Создать новый Bin ID
+              + Создать Bin ID
             </button>
           </div>
         </div>
@@ -179,85 +187,67 @@
             ⬆ Отправить в облако
           </button>
         </div>
-        <div class="flex gap-2">
-          <button onclick="saveCloudConfig()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow transition">
-            Сохранить и включить авто-синхронизацию
-          </button>
-        </div>
+        <button onclick="saveCloudConfig()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow transition">
+          Сохранить
+        </button>
       </div>
     </div>
   </div>
 
   <!-- МОДАЛЬНОЕ ОКНО: ГЕНЕРАТОР ТЕКСТОВОГО ОТЧЕТА -->
-  <div id="reportModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-xl border border-slate-200 space-y-4">
+  <div id="reportModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-3 z-50">
+    <div class="bg-white rounded-2xl max-w-xl w-full p-5 shadow-xl border border-slate-200 space-y-3">
       <div class="flex justify-between items-center">
-        <h3 class="text-lg font-bold text-slate-900">📋 Генератор отчета (WhatsApp / Telegram)</h3>
+        <h3 class="text-base sm:text-lg font-bold text-slate-900">📋 Генератор отчета</h3>
         <button onclick="closeReportModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
       </div>
       <div class="flex gap-2 items-center text-xs">
-        <span class="text-slate-500 font-medium">Формат отчета:</span>
-        <select id="reportScopeSelect" onchange="generateReportText()" class="border border-slate-300 rounded-lg px-2.5 py-1.5 font-semibold text-slate-700 focus:outline-none">
+        <span class="text-slate-500 font-medium">Период:</span>
+        <select id="reportScopeSelect" onchange="generateReportText()" class="border border-slate-300 rounded-lg px-2 py-1.5 font-semibold text-slate-700 w-full">
           <option value="all">Все периоды</option>
         </select>
       </div>
-      <textarea id="reportTextarea" rows="12" class="w-full p-3 text-xs font-mono bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:border-indigo-500"></textarea>
+      <textarea id="reportTextarea" rows="11" class="w-full p-3 text-xs font-mono bg-slate-50 border border-slate-300 rounded-xl focus:outline-none"></textarea>
       <div class="flex justify-end gap-2">
-        <button onclick="copyReportToClipboard()" id="copyReportBtn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow transition">
+        <button onclick="copyReportToClipboard()" id="copyReportBtn" class="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow">
           Скопировать текст
         </button>
-        <button onclick="closeReportModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition">
+        <button onclick="closeReportModal()" class="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg">
           Закрыть
         </button>
       </div>
     </div>
   </div>
 
-  <!-- МОДАЛЬНОЕ ОКНО: УВЕДОМЛЕНИЯ (TELEGRAM + КАЛЕНДАРЬ .ICS) -->
-  <div id="notificationsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+  <!-- МОДАЛЬНОЕ ОКНО: УВЕДОМЛЕНИЯ -->
+  <div id="notificationsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-3 z-50">
+    <div class="bg-white rounded-2xl max-w-xl w-full p-5 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center">
-        <h3 class="text-lg font-bold text-slate-900">🔔 Настройка уведомлений (за 5, 3 и 1 день)</h3>
+        <h3 class="text-base sm:text-lg font-bold text-slate-900">🔔 Уведомления (за 5, 3 и 1 день)</h3>
         <button onclick="closeNotificationsModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
       </div>
 
-      <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5 space-y-2">
-        <h4 class="text-xs font-bold uppercase tracking-wider text-amber-900">Точные даты уведомлений (с учетом ваших пропусков):</h4>
+      <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
+        <h4 class="text-xs font-bold uppercase text-amber-900">Расчетные даты уведомлений:</h4>
         <div id="upcomingAlertsList" class="text-xs text-amber-950 space-y-1"></div>
       </div>
 
-      <div class="border border-slate-200 rounded-xl p-4 space-y-2 bg-slate-50">
-        <h4 class="text-sm font-bold text-slate-800">1. Автономные напоминания в телефон / ПК (.ics)</h4>
-        <p class="text-xs text-slate-500">Скачайте файл и откройте его — календарь (Apple, Google, Outlook) сам пришлет Push/Email ровно за 5, 3 и 1 рабочий день до конца абонемента.</p>
-        <button onclick="downloadICSReminders()" class="mt-2 w-full py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg transition">
-          📅 Скачать файл напоминаний для Календаря (.ics)
+      <div class="border border-slate-200 rounded-xl p-3.5 space-y-2 bg-slate-50">
+        <h4 class="text-xs sm:text-sm font-bold text-slate-800">1. В календарь телефона (.ics)</h4>
+        <button onclick="downloadICSReminders()" class="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg transition">
+          📅 Скачать напоминания (.ics)
         </button>
       </div>
 
-      <div class="border border-slate-200 rounded-xl p-4 space-y-3">
-        <div>
-          <h4 class="text-sm font-bold text-slate-800">2. Авто-уведомления в ваш Telegram-бот</h4>
-          <p class="text-xs text-slate-500">Когда остается 5, 3 или 1 рабочий день до конца периода, приложение автоматически пришлет вам сообщение в Telegram.</p>
+      <div class="border border-slate-200 rounded-xl p-3.5 space-y-2.5">
+        <h4 class="text-xs sm:text-sm font-bold text-slate-800">2. В ваш Telegram-бот</h4>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+          <input type="password" id="tgBotTokenInput" placeholder="Bot Token (от @BotFather)" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg">
+          <input type="text" id="tgChatIdInput" placeholder="Ваш Chat ID" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg">
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-          <div>
-            <label class="block text-slate-600 font-semibold mb-1">Telegram Bot Token:</label>
-            <input type="password" id="tgBotTokenInput" placeholder="123456789:ABCdef..."
-                   class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:border-indigo-500">
-          </div>
-          <div>
-            <label class="block text-slate-600 font-semibold mb-1">Ваш Chat ID:</label>
-            <input type="text" id="tgChatIdInput" placeholder="Например: 987654321"
-                   class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:border-indigo-500">
-          </div>
-        </div>
-        <div class="flex flex-wrap gap-2 pt-1">
-          <button onclick="saveTelegramConfig()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition">
-            Сохранить настройки ТГ
-          </button>
-          <button onclick="sendTestTelegramMessage()" class="px-3.5 py-1.5 bg-sky-100 hover:bg-sky-200 text-sky-800 text-xs font-bold rounded-lg border border-sky-300 transition">
-            ✈ Отправить тест в ТГ
-          </button>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="saveTelegramConfig()" class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg">Сохранить ТГ</button>
+          <button onclick="sendTestTelegramMessage()" class="px-3 py-1.5 bg-sky-100 text-sky-800 text-xs font-bold rounded-lg border border-sky-300">✈ Тест в ТГ</button>
         </div>
         <p id="tgStatusMsg" class="text-xs font-medium text-emerald-600 hidden"></p>
       </div>
@@ -265,48 +255,64 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'kg_tracker_state_v3';
+    // РЕГИСТРАЦИЯ SERVICE WORKER И ПЕРЕХВАТ УСТАНОВКИ PWA
+    let deferredInstallPrompt = null;
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      document.getElementById('pwaInstallBanner').classList.remove('hidden');
+    });
+    async function installPWA() {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      const { outcome } = await deferredInstallPrompt.userChoice;
+      if (outcome === 'accepted') {
+        document.getElementById('pwaInstallBanner').classList.add('hidden');
+      }
+      deferredInstallPrompt = null;
+    }
+
+    const STORAGE_KEY = 'kg_tracker_state_v4';
     const CLOUD_CONFIG_KEY = 'kg_tracker_cloud_cfg_v1';
-    let fileHandle = null;
     let highlightedSubIndex = null;
-    // Множество месяцев, где пользователь временно нажал "Показать скрытые недели"
     let expandedMonthsOverride = new Set();
 
     const SUB_THEMES = [
       {
-        name: 'Индиго',
         cardBorder: 'border-indigo-600',
         cardBg: 'bg-indigo-50/40',
         badge: 'bg-indigo-600 text-white',
         cellAttended: 'bg-indigo-50/90 border-indigo-300 text-indigo-950 hover:bg-indigo-100',
-        cellBorderAccent: 'border-l-4 border-l-indigo-600',
+        cellBorderAccent: 'border-l-[3px] sm:border-l-4 border-l-indigo-600',
         dayPill: 'bg-indigo-200/80 text-indigo-900'
       },
       {
-        name: 'Изумрудный',
         cardBorder: 'border-teal-600',
         cardBg: 'bg-teal-50/40',
         badge: 'bg-teal-600 text-white',
         cellAttended: 'bg-teal-50/90 border-teal-300 text-teal-950 hover:bg-teal-100',
-        cellBorderAccent: 'border-l-4 border-l-teal-600',
+        cellBorderAccent: 'border-l-[3px] sm:border-l-4 border-l-teal-600',
         dayPill: 'bg-teal-200/80 text-teal-900'
       },
       {
-        name: 'Океан',
         cardBorder: 'border-sky-600',
         cardBg: 'bg-sky-50/40',
         badge: 'bg-sky-600 text-white',
         cellAttended: 'bg-sky-50/90 border-sky-300 text-sky-950 hover:bg-sky-100',
-        cellBorderAccent: 'border-l-4 border-l-sky-600',
+        cellBorderAccent: 'border-l-[3px] sm:border-l-4 border-l-sky-600',
         dayPill: 'bg-sky-200/80 text-sky-900'
       },
       {
-        name: 'Фуксия',
         cardBorder: 'border-fuchsia-600',
         cardBg: 'bg-fuchsia-50/40',
         badge: 'bg-fuchsia-600 text-white',
         cellAttended: 'bg-fuchsia-50/90 border-fuchsia-300 text-fuchsia-950 hover:bg-fuchsia-100',
-        cellBorderAccent: 'border-l-4 border-l-fuchsia-600',
+        cellBorderAccent: 'border-l-[3px] sm:border-l-4 border-l-fuchsia-600',
         dayPill: 'bg-fuchsia-200/80 text-fuchsia-900'
       }
     ];
@@ -315,6 +321,7 @@
       startDate: '2026-10-05',
       simulatedToday: '2026-10-16',
       hidePastPeriods: false,
+      hideWeekends: false,
       defaultPrice: 28800,
       daysPerSub: 20,
       updatedAt: Date.now(),
@@ -331,23 +338,19 @@
         '2026-11-04': 'holiday',
         '2026-12-31': 'holiday'
       },
-      telegram: {
-        botToken: '',
-        chatId: '',
-        sentAlertsLog: {}
-      }
+      telegram: { botToken: '', chatId: '', sentAlertsLog: {} }
     };
 
     let state = loadState();
     let cloudConfig = loadCloudConfig();
 
     function loadState() {
-      const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('kg_tracker_state_v2');
+      const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('kg_tracker_state_v3');
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
           return { ...defaultState, ...parsed, telegram: { ...defaultState.telegram, ...(parsed.telegram || {}) } };
-        } catch (e) { console.error(e); }
+        } catch (e) {}
       }
       return JSON.parse(JSON.stringify(defaultState));
     }
@@ -363,37 +366,24 @@
     async function saveState(skipCloudPush = false) {
       state.updatedAt = Date.now();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-
-      if (fileHandle) {
-        try {
-          const writable = await fileHandle.createWritable();
-          await writable.write(JSON.stringify(state, null, 2));
-          await writable.close();
-          updateSyncBadge(true);
-        } catch (err) {
-          updateSyncBadge(false);
-        }
-      }
-
       if (!skipCloudPush && cloudConfig.apiKey && cloudConfig.binId) {
         pushToCloud(true);
       }
-
       render();
     }
 
-    // МОДУЛЬ ОБЛАЧНОЙ СИНХРОНИЗАЦИИ (JSONBin.io API)
+    // ОБЛАЧНАЯ СИНХРОНИЗАЦИЯ
     function updateCloudBadge(statusText, isOk = true) {
       const badge = document.getElementById('cloudSyncBadge');
       if (!cloudConfig.apiKey || !cloudConfig.binId) {
         badge.textContent = '☁️ Облако не подключено';
-        badge.className = 'cursor-pointer px-2.5 py-0.5 text-xs font-bold rounded-full bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200 transition';
+        badge.className = 'cursor-pointer px-2 py-0.5 text-[11px] font-bold rounded-full bg-slate-100 text-slate-600 border border-slate-300';
         return;
       }
-      badge.textContent = statusText || '☁️ Облако синхронизировано';
+      badge.textContent = statusText || '☁️ Синхронизировано';
       badge.className = isOk
-        ? 'cursor-pointer px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200 transition'
-        : 'cursor-pointer px-2.5 py-0.5 text-xs font-bold rounded-full bg-rose-100 text-rose-800 border border-rose-300';
+        ? 'cursor-pointer px-2 py-0.5 text-[11px] font-bold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300'
+        : 'cursor-pointer px-2 py-0.5 text-[11px] font-bold rounded-full bg-rose-100 text-rose-800 border border-rose-300';
     }
 
     function openCloudModal() {
@@ -420,69 +410,55 @@
       cloudConfig.binId = document.getElementById('cloudBinIdInput').value.trim();
       localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(cloudConfig));
       updateCloudBadge('☁️ Облако активно', true);
-      showCloudMessage('✓ Настройки сохранены! Авто-синхронизация включена.');
-      if (cloudConfig.apiKey && cloudConfig.binId) {
-        pushToCloud(true);
-      }
+      showCloudMessage('✓ Настройки сохранены!');
+      if (cloudConfig.apiKey && cloudConfig.binId) pushToCloud(true);
     }
 
     async function createNewCloudBin() {
       const apiKey = document.getElementById('cloudApiKeyInput').value.trim();
       if (!apiKey) {
-        showCloudMessage('Сначала вставьте ваш X-Master-Key от JSONBin.io в поле выше!', true);
+        showCloudMessage('Вставьте X-Master-Key выше!', true);
         return;
       }
-      showCloudMessage('Создаем облачную базу...');
+      showCloudMessage('Создаем базу...');
       try {
         const res = await fetch('https://api.jsonbin.io/v3/b', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Master-Key': apiKey,
-            'X-Bin-Name': 'kindergarten-tracker-db'
-          },
+          headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey, 'X-Bin-Name': 'sadik-db' },
           body: JSON.stringify(state)
         });
         const data = await res.json();
         if (data.metadata && data.metadata.id) {
           document.getElementById('cloudBinIdInput').value = data.metadata.id;
           saveCloudConfig();
-          showCloudMessage(`✅ База создана! Ваш Bin ID: ${data.metadata.id}. Скопируйте его для телефона.`);
+          showCloudMessage(`✅ База создана! Bin ID: ${data.metadata.id}`);
         } else {
-          showCloudMessage('Ошибка создания: ' + (data.message || 'проверьте API ключ'), true);
+          showCloudMessage('Ошибка: проверьте ключ', true);
         }
       } catch (e) {
-        showCloudMessage('Ошибка соединения с JSONBin.io', true);
+        showCloudMessage('Ошибка сети', true);
       }
     }
 
     async function pushToCloud(silent = false) {
       const apiKey = document.getElementById('cloudApiKeyInput')?.value.trim() || cloudConfig.apiKey;
       const binId = document.getElementById('cloudBinIdInput')?.value.trim() || cloudConfig.binId;
-      if (!apiKey || !binId) {
-        if (!silent) showCloudMessage('Заполните API ключ и Bin ID', true);
-        return;
-      }
+      if (!apiKey || !binId) return;
       updateCloudBadge('☁️ Сохранение...', true);
       try {
         const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Master-Key': apiKey
-          },
+          headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey },
           body: JSON.stringify(state)
         });
         if (res.ok) {
           updateCloudBadge('☁️ Синхронизировано', true);
-          if (!silent) showCloudMessage('✅ Данные успешно отправлены в облако!');
+          if (!silent) showCloudMessage('✅ Отправлено в облако!');
         } else {
-          updateCloudBadge('☁️ Ошибка синхр.', false);
-          if (!silent) showCloudMessage('Ошибка записи в облако (проверьте Bin ID и ключ)', true);
+          updateCloudBadge('☁️ Ошибка', false);
         }
       } catch (e) {
         updateCloudBadge('☁️ Офлайн', false);
-        if (!silent) showCloudMessage('Нет сети для отправки в облако', true);
       }
     }
 
@@ -490,7 +466,6 @@
       const apiKey = document.getElementById('cloudApiKeyInput')?.value.trim() || cloudConfig.apiKey;
       const binId = document.getElementById('cloudBinIdInput')?.value.trim() || cloudConfig.binId;
       if (!apiKey || !binId) return;
-
       updateCloudBadge('☁️ Загрузка...', true);
       try {
         const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
@@ -502,40 +477,20 @@
             state = { ...defaultState, ...data.record };
             await saveState(true);
             updateCloudBadge('☁️ Синхронизировано', true);
-            if (!silent) showCloudMessage('✅ Актуальные данные успешно загружены из облака!');
+            if (!silent) showCloudMessage('✅ Данные загружены из облака!');
           }
-        } else {
-          updateCloudBadge('☁️ Ошибка чтения', false);
         }
       } catch (e) {
         updateCloudBadge('☁️ Офлайн', false);
       }
     }
 
-    function updateSyncBadge(isSynced) {
-      const badge = document.getElementById('fileSyncBadge');
-      if (isSynced && fileHandle) {
-        badge.textContent = `✓ Файл: ${fileHandle.name}`;
-        badge.className = 'px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300';
-      } else {
-        badge.textContent = 'Локальная память';
-        badge.className = 'px-2.5 py-0.5 text-xs font-bold rounded-full bg-slate-100 text-slate-600 border border-slate-300';
+    // Авто-подтягивание при разворачивании приложения на телефоне
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && cloudConfig.apiKey && cloudConfig.binId) {
+        pullFromCloud(true);
       }
-    }
-
-    async function connectLocalFile() {
-      if (!window.showSaveFilePicker) {
-        alert('Прямая привязка файла доступна в Chrome/Edge/Яндекс на ПК. Для смартфонов используйте кнопку «☁️ Облако (ПК ↔ Телефон)».');
-        return;
-      }
-      try {
-        fileHandle = await window.showSaveFilePicker({
-          suggestedName: 'kg-data.json',
-          types: [{ description: 'JSON Database', accept: { 'application/json': ['.json'] } }]
-        });
-        await saveState();
-      } catch (e) {}
-    }
+    });
 
     function exportJsonFile() {
       const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
@@ -553,21 +508,15 @@
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          const imported = JSON.parse(e.target.result);
-          state = { ...defaultState, ...imported };
+          state = { ...defaultState, ...JSON.parse(e.target.result) };
           saveState();
-        } catch (err) {
-          alert('Ошибка чтения JSON файла.');
-        }
+        } catch (err) { alert('Ошибка чтения файла.'); }
       };
       reader.readAsText(file);
     }
 
     function toISODate(d) {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
 
     function formatHumanDate(isoStr) {
@@ -582,7 +531,7 @@
       return `${d}.${m}`;
     }
 
-    // ЯДРО РАСЧЕТА РАСПИСАНИЯ
+    // ЯДРО РАСЧЕТА
     function calculateSchedule() {
       const totalSubscriptions = state.subscriptions.length;
       let currentValDate = new Date(state.startDate + 'T00:00:00');
@@ -670,7 +619,6 @@
     function toggleDayStatus(isoDate) {
       const d = new Date(isoDate + 'T00:00:00');
       if (d.getDay() === 0 || d.getDay() === 6) return;
-
       const current = state.exceptions[isoDate] || 'attended';
       if (current === 'attended') state.exceptions[isoDate] = 'missed';
       else if (current === 'missed') state.exceptions[isoDate] = 'holiday';
@@ -681,10 +629,7 @@
     function togglePaidStatus(subId, event) {
       if (event) event.stopPropagation();
       const sub = state.subscriptions.find(s => s.id === subId);
-      if (sub) {
-        sub.isPaid = !sub.isPaid;
-        saveState();
-      }
+      if (sub) { sub.isPaid = !sub.isPaid; saveState(); }
     }
 
     function toggleManualHideSub(subId, event) {
@@ -699,18 +644,13 @@
 
     function updateSubPrice(subId, newPrice) {
       const sub = state.subscriptions.find(s => s.id === subId);
-      if (sub) {
-        sub.price = Number(newPrice) || 0;
-        saveState();
-      }
+      if (sub) { sub.price = Number(newPrice) || 0; saveState(); }
     }
 
     function updateBasePrice(val) {
       const price = Number(val) || 0;
       state.defaultPrice = price;
-      state.subscriptions.forEach(s => {
-        if (!s.isPaid) s.price = price;
-      });
+      state.subscriptions.forEach(s => { if (!s.isPaid) s.price = price; });
       saveState();
     }
 
@@ -727,12 +667,14 @@
       saveState();
     }
 
+    function toggleHideWeekends(checked) {
+      state.hideWeekends = checked;
+      saveState();
+    }
+
     function toggleMonthHiddenWeeks(monthKey) {
-      if (expandedMonthsOverride.has(monthKey)) {
-        expandedMonthsOverride.delete(monthKey);
-      } else {
-        expandedMonthsOverride.add(monthKey);
-      }
+      if (expandedMonthsOverride.has(monthKey)) expandedMonthsOverride.delete(monthKey);
+      else expandedMonthsOverride.add(monthKey);
       render();
     }
 
@@ -742,15 +684,8 @@
     }
 
     function addSubscription() {
-      const nextId = state.subscriptions.length > 0
-        ? Math.max(...state.subscriptions.map(s => s.id)) + 1
-        : 1;
-      state.subscriptions.push({
-        id: nextId,
-        price: state.defaultPrice,
-        isPaid: false,
-        hiddenManually: false
-      });
+      const nextId = state.subscriptions.length > 0 ? Math.max(...state.subscriptions.map(s => s.id)) + 1 : 1;
+      state.subscriptions.push({ id: nextId, price: state.defaultPrice, isPaid: false, hiddenManually: false });
       saveState();
     }
 
@@ -763,13 +698,10 @@
       }
     }
 
-    // УВЕДОМЛЕНИЯ ЗА 5, 3, 1 ДЕНЬ
     function checkPaymentNotifications(subStats) {
       const banner = document.getElementById('paymentAlertBanner');
       banner.classList.add('hidden');
-
-      const currentSub = subStats.find(s => s.startDate <= state.simulatedToday && s.endDate >= state.simulatedToday)
-                         || subStats.find(s => !s.isPast);
+      const currentSub = subStats.find(s => s.startDate <= state.simulatedToday && s.endDate >= state.simulatedToday) || subStats.find(s => !s.isPast);
       if (!currentSub) return;
 
       const nextSub = subStats.find(s => s.index === currentSub.index + 1);
@@ -780,45 +712,29 @@
       if (currentUnpaid || (daysLeft <= 5 && needsPaymentForNext)) {
         const isMilestone = [5, 3, 1].includes(daysLeft);
         const targetSub = currentUnpaid ? currentSub : nextSub;
-        const urgencyColor = daysLeft <= 1
-          ? 'bg-rose-50 border-rose-600 text-rose-950'
-          : (daysLeft <= 3 ? 'bg-amber-50 border-amber-500 text-amber-950' : 'bg-indigo-50 border-indigo-600 text-indigo-950');
+        const urgencyColor = daysLeft <= 1 ? 'bg-rose-50 border-rose-600 text-rose-950' : (daysLeft <= 3 ? 'bg-amber-50 border-amber-500 text-amber-950' : 'bg-indigo-50 border-indigo-600 text-indigo-950');
 
-        banner.className = `rounded-2xl p-4 shadow-sm border-l-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 ${urgencyColor}`;
+        banner.className = `rounded-2xl p-3.5 shadow-sm border-l-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-2.5 ${urgencyColor}`;
         banner.innerHTML = `
           <div>
-            <div class="flex items-center gap-2">
-              <span class="px-2 py-0.5 text-xs font-extrabold uppercase rounded bg-slate-900 text-white">
-                ${isMilestone ? `🔔 Контрольный срок: осталось ${daysLeft} дн.` : `Напоминание об оплате`}
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded bg-slate-900 text-white">
+                ${isMilestone ? `🔔 Осталось ${daysLeft} дн.` : `Напоминание`}
               </span>
-              <span class="text-xs font-bold opacity-75">До конца периода #${currentSub.index} (${formatHumanDate(currentSub.endDate)}) осталось рабочих дней: ${daysLeft}</span>
+              <span class="text-xs font-bold opacity-80">Конец периода #${currentSub.index}: ${formatHumanDate(currentSub.endDate)}</span>
             </div>
-            <p class="text-sm font-bold mt-1">
+            <p class="text-xs sm:text-sm font-bold mt-1">
               ${currentUnpaid
-                ? `Текущий Период #${currentSub.index} еще НЕ ОПЛАЧЕН (${currentSub.price.toLocaleString('ru-RU')} ₽)!`
-                : `Пора оплатить следующий Период #${targetSub.index} (старт с ${formatHumanDate(targetSub.startDate)}, сумма: ${targetSub.price.toLocaleString('ru-RU')} ₽).`
+                ? `Текущий Период #${currentSub.index} НЕ ОПЛАЧЕН (${currentSub.price.toLocaleString('ru-RU')} ₽)!`
+                : `К оплате Период #${targetSub.index} с ${formatHumanDate(targetSub.startDate)}:${targetSub.price.toLocaleString('ru-RU')} ₽.`
               }
             </p>
           </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <button onclick="togglePaidStatus(${targetSub.id})" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow transition">
-              ✓ Отметить Период #${targetSub.index} оплаченным
-            </button>
-          </div>
+          <button onclick="togglePaidStatus(${targetSub.id})" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg shadow shrink-0">
+            ✓ Отметить #${targetSub.index} оплаченным
+          </button>
         `;
         banner.classList.remove('hidden');
-
-        if (isMilestone) {
-          const alertKey = `sub_${currentSub.index}_left_${daysLeft}_date_${state.simulatedToday}`;
-          if (!state.telegram.sentAlertsLog[alertKey]) {
-            const msg = `🔔 Детский сад: до окончания Периода #${currentSub.index} (${formatHumanDate(currentSub.endDate)}) осталось ровно ${daysLeft} раб. дн.!\nК оплате за Период #${targetSub.index}: ${targetSub.price.toLocaleString('ru-RU')} ₽ (старт ${formatHumanDate(targetSub.startDate)}).`;
-            if (state.telegram.botToken && state.telegram.chatId) {
-              sendTelegramText(msg, true);
-              state.telegram.sentAlertsLog[alertKey] = true;
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-            }
-          }
-        }
       }
     }
 
@@ -835,27 +751,20 @@
     function openNotificationsModal() {
       document.getElementById('tgBotTokenInput').value = state.telegram.botToken || '';
       document.getElementById('tgChatIdInput').value = state.telegram.chatId || '';
-
       const { subStats } = calculateSchedule();
-      const listEl = document.getElementById('upcomingAlertsList');
-
-      listEl.innerHTML = subStats.filter(s => !s.isPast).map(sub => {
-        const milestones = getAlertDatesForSub(sub);
-        return `
-          <div class="py-1.5 border-b border-amber-200/60 last:border-none">
-            <div class="font-bold text-amber-950">Период #${sub.index} (${formatHumanDate(sub.startDate)} — ${formatHumanDate(sub.endDate)}):</div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-1 mt-1">
-              ${milestones.map(m => `
-                <div class="bg-white/80 px-2 py-1 rounded border border-amber-300/70">
-                  <span class="font-extrabold text-indigo-700">${formatHumanDate(m.date)}</span>
-                  <span class="block text-[10px] text-slate-600">Останется ${m.daysLeft} раб. дн.</span>
-                </div>
-              `).join('')}
-            </div>
+      document.getElementById('upcomingAlertsList').innerHTML = subStats.filter(s => !s.isPast).map(sub => `
+        <div class="py-1 border-b border-amber-200/60 last:border-none">
+          <div class="font-bold">Период #${sub.index} (${formatShortDate(sub.startDate)}–${formatShortDate(sub.endDate)}):</div>
+          <div class="grid grid-cols-3 gap-1 mt-1">
+            ${getAlertDatesForSub(sub).map(m => `
+              <div class="bg-white px-1.5 py-1 rounded border border-amber-300 text-center">
+                <span class="font-extrabold text-indigo-700 block">${formatShortDate(m.date)}</span>
+                <span class="text-[9px] text-slate-500">За ${m.daysLeft} дн.</span>
+              </div>
+            `).join('')}
           </div>
-        `;
-      }).join('');
-
+        </div>
+      `).join('');
       document.getElementById('notificationsModal').classList.remove('hidden');
       document.getElementById('notificationsModal').classList.add('flex');
     }
@@ -869,18 +778,15 @@
       state.telegram.botToken = document.getElementById('tgBotTokenInput').value.trim();
       state.telegram.chatId = document.getElementById('tgChatIdInput').value.trim();
       saveState();
-      const statusEl = document.getElementById('tgStatusMsg');
-      statusEl.textContent = '✓ Настройки Telegram сохранены!';
-      statusEl.classList.remove('hidden');
-      setTimeout(() => statusEl.classList.add('hidden'), 3000);
+      const el = document.getElementById('tgStatusMsg');
+      el.textContent = '✓ Сохранено!';
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 2500);
     }
 
     async function sendTelegramText(text, silent = false) {
       const { botToken, chatId } = state.telegram;
-      if (!botToken || !chatId) {
-        if (!silent) alert('Укажите Bot Token и ваш Chat ID.');
-        return;
-      }
+      if (!botToken || !chatId) return;
       try {
         const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
           method: 'POST',
@@ -888,18 +794,15 @@
           body: JSON.stringify({ chat_id: chatId, text })
         });
         const data = await res.json();
-        if (data.ok && !silent) alert('✅ Сообщение доставлено в Telegram!');
-      } catch (e) {
-        if (!silent) alert('Ошибка отправки в Telegram.');
-      }
+        if (data.ok && !silent) alert('✅ Доставлено в Telegram!');
+      } catch (e) {}
     }
 
     function sendTestTelegramMessage() {
       saveTelegramConfig();
       const { subStats } = calculateSchedule();
       const activeSub = subStats.find(s => !s.isPast) || subStats[0];
-      const msg = `👶 Трекер детского сада\nПериод #${activeSub.index}: ${formatHumanDate(activeSub.startDate)} — ${formatHumanDate(activeSub.endDate)}\nПропусков: ${activeSub.missedCount} дн.\nСтатус: ${activeSub.isPaid ? 'Оплачен' : 'НЕ ОПЛАЧЕН'} (${activeSub.price.toLocaleString('ru-RU')} ₽)`;
-      sendTelegramText(msg, false);
+      sendTelegramText(`👶 Детский сад\nПериод #${activeSub.index}: ${formatHumanDate(activeSub.startDate)} — ${formatHumanDate(activeSub.endDate)}\nПропусков: ${activeSub.missedCount} дн.`, false);
     }
 
     function downloadICSReminders() {
@@ -909,32 +812,26 @@
         getAlertDatesForSub(sub).forEach(m => {
           const cleanDate = m.date.replace(/-/g, '');
           icsLines.push(
-            'BEGIN:VEVENT',
-            `UID:kg-sub-${sub.index}-left-${m.daysLeft}-${cleanDate}@tracker.local`,
-            `DTSTAMP:${cleanDate}T060000Z`,
-            `DTSTART;VALUE=DATE:${cleanDate}`,
+            'BEGIN:VEVENT', `UID:kg-${sub.index}-${m.daysLeft}-${cleanDate}@local`,
+            `DTSTAMP:${cleanDate}T060000Z`, `DTSTART;VALUE=DATE:${cleanDate}`,
             `SUMMARY:🔔 Детский сад: осталось ${m.daysLeft} раб. дн. (Период #${sub.index})`,
-            `DESCRIPTION:Абонемент #${sub.index} заканчивается ${formatHumanDate(sub.endDate)}. Сумма к оплате следующего: ${state.defaultPrice} руб.`,
-            'BEGIN:VALARM', 'TRIGGER:PT9H', 'ACTION:DISPLAY', 'DESCRIPTION:Оплата детского сада', 'END:VALARM', 'END:VEVENT'
+            'BEGIN:VALARM', 'TRIGGER:PT9H', 'ACTION:DISPLAY', 'DESCRIPTION:Оплата сада', 'END:VALARM', 'END:VEVENT'
           );
         });
       });
       icsLines.push('END:VCALENDAR');
       const blob = new Blob([icsLines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = 'kindergarten-reminders.ics';
+      a.href = URL.createObjectURL(blob);
+      a.download = 'sadik-reminders.ics';
       a.click();
-      URL.revokeObjectURL(url);
     }
 
-    // ОТЧЕТ ДЛЯ WHATSAPP / TELEGRAM
     function openReportModal() {
       const { subStats } = calculateSchedule();
       const select = document.getElementById('reportScopeSelect');
-      select.innerHTML = `<option value="all">Сводка по всем периодам (${subStats.length})</option>` +
-        subStats.map(s => `<option value="${s.index}">Только Период #${s.index} (${formatHumanDate(s.startDate)} — ${formatHumanDate(s.endDate)})</option>`).join('');
+      select.innerHTML = `<option value="all">Все периоды (${subStats.length})</option>` +
+        subStats.map(s => `<option value="${s.index}">Период #${s.index} (${formatShortDate(s.startDate)}–${formatShortDate(s.endDate)})</option>`).join('');
       generateReportText();
       document.getElementById('reportModal').classList.remove('hidden');
       document.getElementById('reportModal').classList.add('flex');
@@ -949,25 +846,15 @@
       const { subStats } = calculateSchedule();
       const scope = document.getElementById('reportScopeSelect').value;
       const targetSubs = scope === 'all' ? subStats : subStats.filter(s => String(s.index) === String(scope));
-
       let lines = [`📊 СВЕРКА ПОСЕЩЕНИЙ ДЕТСКОГО САДА (на ${formatHumanDate(state.simulatedToday)})`, ''];
       targetSubs.forEach(sub => {
-        lines.push(`🔹 АБОНЕМЕНТ №${sub.index} (${state.daysPerSub} рабочих дней)`);
-        lines.push(`• Период с учетом переносов: ${formatHumanDate(sub.startDate)} — ${formatHumanDate(sub.endDate)}`);
-        lines.push(`• Статус оплаты: ${sub.isPaid ? '✅ ОПЛАЧЕН' : '⏳ НЕ ОПЛАЧЕН'} (${sub.price.toLocaleString('ru-RU')} ₽)`);
-        lines.push(sub.missedCount > 0
-          ? `• Пропуски с переносом (${sub.missedCount} дн.): ${sub.missedDates.map(formatShortDate).join(', ')}`
-          : `• Пропуски: нет (0 дн.)`);
-        if (sub.holidayDates.length > 0) {
-          lines.push(`• Праздничные выходные (${sub.holidayDates.length} дн.): ${sub.holidayDates.map(formatShortDate).join(', ')}`);
-        }
+        lines.push(`🔹 АБОНЕМЕНТ №${sub.index} (${state.daysPerSub} раб. дн.)`);
+        lines.push(`• Даты: ${formatHumanDate(sub.startDate)} — ${formatHumanDate(sub.endDate)}`);
+        lines.push(`• Оплата: ${sub.isPaid ? '✅ ОПЛАЧЕН' : '⏳ НЕ ОПЛАЧЕН'} (${sub.price.toLocaleString('ru-RU')} ₽)`);
+        lines.push(sub.missedCount > 0 ? `• Пропуски (+${sub.missedCount} дн.): ${sub.missedDates.map(formatShortDate).join(', ')}` : `• Пропуски: нет`);
+        if (sub.holidayDates.length > 0) lines.push(`• Выходные сада: ${sub.holidayDates.map(formatShortDate).join(', ')}`);
         lines.push('');
       });
-
-      const nextUnpaid = subStats.find(s => !s.isPaid);
-      if (nextUnpaid) {
-        lines.push(`💳 Следующая оплата: к ${formatHumanDate(nextUnpaid.startDate)} (Абонемент №${nextUnpaid.index}, сумма: ${nextUnpaid.price.toLocaleString('ru-RU')} ₽).`);
-      }
       document.getElementById('reportTextarea').value = lines.join('\n');
     }
 
@@ -976,20 +863,16 @@
       textarea.select();
       navigator.clipboard.writeText(textarea.value);
       const btn = document.getElementById('copyReportBtn');
-      const oldText = btn.textContent;
       btn.textContent = '✓ Скопировано!';
-      btn.classList.replace('bg-indigo-600', 'bg-emerald-600');
-      setTimeout(() => {
-        btn.textContent = oldText;
-        btn.classList.replace('bg-emerald-600', 'bg-indigo-600');
-      }, 2000);
+      setTimeout(() => btn.textContent = 'Скопировать текст', 2000);
     }
 
-    // РЕНДЕР КАРТОЧЕК И КАЛЕНДАРНОЙ СЕТКИ (С УМНЫМ СКРЫТИЕМ ПРОШЕДШИХ ПЕРИОДОВ И НЕДЕЛЬ)
+    // РЕНДЕР КАРТОЧЕК И АДАПТИВНОЙ МОБИЛЬНОЙ СЕТКИ
     function render() {
       document.getElementById('basePriceInput').value = state.defaultPrice;
       document.getElementById('simulatedTodayInput').value = state.simulatedToday;
       document.getElementById('hidePastCheckbox').checked = state.hidePastPeriods;
+      document.getElementById('hideWeekendsCheckbox').checked = !!state.hideWeekends;
 
       const perDay = Math.round(state.defaultPrice / state.daysPerSub);
       document.getElementById('pricePerDayDisplay').textContent = perDay.toLocaleString('ru-RU') + ' ₽';
@@ -997,19 +880,16 @@
       const { subStats, dayMap, lastCalculatedDate } = calculateSchedule();
       checkPaymentNotifications(subStats);
 
-      // Определяем, какие периоды сейчас скрыты (либо автоматически как прошедшие, либо вручную иконкой глаза)
       const hiddenSubIndices = new Set(
         subStats.filter(s => (state.hidePastPeriods && s.isPast) || s.hiddenManually).map(s => s.index)
       );
-
-      // Определяем самую раннюю дату среди всех ВИДИМЫХ периодов (чтобы отсечь сетку прошедших периодов!)
       const visibleSubs = subStats.filter(s => !hiddenSubIndices.has(s.index));
       const firstVisibleStartDate = visibleSubs.length > 0 ? visibleSubs[0].startDate : state.startDate;
 
       const filterLabel = document.getElementById('activeFilterLabel');
       const clearBtn = document.getElementById('clearFilterBtn');
       if (highlightedSubIndex) {
-        filterLabel.textContent = `🔍 Выделен Период #${highlightedSubIndex}`;
+        filterLabel.textContent = `Период #${highlightedSubIndex}`;
         filterLabel.classList.remove('hidden');
         clearBtn.classList.remove('hidden');
       } else {
@@ -1017,66 +897,47 @@
         clearBtn.classList.add('hidden');
       }
 
-      // 1. Рендер карточек
+      // 1. Карточки периодов
       const subContainer = document.getElementById('subscriptionsContainer');
       const hiddenCount = subStats.length - visibleSubs.length;
 
       subContainer.innerHTML = visibleSubs.map(sub => {
         const theme = SUB_THEMES[(sub.index - 1) % SUB_THEMES.length];
         const isSelected = highlightedSubIndex === sub.index;
-        const paidBadge = sub.isPaid
-          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-          : 'bg-rose-100 text-rose-800 border-rose-300';
+        const paidBadge = sub.isPaid ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300';
 
         return `
           <div onclick="selectSubHighlight(${sub.index})"
-               class="bg-white rounded-2xl p-5 shadow-sm border-l-8 ${theme.cardBorder} ${theme.cardBg} border border-slate-200 flex flex-col justify-between cursor-pointer transition ${isSelected ? 'ring-2 ring-indigo-600 shadow-md' : 'hover:shadow-md'}">
+               class="bg-white rounded-2xl p-4 shadow-sm border-l-8 ${theme.cardBorder} ${theme.cardBg} border border-slate-200 flex flex-col justify-between cursor-pointer transition ${isSelected ? 'ring-2 ring-indigo-600' : ''}">
             <div>
               <div class="flex justify-between items-start gap-2">
                 <div>
-                  <div class="flex items-center gap-2">
-                    <span class="px-2 py-0.5 text-[11px] font-extrabold uppercase rounded ${theme.badge}">Период #${sub.index}</span>
-                    ${sub.isPast ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-600">Завершен</span>` : ''}
-                  </div>
-                  <h3 class="text-base font-extrabold text-slate-900 mt-1.5">
+                  <span class="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded ${theme.badge}">Период #${sub.index}</span>
+                  <h3 class="text-sm sm:text-base font-extrabold text-slate-900 mt-1">
                     ${formatHumanDate(sub.startDate)} — ${formatHumanDate(sub.endDate)}
                   </h3>
                 </div>
                 <div class="flex items-center gap-1">
-                  <button onclick="togglePaidStatus(${sub.id}, event)"
-                          class="px-2.5 py-1 rounded-full text-xs font-bold border ${paidBadge} transition hover:opacity-80">
+                  <button onclick="togglePaidStatus(${sub.id}, event)" class="px-2 py-0.5 rounded-full text-[11px] font-bold border ${paidBadge}">
                     ${sub.isPaid ? '✓ Оплачен' : 'Не оплачен'}
                   </button>
-                  <button onclick="toggleManualHideSub(${sub.id}, event)" title="Скрыть карточку и календарную сетку этого периода"
-                          class="px-1.5 py-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded text-xs font-bold transition">
-                    👁‍🗨 Скрыть
+                  <button onclick="toggleManualHideSub(${sub.id}, event)" title="Скрыть период" class="px-1.5 py-0.5 text-slate-400 hover:text-rose-600 text-xs font-bold">
+                    👁‍🗨
                   </button>
                 </div>
               </div>
-
-              <div class="mt-3 grid grid-cols-3 gap-2 text-xs bg-white/90 p-2.5 rounded-xl border border-slate-200/80">
-                <div>
-                  <span class="text-slate-400 block text-[10px]">Посещений:</span>
-                  <span class="font-extrabold text-slate-800">${sub.attendedCount} дн.</span>
-                </div>
-                <div>
-                  <span class="text-slate-400 block text-[10px]">Пропусков:</span>
-                  <span class="font-extrabold ${sub.missedCount > 0 ? 'text-amber-600' : 'text-slate-700'}">+${sub.missedCount} дн.</span>
-                </div>
-                <div>
-                  <span class="text-slate-400 block text-[10px]">Осталось:</span>
-                  <span class="font-extrabold text-indigo-600">${sub.remainingAfterToday} дн.</span>
-                </div>
+              <div class="mt-2.5 grid grid-cols-3 gap-1.5 text-xs bg-white/90 p-2 rounded-xl border border-slate-200/80 text-center">
+                <div><span class="text-slate-400 block text-[10px]">Посещений</span><span class="font-extrabold">${sub.attendedCount} дн.</span></div>
+                <div><span class="text-slate-400 block text-[10px]">Пропусков</span><span class="font-extrabold ${sub.missedCount > 0 ? 'text-amber-600' : ''}">+${sub.missedCount}</span></div>
+                <div><span class="text-slate-400 block text-[10px]">Осталось</span><span class="font-extrabold text-indigo-600">${sub.remainingAfterToday} дн.</span></div>
               </div>
             </div>
-
-            <div class="mt-3 pt-2.5 border-t border-slate-200/60 flex justify-between items-center text-xs" onclick="event.stopPropagation()">
-              <span class="text-slate-500 font-medium">Стоимость абонемента:</span>
+            <div class="mt-2.5 pt-2 border-t border-slate-200/60 flex justify-between items-center text-xs" onclick="event.stopPropagation()">
+              <span class="text-slate-500 font-medium">Стоимость:</span>
               <div class="flex items-center gap-1">
-                <input type="number" value="${sub.price}" step="100"
-                       onchange="updateSubPrice(${sub.id}, this.value)"
-                       class="w-24 text-right font-extrabold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-300 focus:border-indigo-500 focus:outline-none">
-                <span class="font-bold text-slate-700">₽</span>
+                <input type="number" value="${sub.price}" step="100" onchange="updateSubPrice(${sub.id}, this.value)"
+                       class="w-20 text-right font-extrabold bg-white px-1.5 py-0.5 rounded border border-slate-300">
+                <span class="font-bold">₽</span>
               </div>
             </div>
           </div>
@@ -1084,18 +945,17 @@
       }).join('');
 
       if (hiddenCount > 0) {
-        const hiddenNames = subStats.filter(s => hiddenSubIndices.has(s.index)).map(s => `#${s.index}`).join(', ');
         subContainer.innerHTML += `
-          <div class="bg-slate-200/60 border-2 border-dashed border-slate-300 rounded-2xl p-5 flex flex-col items-center justify-center text-center gap-2">
-            <span class="text-xs font-extrabold text-slate-700">Скрыты периоды (${hiddenNames}) и их сетка календаря</span>
-            <button onclick="showAllHiddenSubs()" class="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-indigo-600 text-xs font-bold rounded-lg shadow-sm border border-slate-300 transition">
-              👁 Показать все периоды и сетку
+          <div class="bg-slate-200/60 border-2 border-dashed border-slate-300 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5">
+            <span class="text-xs font-bold text-slate-600">Скрыто периодов: ${hiddenCount}</span>
+            <button onclick="showAllHiddenSubs()" class="px-3 py-1 bg-white text-indigo-600 text-xs font-bold rounded-lg border border-slate-300">
+              👁 Показать все
             </button>
           </div>
         `;
       }
 
-      // 2. Рендер календарной сетки с отсечением скрытых периодов и прошедших недель
+      // 2. Адаптивная календарная сетка (идеально помещается на мобильных экранах)
       const calContainer = document.getElementById('calendarContainer');
       calContainer.innerHTML = '';
 
@@ -1106,45 +966,44 @@
 
       let curY = startYear, curM = startMonth;
       const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
-      const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+      const weekDays = state.hideWeekends ? ['Пн', 'Вт', 'Ср', 'Чт', 'Пт'] : ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+      const gridColsClass = state.hideWeekends ? 'grid-cols-5' : 'grid-cols-7';
 
       while (curY < finalYear || (curY === finalYear && curM <= finalMonth)) {
         const monthKey = `${curY}-${String(curM + 1).padStart(2, '0')}`;
         const firstDayOfMonth = new Date(curY, curM, 1);
         const daysInMonth = new Date(curY, curM + 1, 0).getDate();
 
-        // Разбиваем месяц на недели (массив строк по 7 ячеек), чтобы можно было скрывать целые недели завершенных периодов!
         let startOffset = firstDayOfMonth.getDay() - 1;
         if (startOffset === -1) startOffset = 6;
 
         let weeks = [];
         let currentWeekCells = [];
         for (let i = 0; i < startOffset; i++) {
-          currentWeekCells.push({ type: 'empty' });
+          currentWeekCells.push({ type: 'empty', colIndex: i });
         }
 
         for (let day = 1; day <= daysInMonth; day++) {
           const iso = `${curY}-${String(curM + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          currentWeekCells.push({ type: 'day', day, iso, info: dayMap[iso] });
+          const colIndex = currentWeekCells.length;
+          currentWeekCells.push({ type: 'day', day, iso, info: dayMap[iso], colIndex });
           if (currentWeekCells.length === 7) {
             weeks.push(currentWeekCells);
             currentWeekCells = [];
           }
         }
         if (currentWeekCells.length > 0) {
-          while (currentWeekCells.length < 7) currentWeekCells.push({ type: 'empty' });
+          while (currentWeekCells.length < 7) {
+            currentWeekCells.push({ type: 'empty', colIndex: currentWeekCells.length });
+          }
           weeks.push(currentWeekCells);
         }
 
-        // Проверяем каждую неделю месяца: есть ли в ней хотя бы один ВИДИМЫЙ (не скрытый) период?
         let visibleWeeksCount = 0;
         let hiddenWeeksCount = 0;
 
         const processedWeeks = weeks.map(week => {
           const dayCells = week.filter(c => c.type === 'day');
-          // Неделя считается полностью принадлежащей скрытому/прошедшему периоду, если:
-          // 1) Все её дни строго раньше старта первого видимого абонемента (firstVisibleStartDate)
-          // ИЛИ 2) Все рабочие дни этой недели принадлежат скрытым абонементам (hiddenSubIndices)
           const allBeforeVisible = hiddenSubIndices.size > 0 && dayCells.every(c => c.iso < firstVisibleStartDate);
           const workDaysWithSub = dayCells.filter(c => c.info && c.info.subIndex);
           const allSubsInWeekHidden = workDaysWithSub.length > 0 && workDaysWithSub.every(c => hiddenSubIndices.has(c.info.subIndex));
@@ -1152,11 +1011,9 @@
           const isWeekHidden = (allBeforeVisible || allSubsInWeekHidden);
           if (isWeekHidden) hiddenWeeksCount++;
           else visibleWeeksCount++;
-
           return { cells: week, isWeekHidden };
         });
 
-        // Если ВЕСЬ месяц состоит только из скрытых периодов — полностью скрываем карточку этого месяца!
         if (visibleWeeksCount === 0 && hiddenSubIndices.size > 0) {
           curM++;
           if (curM > 11) { curM = 0; curY++; }
@@ -1167,11 +1024,14 @@
         let weeksHtml = '';
 
         processedWeeks.forEach(w => {
-          if (w.isWeekHidden && !isMonthForceExpanded) return; // Пропускаем скрытую неделю прошедшего периода!
+          if (w.isWeekHidden && !isMonthForceExpanded) return;
 
           w.cells.forEach(cell => {
+            // Если включен режим "Только Пн-Пт", пропускаем колонки Сб (5) и Вс (6)
+            if (state.hideWeekends && (cell.colIndex === 5 || cell.colIndex === 6)) return;
+
             if (cell.type === 'empty') {
-              weeksHtml += `<div class="p-2"></div>`;
+              weeksHtml += `<div class="p-1"></div>`;
               return;
             }
 
@@ -1183,56 +1043,64 @@
             const isDimmedByFilter = highlightedSubIndex && (!info || info.subIndex !== highlightedSubIndex);
 
             let cellClasses = 'bg-white border-slate-200 text-slate-400';
-            let topBadgeHtml = '';
+            let topRightHtml = '';
             let bottomBadgeHtml = '';
-            let boundaryBannerHtml = '';
 
             if (isWeekend) {
-              cellClasses = 'bg-slate-100/80 border-slate-200 text-slate-400 cursor-not-allowed';
+              cellClasses = 'bg-slate-100/80 border-slate-200/80 text-slate-400 cursor-not-allowed';
             } else if (iso < state.startDate || isSubHidden) {
-              cellClasses = 'bg-slate-100/50 border-dashed border-slate-200 text-slate-300 opacity-45';
-              if (isSubHidden) {
-                topBadgeHtml = `<span class="text-[9px] font-bold text-slate-400">Скрыт #${info.subIndex}</span>`;
-              }
+              cellClasses = 'bg-slate-50 border-dashed border-slate-200 text-slate-300 opacity-45';
             } else if (info) {
               const theme = info.subIndex ? SUB_THEMES[(info.subIndex - 1) % SUB_THEMES.length] : SUB_THEMES[0];
 
               if (info.status === 'attended') {
                 cellClasses = `${theme.cellAttended} ${theme.cellBorderAccent} cursor-pointer`;
-                topBadgeHtml = `<span class="px-1.5 py-0.5 text-[10px] font-extrabold rounded ${theme.badge}">#${info.subIndex}</span>`;
-                bottomBadgeHtml = `<span class="text-[11px] font-bold px-1.5 py-0.5 rounded ${theme.dayPill}">День ${info.dayNumberInSub}/20</span>`;
-
+                // Компактные верхние бейджи старта/финиша/номера периода без разрыва ячейки на мобильном
                 if (info.isSubStart) {
-                  cellClasses += ' ring-2 ring-slate-900 shadow-sm';
-                  boundaryBannerHtml = `<div class="text-[9px] font-black uppercase tracking-wider bg-slate-900 text-white px-1.5 py-0.5 rounded text-center mb-1">🚀 Старт #${info.subIndex}</div>`;
+                  cellClasses += ' ring-1 sm:ring-2 ring-slate-900';
+                  topRightHtml = `<span class="px-1 py-0.2 text-[8px] sm:text-[10px] font-black rounded bg-slate-900 text-white leading-tight">🚀#${info.subIndex}</span>`;
                 } else if (info.isSubEnd) {
-                  cellClasses += ' ring-2 ring-rose-600 shadow-sm';
-                  boundaryBannerHtml = `<div class="text-[9px] font-black uppercase tracking-wider bg-rose-600 text-white px-1.5 py-0.5 rounded text-center mb-1">🏁 Финиш #${info.subIndex}</div>`;
+                  cellClasses += ' ring-1 sm:ring-2 ring-rose-600';
+                  topRightHtml = `<span class="px-1 py-0.2 text-[8px] sm:text-[10px] font-black rounded bg-rose-600 text-white leading-tight">🏁#${info.subIndex}</span>`;
+                } else {
+                  topRightHtml = `<span class="px-1 py-0.2 text-[8px] sm:text-[10px] font-extrabold rounded ${theme.badge} leading-tight">#${info.subIndex}</span>`;
                 }
+
+                // На мобильном короткая запись "1/20", на ПК "День 1/20"
+                bottomBadgeHtml = `
+                  <span class="w-full text-center text-[9px] sm:text-[11px] font-extrabold px-0.5 py-0.5 rounded ${theme.dayPill} truncate leading-none">
+                    <span class="hidden sm:inline">День </span>${info.dayNumberInSub}/20
+                  </span>
+                `;
               } else if (info.status === 'missed') {
-                cellClasses = `bg-amber-50 border-amber-400 border-l-4 border-l-amber-500 text-amber-950 cursor-pointer hover:bg-amber-100`;
-                topBadgeHtml = `<span class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-amber-200 text-amber-900">#${info.subIndex}</span>`;
-                bottomBadgeHtml = `<span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500 text-white">Пропуск (+1)</span>`;
+                cellClasses = `bg-amber-50 border-amber-400 border-l-[3px] sm:border-l-4 border-l-amber-500 text-amber-950 cursor-pointer hover:bg-amber-100`;
+                topRightHtml = `<span class="px-1 py-0.2 text-[8px] sm:text-[10px] font-bold rounded bg-amber-200 text-amber-900 leading-tight">#${info.subIndex}</span>`;
+                bottomBadgeHtml = `
+                  <span class="w-full text-center text-[9px] sm:text-[10px] font-extrabold px-0.5 py-0.5 rounded bg-amber-500 text-white truncate leading-none">
+                    <span class="sm:hidden">Проп.+1</span><span class="hidden sm:inline">Пропуск (+1)</span>
+                  </span>
+                `;
               } else if (info.status === 'holiday') {
-                cellClasses = `bg-purple-50 border-purple-300 border-l-4 border-l-purple-500 text-purple-950 cursor-pointer hover:bg-purple-100`;
-                bottomBadgeHtml = `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-200 text-purple-900">Выходной</span>`;
+                cellClasses = `bg-purple-50 border-purple-300 border-l-[3px] sm:border-l-4 border-l-purple-500 text-purple-950 cursor-pointer hover:bg-purple-100`;
+                bottomBadgeHtml = `
+                  <span class="w-full text-center text-[9px] sm:text-[10px] font-bold px-0.5 py-0.5 rounded bg-purple-200 text-purple-900 truncate leading-none">
+                    Выходной
+                  </span>
+                `;
               }
             }
 
             if (isDimmedByFilter) cellClasses += ' opacity-25 scale-95';
-            if (isToday) cellClasses += ' ring-2 ring-offset-1 ring-amber-500';
+            if (isToday) cellClasses += ' ring-2 ring-amber-500';
 
             weeksHtml += `
               <div onclick="toggleDayStatus('${iso}')"
-                   class="day-card border rounded-xl p-2 min-h-[86px] flex flex-col justify-between select-none ${cellClasses}">
-                <div>
-                  ${boundaryBannerHtml}
-                  <div class="flex justify-between items-center">
-                    <span class="font-extrabold text-sm ${isToday ? 'bg-amber-500 text-white px-1.5 rounded' : ''}">${day}</span>
-                    ${topBadgeHtml}
-                  </div>
+                   class="day-card border rounded-lg sm:rounded-xl p-1 sm:p-2 min-h-[58px] sm:min-h-[82px] flex flex-col justify-between select-none overflow-hidden ${cellClasses}">
+                <div class="flex justify-between items-start gap-0.5">
+                  <span class="font-extrabold text-xs sm:text-sm leading-none ${isToday ? 'bg-amber-500 text-white px-1 py-0.5 rounded' : ''}">${day}</span>
+                  ${topRightHtml}
                 </div>
-                <div class="mt-2 flex justify-end">
+                <div class="mt-1 flex w-full">
                   ${bottomBadgeHtml}
                 </div>
               </div>
@@ -1242,21 +1110,21 @@
 
         const hiddenWeeksNoticeHtml = hiddenWeeksCount > 0 ? `
           <button onclick="toggleMonthHiddenWeeks('${monthKey}')"
-                  class="text-xs font-bold px-2.5 py-1 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition">
-            ${isMonthForceExpanded ? '▲ Свернуть прошедшие недели' : `▼ Скрыто прошедших недель: ${hiddenWeeksCount} (показать)`}
+                  class="text-[11px] font-bold px-2.5 py-1 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700">
+            ${isMonthForceExpanded ? '▲ Свернуть прошедшие недели' : `▼ Скрыто недель: ${hiddenWeeksCount} (показать)`}
           </button>
         ` : '';
 
         calContainer.innerHTML += `
-          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-            <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
-              <h2 class="text-lg font-extrabold text-slate-900">${monthNames[curM]} ${curY}</h2>
+          <div class="bg-white p-3 sm:p-5 rounded-2xl shadow-sm border border-slate-200">
+            <div class="flex flex-wrap justify-between items-center gap-2 mb-2.5">
+              <h2 class="text-base sm:text-lg font-extrabold text-slate-900">${monthNames[curM]} ${curY}</h2>
               ${hiddenWeeksNoticeHtml}
             </div>
-            <div class="grid grid-cols-7 gap-2 text-center text-xs font-bold text-slate-400 mb-2">
+            <div class="grid ${gridColsClass} gap-1 sm:gap-2 text-center text-[11px] sm:text-xs font-bold text-slate-400 mb-1.5">
               ${weekDays.map(w => `<div>${w}</div>`).join('')}
             </div>
-            <div class="grid grid-cols-7 gap-2">
+            <div class="grid ${gridColsClass} gap-1 sm:gap-2">
               ${weeksHtml}
             </div>
           </div>
@@ -1274,7 +1142,6 @@
       saveState();
     }
 
-    // Инициализация и авто-подтягивание из облака при старте
     updateCloudBadge();
     render();
     if (cloudConfig.apiKey && cloudConfig.binId) {
