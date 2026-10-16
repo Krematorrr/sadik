@@ -355,12 +355,22 @@
       return JSON.parse(JSON.stringify(defaultState));
     }
 
-    function loadCloudConfig() {
+   function loadCloudConfig() {
+      // Жестко прописанные ключи (не сотрутся даже при очистке браузера или в инкогнито)
+      const hardcodedConfig = {
+        apiKey: '$2a$10$3lkyakUsPN81u2apeDoRQefljytEcqIsM2W8Q8.XB6XQ6AHzlmhO6', // Например: '$2a$10$AbCdEf...'
+        binId: '6ad15ca5ffd5d160536f384a'         // Например: '6710a8b2e41b...'
+      };
+
       const saved = localStorage.getItem(CLOUD_CONFIG_KEY);
       if (saved) {
-        try { return JSON.parse(saved); } catch (e) {}
+        try { 
+          const parsed = JSON.parse(saved);
+          // Если в памяти что-то есть, но ключи пустые — берем жесткие
+          if (parsed.apiKey && parsed.binId) return parsed;
+        } catch (e) {}
       }
-      return { apiKey: '', binId: '' };
+      return hardcodedConfig;
     }
 
     async function saveState(skipCloudPush = false) {
