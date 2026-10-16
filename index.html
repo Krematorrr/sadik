@@ -127,9 +127,9 @@
         <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-amber-500 inline-block"></span> Пропуск (+1)</span>
         <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-purple-500 inline-block"></span> Выходной</span>
       </div>
-
+      
+<!-- Выбор стиля уже посещенных дней (Зеленый vs Серый) -->
       <div class="flex flex-wrap items-center gap-2">
-        <!-- Выбор стиля уже посещенных дней (Зеленый vs Серый) -->
         <div class="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded border border-slate-300 text-[11px]">
           <span class="text-slate-500 font-semibold">Прошедшие:</span>
           <select id="pastStyleSelect" onchange="updatePastStyle(this.value)" class="bg-transparent font-bold text-slate-800 focus:outline-none cursor-pointer">
@@ -153,7 +153,7 @@
     <section id="calendarContainer" class="space-y-4 sm:space-y-6"></section>
   </div>
 
-  <!-- МОДАЛЬНОЕ ОКНО: АРХИВ СКРЫТЫХ ПЕРИОДОВ (Индивидуальное раскрытие и удаление) -->
+  <!-- МОДАЛЬНОЕ ОКНО: АРХИВ СКРЫТЫХ ПЕРИОДОВ -->
   <div id="hiddenModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-3 z-50">
     <div class="bg-white rounded-2xl max-w-xl w-full p-5 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center">
@@ -246,7 +246,7 @@
     </div>
   </div>
 
-  <!-- МОДАЛЬНОЕ ОКНО: УВЕДОМЛЕНИЯ -->
+  <!-- МОДАЛЬНОЕ ОКНО: УВЕДОМЛЕНИЯ (С ПОДДЕРЖКОЙ НЕСКОЛЬКИХ CHAT ID) -->
   <div id="notificationsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-3 z-50">
     <div class="bg-white rounded-2xl max-w-xl w-full p-5 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center">
@@ -267,22 +267,45 @@
       </div>
 
       <div class="border border-slate-200 rounded-xl p-3.5 space-y-2.5">
-        <h4 class="text-xs sm:text-sm font-bold text-slate-800">2. В ваш Telegram-бот</h4>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-          <input type="password" id="tgBotTokenInput" placeholder="Bot Token (от @BotFather)" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg">
-          <input type="text" id="tgChatIdInput" placeholder="Ваш личный Chat ID (от @userinfobot)" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg">
+        <div>
+          <h4 class="text-xs sm:text-sm font-bold text-slate-800">2. В ваш Telegram-бот (поддержка нескольких получателей)</h4>
+          <p class="text-[11px] text-slate-500 mt-0.5">Можно указать несколько Chat ID через запятую (например: <code>12345678, 87654321</code>) — уведомление придет всем.</p>
         </div>
-        <div class="flex flex-wrap gap-2">
+        <div class="space-y-2 text-xs">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">Bot Token (от @BotFather):</label>
+            <input type="password" id="tgBotTokenInput" placeholder="8792131173:AAHdFMBq..." class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg font-mono">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">Список Chat ID получателей (через запятую):</label>
+            <input type="text" id="tgChatIdInput" placeholder="Например: 123456789, 987654321" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg font-mono">
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2 pt-1">
           <button onclick="saveTelegramConfig()" class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg">Сохранить ТГ</button>
-          <button onclick="sendTestTelegramMessage()" class="px-3 py-1.5 bg-sky-100 text-sky-800 text-xs font-bold rounded-lg border border-sky-300">✈ Тест в ТГ</button>
+          <button onclick="sendTestTelegramMessage()" class="px-3 py-1.5 bg-sky-100 text-sky-800 text-xs font-bold rounded-lg border border-sky-300">✈ Отправить тест всем</button>
         </div>
-        <p id="tgStatusMsg" class="text-xs font-medium text-emerald-600 hidden"></p>
+        <p id="tgStatusMsg" class="text-xs font-bold text-emerald-600 hidden"></p>
       </div>
     </div>
   </div>
 
   <script>
-    // PWA Service Worker
+    // =========================================================================
+    // 1. ЖЕСТКО ЗАШИТЫЕ КЛЮЧИ ОБЛАКА И TELEGRAM (Никогда не слетают)
+    // =========================================================================
+    const HARDCODED_CLOUD = {
+      apiKey: '$2a$10$3lkyakUsPN81u2apeDoRQefljytEcqIsM2W8Q8.XB6XQ6AHzlmhO6',
+      binId: '6ad15ca5ffd5d160536f384a'
+    };
+
+    // Впишите сюда ваш Bot Token и один или несколько Chat ID через запятую:
+    const HARDCODED_TELEGRAM = {
+      botToken: '8792131173:AAHdFMBq-qlh-uB6pbpGTMUC6HXmM-u04Bw', // Например: '8792131173:AAHdFMBq-qlh-uB6pbpGTMUC6HXmM...'
+      chatId: '340778976, 413769416'    // Например: '123456789, 987654321' (можно несколько через запятую)
+    };
+    // =========================================================================
+
     let deferredInstallPrompt = null;
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -307,7 +330,6 @@
     let highlightedSubIndex = null;
     let expandedMonthsOverride = new Set();
 
-    // Палитра периодов БЕЗ зеленого цвета (зеленый зарезервирован строго под уже посещенные дни!)
     const SUB_THEMES = [
       {
         name: 'Индиго',
@@ -352,7 +374,7 @@
       simulatedToday: '2026-10-16',
       hidePastPeriods: false,
       hideWeekends: false,
-      pastAttendedStyle: 'green', // 'green' (светло-зеленый) или 'gray' (затемненный серый)
+      pastAttendedStyle: 'green',
       defaultPrice: 28800,
       daysPerSub: 20,
       updatedAt: Date.now(),
@@ -369,8 +391,25 @@
         '2026-11-04': 'holiday',
         '2026-12-31': 'holiday'
       },
-      telegram: { botToken: '', chatId: '', sentAlertsLog: {} }
+      telegram: {
+        botToken: HARDCODED_TELEGRAM.botToken,
+        chatId: HARDCODED_TELEGRAM.chatId,
+        sentAlertsLog: {}
+      }
     };
+
+    // Гарантирует, что зашитые в код настройки Telegram не затрутся пустыми строками
+    function applyTelegramFallback(targetState) {
+      if (!targetState.telegram) targetState.telegram = { sentAlertsLog: {} };
+      if (!targetState.telegram.botToken && HARDCODED_TELEGRAM.botToken) {
+        targetState.telegram.botToken = HARDCODED_TELEGRAM.botToken;
+      }
+      if (!targetState.telegram.chatId && HARDCODED_TELEGRAM.chatId) {
+        targetState.telegram.chatId = HARDCODED_TELEGRAM.chatId;
+      }
+      if (!targetState.telegram.sentAlertsLog) targetState.telegram.sentAlertsLog = {};
+      return targetState;
+    }
 
     let state = loadState();
     let cloudConfig = loadCloudConfig();
@@ -380,19 +419,13 @@
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          return { ...defaultState, ...parsed, telegram: { ...defaultState.telegram, ...(parsed.telegram || {}) } };
+          return applyTelegramFallback({ ...defaultState, ...parsed });
         } catch (e) {}
       }
-      return JSON.parse(JSON.stringify(defaultState));
+      return applyTelegramFallback(JSON.parse(JSON.stringify(defaultState)));
     }
 
     function loadCloudConfig() {
-      // Вставьте ваши ключи сюда, чтобы они никогда не слетали при очистке браузера:
-      const hardcodedConfig = {
-        apiKey: '$2a$10$3lkyakUsPN81u2apeDoRQefljytEcqIsM2W8Q8.XB6XQ6AHzlmhO6', // Ваш X-Master-Key от JSONBin
-        binId: '6ad15ca5ffd5d160536f384a'   // Ваш Bin ID
-      };
-
       const saved = localStorage.getItem(CLOUD_CONFIG_KEY);
       if (saved) {
         try {
@@ -400,10 +433,11 @@
           if (parsed.apiKey && parsed.binId) return parsed;
         } catch (e) {}
       }
-      return hardcodedConfig;
+      return { ...HARDCODED_CLOUD };
     }
 
     async function saveState(skipCloudPush = false) {
+      applyTelegramFallback(state);
       state.updatedAt = Date.now();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       if (!skipCloudPush && cloudConfig.apiKey && cloudConfig.binId) {
@@ -446,8 +480,8 @@
     }
 
     function saveCloudConfig() {
-      cloudConfig.apiKey = document.getElementById('cloudApiKeyInput').value.trim();
-      cloudConfig.binId = document.getElementById('cloudBinIdInput').value.trim();
+      cloudConfig.apiKey = document.getElementById('cloudApiKeyInput').value.trim() || HARDCODED_CLOUD.apiKey;
+      cloudConfig.binId = document.getElementById('cloudBinIdInput').value.trim() || HARDCODED_CLOUD.binId;
       localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(cloudConfig));
       updateCloudBadge('☁️ Облако активно', true);
       showCloudMessage('✓ Настройки сохранены!');
@@ -503,7 +537,12 @@
         if (res.ok) {
           const data = await res.json();
           if (data.record && data.record.subscriptions) {
-            state = { ...defaultState, ...data.record };
+            // Сохраняем уже введенные локально данные ТГ, если в облаке они были пустыми
+            const existingTg = state.telegram || {};
+            state = applyTelegramFallback({ ...defaultState, ...data.record });
+            if (!state.telegram.botToken && existingTg.botToken) state.telegram.botToken = existingTg.botToken;
+            if (!state.telegram.chatId && existingTg.chatId) state.telegram.chatId = existingTg.chatId;
+
             await saveState(true);
             updateCloudBadge('☁️ Синхронизировано', true);
             if (!silent) showCloudMessage('✅ Данные загружены из облака!');
@@ -532,7 +571,7 @@
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          state = { ...defaultState, ...JSON.parse(e.target.result) };
+          state = applyTelegramFallback({ ...defaultState, ...JSON.parse(e.target.result) });
           saveState();
         } catch (err) { alert('Ошибка чтения файла.'); }
       };
@@ -568,7 +607,7 @@
         startDate: null,
         endDate: null,
         attendedCount: 0,
-        completedCount: 0, // Уже отхоженные дни (<= simulatedToday)
+        completedCount: 0,
         missedCount: 0,
         missedDates: [],
         holidayDates: [],
@@ -605,7 +644,7 @@
           dayNumberInSub: null,
           isSubStart: false,
           isSubEnd: false,
-          isCompletedVisit: false // Флаг: день уже прошел и был посещен
+          isCompletedVisit: false
         };
 
         if (status === 'attended') {
@@ -655,7 +694,6 @@
       return false;
     }
 
-    // ДЕЙСТВИЯ ПОЛЬЗОВАТЕЛЯ
     function toggleDayStatus(isoDate) {
       const d = new Date(isoDate + 'T00:00:00');
       if (d.getDay() === 0 || d.getDay() === 6) return;
@@ -685,25 +723,24 @@
       }
     }
 
-    // Раскрыть один конкретный период из архива (даже если включено авто-скрытие прошлых!)
     function restoreSingleSubscription(subId) {
       const sub = state.subscriptions.find(s => s.id === subId);
       if (sub) {
         sub.hiddenManually = false;
-        sub.forceShow = true; // Позволяет держать этот прошлый период открытым отдельно от остальных
+        sub.forceShow = true;
         saveState();
         renderHiddenModalList();
       }
     }
 
-    // Удаление периода навсегда (с защитой от случайного нажатия)
+     // Удаление периода навсегда (с защитой от случайного нажатия)
     function deleteSubscription(subId, subIndex, event) {
       if (event) event.stopPropagation();
       if (state.subscriptions.length <= 1) {
         alert('Нельзя удалить единственный период в расписании.');
         return;
       }
-      if (confirm(`Удалить Период #${subIndex} из расписания? Все последующие периоды автоматически сдвинутся.`)) {
+      if (confirm(`Удалить Период #${subIndex} из расписании? Все последующие периоды автоматически сдвинутся.`)) {
         state.subscriptions = state.subscriptions.filter(s => s.id !== subId);
         highlightedSubIndex = null;
         expandedMonthsOverride.clear();
@@ -739,7 +776,6 @@
     function toggleHidePast(checked) {
       state.hidePastPeriods = checked;
       if (checked) {
-        // Сбрасываем индивидуальные исключения показа при повторном включении галочки
         state.subscriptions.forEach(s => s.forceShow = false);
       }
       expandedMonthsOverride.clear();
@@ -768,7 +804,6 @@
       saveState();
     }
 
-    // Безопасный сброс ТОЛЬКО визуальных фильтров (данные и периоды не затрагиваются)
     function resetViewFilters() {
       highlightedSubIndex = null;
       state.hideWeekends = false;
@@ -776,7 +811,7 @@
       saveState();
     }
 
-    // МОДАЛЬНОЕ ОКНО АРХИВА СКРЫТЫХ ПЕРИОДОВ
+    // МОДАЛЬНОЕ ОКНО СКРЫТЫХ ПЕРИОДОВ
     function openHiddenModal() {
       renderHiddenModalList();
       document.getElementById('hiddenModal').classList.remove('hidden');
@@ -835,7 +870,7 @@
       saveState();
     }
 
-    // УВЕДОМЛЕНИЯ ЗА 5, 3, 1 ДЕНЬ
+    // УВЕДОМЛЕНИЯ ЗА 5, 3, 1 ДЕНЬ + МУЛЬТИ-РАССЫЛКА В TELEGRAM
     function checkPaymentNotifications(subStats) {
       const banner = document.getElementById('paymentAlertBanner');
       banner.classList.add('hidden');
@@ -873,6 +908,20 @@
           </button>
         `;
         banner.classList.remove('hidden');
+
+        // Авто-отправка в Telegram всем указанным Chat ID при достижении порога 5, 3 или 1 день
+        if (isMilestone) {
+          const alertKey = `sub_${currentSub.index}_left_${daysLeft}_date_${state.simulatedToday}`;
+          const botToken = state.telegram?.botToken || HARDCODED_TELEGRAM.botToken;
+          const chatIdsRaw = state.telegram?.chatId || HARDCODED_TELEGRAM.chatId;
+
+          if (botToken && chatIdsRaw && !state.telegram.sentAlertsLog[alertKey]) {
+            const msg = `🔔 Детский сад: до окончания Периода #${currentSub.index} (${formatHumanDate(currentSub.endDate)}) осталось ровно ${daysLeft} раб. дн.!\nК оплате за Период #${targetSub.index}: ${targetSub.price.toLocaleString('ru-RU')} ₽ (старт ${formatHumanDate(targetSub.startDate)}).`;
+            sendTelegramText(msg, true);
+            state.telegram.sentAlertsLog[alertKey] = true;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          }
+        }
       }
     }
 
@@ -887,6 +936,7 @@
     }
 
     function openNotificationsModal() {
+      applyTelegramFallback(state);
       document.getElementById('tgBotTokenInput').value = state.telegram.botToken || '';
       document.getElementById('tgChatIdInput').value = state.telegram.chatId || '';
       const { subStats } = calculateSchedule();
@@ -913,34 +963,63 @@
     }
 
     function saveTelegramConfig() {
-      state.telegram.botToken = document.getElementById('tgBotTokenInput').value.trim();
-      state.telegram.chatId = document.getElementById('tgChatIdInput').value.trim();
+      state.telegram.botToken = document.getElementById('tgBotTokenInput').value.trim() || HARDCODED_TELEGRAM.botToken;
+      state.telegram.chatId = document.getElementById('tgChatIdInput').value.trim() || HARDCODED_TELEGRAM.chatId;
       saveState();
       const el = document.getElementById('tgStatusMsg');
-      el.textContent = '✓ Сохранено!';
+      el.textContent = '✓ Настройки сохранены и синхронизированы с облаком!';
+      el.className = 'text-xs font-bold text-emerald-600';
       el.classList.remove('hidden');
-      setTimeout(() => el.classList.add('hidden'), 2500);
+      setTimeout(() => el.classList.add('hidden'), 3000);
     }
 
+    // Поддержка отправки сразу на несколько Chat ID (разделенных запятой, точкой с запятой или пробелом)
     async function sendTelegramText(text, silent = false) {
-      const { botToken, chatId } = state.telegram;
-      if (!botToken || !chatId) return;
-      try {
-        const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: chatId, text })
-        });
-        const data = await res.json();
-        if (data.ok && !silent) alert('✅ Доставлено в Telegram!');
-      } catch (e) {}
+      const botToken = (state.telegram?.botToken || HARDCODED_TELEGRAM.botToken || '').trim();
+      const rawChatIds = (state.telegram?.chatId || HARDCODED_TELEGRAM.chatId || '').trim();
+
+      const chatIdList = rawChatIds.split(/[\s,;]+/).map(id => id.trim()).filter(Boolean);
+
+      if (!botToken || chatIdList.length === 0) {
+        if (!silent) alert('Укажите Bot Token и хотя бы один Chat ID.');
+        return;
+      }
+
+      let successCount = 0;
+      let errors = [];
+
+      for (const chatId of chatIdList) {
+        try {
+          const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text })
+          });
+          const data = await res.json();
+          if (data.ok) {
+            successCount++;
+          } else {
+            errors.push(`ID ${chatId}: ${data.description || 'ошибка'}`);
+          }
+        } catch (e) {
+          errors.push(`ID ${chatId}: ошибка сети`);
+        }
+      }
+
+      if (!silent) {
+        if (errors.length === 0) {
+          alert(`✅ Успешно доставлено получателям (${successCount} из ${chatIdList.length})!`);
+        } else {
+          alert(`Отправлено: ${successCount} из ${chatIdList.length}.\nОшибки:\n${errors.join('\n')}`);
+        }
+      }
     }
 
     function sendTestTelegramMessage() {
       saveTelegramConfig();
       const { subStats } = calculateSchedule();
       const activeSub = subStats.find(s => !s.isPast) || subStats[0];
-      sendTelegramText(`👶 Детский сад\nПериод #${activeSub.index}: ${formatHumanDate(activeSub.startDate)} — ${formatHumanDate(activeSub.endDate)}\nПосещено: ${activeSub.completedCount}/20\nПропусков: ${activeSub.missedCount} дн.`, false);
+      sendTelegramText(`👶 Детский сад (Тест)\nПериод #${activeSub.index}: ${formatHumanDate(activeSub.startDate)} — ${formatHumanDate(activeSub.endDate)}\nПосещено: ${activeSub.completedCount}/20\nПропусков: ${activeSub.missedCount} дн.`, false);
     }
 
     function downloadICSReminders() {
@@ -1025,7 +1104,6 @@
       const visibleSubs = subStats.filter(s => !hiddenSubIndices.has(s.index));
       const firstVisibleStartDate = visibleSubs.length > 0 ? visibleSubs[0].startDate : state.startDate;
 
-      // Кнопка архива скрытых периодов в шапке
       const archiveBtn = document.getElementById('hiddenArchiveBtn');
       if (hiddenSubs.length > 0) {
         archiveBtn.textContent = `📦 Скрытые (${hiddenSubs.length})`;
@@ -1034,7 +1112,6 @@
         archiveBtn.classList.add('hidden');
       }
 
-      // Кнопка безопасного сброса фильтров
       const resetFiltersBtn = document.getElementById('resetFiltersBtn');
       if (highlightedSubIndex || state.hideWeekends || expandedMonthsOverride.size > 0) {
         resetFiltersBtn.classList.remove('hidden');
@@ -1042,7 +1119,6 @@
         resetFiltersBtn.classList.add('hidden');
       }
 
-      // 1. Карточки видимых абонементов
       const subContainer = document.getElementById('subscriptionsContainer');
 
       subContainer.innerHTML = visibleSubs.map(sub => {
@@ -1105,7 +1181,6 @@
         `;
       }).join('');
 
-      // Карточка быстрого доступа к скрытым периодам
       if (hiddenSubs.length > 0) {
         subContainer.innerHTML += `
           <div onclick="openHiddenModal()" class="bg-slate-200/70 hover:bg-slate-200 border-2 border-dashed border-slate-300 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 cursor-pointer transition">
@@ -1115,7 +1190,6 @@
         `;
       }
 
-      // 2. Рендер календарной сетки
       const calContainer = document.getElementById('calendarContainer');
       calContainer.innerHTML = '';
 
@@ -1213,10 +1287,8 @@
               const theme = info.subIndex ? SUB_THEMES[(info.subIndex - 1) % SUB_THEMES.length] : SUB_THEMES[0];
 
               if (info.status === 'attended') {
-                // Проверяем: этот день УЖЕ посещен (<= Сегодня) или только запланирован в будущем?
                 if (info.isCompletedVisit) {
                   if (state.pastAttendedStyle === 'gray') {
-                    // Вариант 1: Затемненный серый для уже отхоженных дней
                     cellClasses = `bg-slate-200/90 border-slate-300 ${theme.cellBorderAccent} text-slate-600 cursor-pointer hover:bg-slate-300/70`;
                     bottomBadgeHtml = `
                       <span class="w-full text-center text-[9px] sm:text-[11px] font-bold px-0.5 py-0.5 rounded bg-slate-300 text-slate-700 truncate leading-none">
@@ -1224,7 +1296,6 @@
                       </span>
                     `;
                   } else {
-                    // Вариант 2 (по умолчанию): Светло-зеленый только для уже посещенных дней!
                     cellClasses = `bg-emerald-50 border-emerald-400 ${theme.cellBorderAccent} text-emerald-950 cursor-pointer hover:bg-emerald-100`;
                     bottomBadgeHtml = `
                       <span class="w-full text-center text-[9px] sm:text-[11px] font-extrabold px-0.5 py-0.5 rounded bg-emerald-200/90 text-emerald-900 truncate leading-none">
@@ -1233,7 +1304,6 @@
                     `;
                   }
                 } else {
-                  // Будущие запланированные дни — красятся в цвет своего периода (Индиго / Океан / Фуксия)
                   cellClasses = `${theme.cellPlanned} ${theme.cellBorderAccent} cursor-pointer`;
                   bottomBadgeHtml = `
                     <span class="w-full text-center text-[9px] sm:text-[11px] font-extrabold px-0.5 py-0.5 rounded ${theme.dayPill} truncate leading-none">
