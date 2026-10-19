@@ -414,6 +414,9 @@
     let state = loadState();
     let cloudConfig = loadCloudConfig();
 
+    // Автоматически ставим реальную текущую дату при запуске
+    state.simulatedToday = toISODate(new Date());
+
     function loadState() {
       const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('kg_tracker_state_v4') || localStorage.getItem('kg_tracker_state_v3');
       if (saved) {
@@ -542,6 +545,9 @@
             state = applyTelegramFallback({ ...defaultState, ...data.record });
             if (!state.telegram.botToken && existingTg.botToken) state.telegram.botToken = existingTg.botToken;
             if (!state.telegram.chatId && existingTg.chatId) state.telegram.chatId = existingTg.chatId;
+
+            // Принудительно ставим реальную дату после загрузки старых данных из облака
+            state.simulatedToday = toISODate(new Date());
 
             await saveState(true);
             updateCloudBadge('☁️ Синхронизировано', true);
