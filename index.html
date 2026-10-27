@@ -37,7 +37,7 @@
     <!-- Баннер уведомлений по Основному саду -->
     <div id="paymentAlertBanner" class="hidden rounded-2xl p-3.5 sm:p-4 shadow-md border-l-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-3"></div>
 
-    <!-- Баннер уведомлений по Английскому языку (когда остается последнее занятие) -->
+    <!-- Баннер уведомлений по Английскому языку -->
     <div id="englishAlertBanner" class="hidden rounded-2xl p-3.5 sm:p-4 shadow-md border-l-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-3"></div>
 
     <!-- Шапка с логотипом «Улей» и переключателем разделов -->
@@ -60,11 +60,11 @@
 
         <!-- Переключатель вкладок: Детский сад vs Английский язык -->
         <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200 w-full lg:w-auto">
-          <button id="tabBtnGarden" onclick="switchMainTab('garden')" class="flex-1 lg:flex-initial px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 bg-white text-indigo-700 shadow-sm">
+          <button id="tabBtnGarden" onclick="switchMainTab('garden')" class="flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 bg-white text-indigo-700 shadow-sm">
             🐝 Детский сад (20 дн.)
           </button>
-          <button id="tabBtnEnglish" onclick="switchMainTab('english')" class="flex-1 lg:flex-initial px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900">
-            🇬🇧 Английский язык (8 ур.)
+          <button id="tabBtnEnglish" onclick="switchMainTab('english')" class="flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900">
+            🎓 Английский (8 ур.)
             <span id="engTabCounter" class="px-1.5 py-0.2 text-[10px] rounded-full bg-indigo-100 text-indigo-800 font-black">2/8</span>
           </button>
         </div>
@@ -96,7 +96,7 @@
             📋 Отчет
           </button>
           <button onclick="openNotificationsModal()" class="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">
-            🔔 Уведомления ТГ
+            🔔 Уведомления (Push / ТГ)
           </button>
         </div>
       </div>
@@ -106,9 +106,8 @@
     <!-- ВКЛАДКА 1: ОСНОВНОЙ ДЕТСКИЙ САД                                     -->
     <!-- =================================================================== -->
     <div id="gardenSection" class="space-y-4">
-      <!-- Панель настроек абонемента сада -->
       <div class="bg-white p-3.5 sm:p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-3">
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="flex flex-wrap items-center gap-2.5 sm:gap-3">
           <div class="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
             <span class="text-xs text-slate-500 font-semibold">Цена (20 дн.):</span>
             <input type="number" id="basePriceInput" value="28800" step="100"
@@ -143,7 +142,10 @@
           <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-indigo-500 inline-block"></span> План</span>
           <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-amber-500 inline-block"></span> Пропуск (+1)</span>
           <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-purple-500 inline-block"></span> Выходной</span>
-          <span class="flex items-center gap-1"><span>🇬🇧</span> День английского</span>
+          <span class="flex items-center gap-1">
+            <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-blue-600 text-white text-[9px] font-black shadow-sm">🎓 EN</span>
+            <span>Урок английского</span>
+          </span>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
@@ -171,18 +173,17 @@
     </div>
 
     <!-- =================================================================== -->
-    <!-- ВКЛАДКА 2: АНГЛИЙСКИЙ ЯЗЫК (ВТ и ЧТ, 8 занятий = 5600 ₽)            -->
+    <!-- ВКЛАДКА 2: АНГЛИЙСКИЙ ЯЗЫК (АДАПТИРОВАНО ДЛЯ ТЕЛЕФОНА И ПК)         -->
     <!-- =================================================================== -->
     <div id="englishSection" class="hidden space-y-4">
-      <!-- Верхняя сводка по Английскому -->
       <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <div class="flex items-center gap-2">
-            <span class="text-xl">🇬🇧</span>
+            <span class="px-2 py-1 rounded-lg bg-blue-600 text-white text-xs font-black">🎓 EN</span>
             <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">Учет занятий: Английский язык</h2>
           </div>
           <p class="text-xs text-slate-500 mt-1">
-            Базовое расписание: <b>Вторник и Четверг</b> (8 занятий в абонементе). Любое занятие можно перенести на другой день недели или отменить со сдвигом абонемента вперед.
+            Базовое расписание: <b>Вторник и Четверг</b> (8 занятий в абонементе). Вы можете менять дату любого урока на другой день недели или нажимать «Перенос (+1)».
           </p>
         </div>
 
@@ -206,7 +207,7 @@
         </div>
       </div>
 
-      <!-- Список абонементов Английского языка с таблицей занятий внутри каждого -->
+      <!-- Список абонементов Английского языка -->
       <div id="englishSubscriptionsContainer" class="space-y-5"></div>
     </div>
 
@@ -285,11 +286,11 @@
     </div>
   </div>
 
-  <!-- МОДАЛЬНОЕ ОКНО: УВЕДОМЛЕНИЯ -->
+  <!-- МОДАЛЬНОЕ ОКНО: УВЕДОМЛЕНИЯ (PUSH + КАЛЕНДАРЬ + TELEGRAM) -->
   <div id="notificationsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-3 z-50">
     <div class="bg-white rounded-2xl max-w-xl w-full p-5 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center">
-        <h3 class="text-base sm:text-lg font-bold text-slate-900">🔔 Уведомления (Сад: 5, 3, 1 дн. | Английский: посл. урок)</h3>
+        <h3 class="text-base sm:text-lg font-bold text-slate-900">🔔 Уведомления (Push + Календарь + Telegram)</h3>
         <button onclick="closeNotificationsModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
       </div>
 
@@ -298,9 +299,38 @@
         <div id="upcomingAlertsList" class="text-xs text-amber-950 space-y-1.5"></div>
       </div>
 
+      <!-- 1. Системные Push-уведомления приложения (работают без Telegram!) -->
+      <div class="border border-indigo-200 rounded-xl p-3.5 space-y-2 bg-indigo-50/50">
+        <div class="flex justify-between items-start gap-2">
+          <div>
+            <h4 class="text-xs sm:text-sm font-bold text-indigo-950">1. Системные Push-уведомления на телефон / ПК</h4>
+            <p class="text-[11px] text-slate-600 mt-0.5">Всплывают в верхней шторке смартфона или Windows со звуком и иконкой «Улей», даже если Telegram недоступен.</p>
+          </div>
+          <span id="pushPermissionBadge" class="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200 text-slate-700 shrink-0">Проверка...</span>
+        </div>
+        <div class="flex flex-wrap gap-2 pt-1">
+          <button onclick="requestSystemPushPermission()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition">
+            📲 Включить Push-уведомления
+          </button>
+          <button onclick="sendTestSystemPush()" class="px-3 py-1.5 bg-white hover:bg-slate-50 text-indigo-700 border border-indigo-300 text-xs font-bold rounded-lg transition">
+            🔔 Проверить Push сейчас
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. Календарь телефона (.ics) -->
+      <div class="border border-slate-200 rounded-xl p-3.5 space-y-2 bg-slate-50">
+        <h4 class="text-xs sm:text-sm font-bold text-slate-800">2. Автономные будильники в Календарь телефона (.ics)</h4>
+        <p class="text-[11px] text-slate-500">Записывает напоминания по Саду и Английскому в штатный календарь телефона — сработает в 09:00 утра даже без интернета.</p>
+        <button onclick="downloadICSReminders()" class="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg transition">
+          📅 Скачать файл напоминаний (.ics)
+        </button>
+      </div>
+
+      <!-- 3. Telegram-бот -->
       <div class="border border-slate-200 rounded-xl p-3.5 space-y-2.5">
         <div>
-          <h4 class="text-xs sm:text-sm font-bold text-slate-800">Настройки Telegram-бота (вшиты в код)</h4>
+          <h4 class="text-xs sm:text-sm font-bold text-slate-800">3. Настройки Telegram-бота (вшиты в код)</h4>
           <p class="text-[11px] text-slate-500 mt-0.5">Уведомления уходят всем получателям через запятую при остатке 5, 3 и 1 дня сада, а также на последнем (8-м) уроке английского.</p>
         </div>
         <div class="space-y-2 text-xs">
@@ -315,7 +345,7 @@
         </div>
         <div class="flex flex-wrap gap-2 pt-1">
           <button onclick="saveTelegramConfig()" class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg">Сохранить ТГ</button>
-          <button onclick="sendTestTelegramMessage()" class="px-3 py-1.5 bg-sky-100 text-sky-800 text-xs font-bold rounded-lg border border-sky-300">✈ Отправить тест всем (Сад + Англ.)</button>
+          <button onclick="sendTestTelegramMessage()" class="px-3 py-1.5 bg-sky-100 text-sky-800 text-xs font-bold rounded-lg border border-sky-300">✈ Отправить тест в ТГ</button>
         </div>
         <p id="tgStatusMsg" class="text-xs font-bold text-emerald-600 hidden"></p>
       </div>
@@ -356,9 +386,82 @@
       deferredInstallPrompt = null;
     }
 
+    // СИСТЕМНЫЕ PUSH-УВЕДОМЛЕНИЯ ЧЕРЕЗ SERVICE WORKER (Работают без Telegram)
+    function updatePushBadge() {
+      const badge = document.getElementById('pushPermissionBadge');
+      if (!badge) return;
+      if (!('Notification' in window)) {
+        badge.textContent = 'Не поддерживается';
+        badge.className = 'px-2 py-0.5 text-[10px] font-bold rounded bg-rose-100 text-rose-800';
+        return;
+      }
+      if (Notification.permission === 'granted') {
+        badge.textContent = '✓ Включены';
+        badge.className = 'px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-100 text-emerald-800 border border-emerald-300';
+      } else if (Notification.permission === 'denied') {
+        badge.textContent = 'Заблокированы в браузере';
+        badge.className = 'px-2 py-0.5 text-[10px] font-bold rounded bg-rose-100 text-rose-800';
+      } else {
+        badge.textContent = 'Не активированы';
+        badge.className = 'px-2 py-0.5 text-[10px] font-bold rounded bg-amber-100 text-amber-800';
+      }
+    }
+
+    async function requestSystemPushPermission() {
+      if (!('Notification' in window)) {
+        alert(' Ваше устройство или браузер не поддерживает системные уведомления.');
+        return;
+      }
+      const perm = await Notification.requestPermission();
+      updatePushBadge();
+      if (perm === 'granted') {
+        triggerSystemPush('Детский клуб «Улей»', '✅ Системные Push-уведомления успешно активированы!');
+      } else {
+        alert('Разрешение не получено. Проверьте настройки уведомлений для сайта/приложения в настройках телефона.');
+      }
+    }
+
+    async function triggerSystemPush(title, body) {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      try {
+        if ('serviceWorker' in navigator) {
+          const reg = await navigator.serviceWorker.getRegistration();
+          if (reg && reg.showNotification) {
+            await reg.showNotification(title, {
+              body,
+              icon: './icon.jpg',
+              badge: './icon.jpg',
+              vibrate: [200, 100, 200],
+              tag: 'uley-push-' + Date.now()
+            });
+            return;
+          }
+        }
+        new Notification(title, { body, icon: './icon.jpg' });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function sendTestSystemPush() {
+      if (Notification.permission !== 'granted') {
+        requestSystemPushPermission();
+        return;
+      }
+      const { subStats } = calculateSchedule();
+      const engStats = enrichEnglishSubscriptions();
+      const activeSub = subStats.find(s => !s.isPast) || subStats[0];
+      const activeEng = engStats[engStats.length - 1];
+
+      triggerSystemPush(
+        '🐝 Детский клуб «Улей»',
+        `Сад (Период #${activeSub.index}): отхожено ${activeSub.completedCount}/20 дн.\nАнглийский (#${activeEng.index}): ${activeEng.attendedCount}/8 ур.`
+      );
+    }
+
     const STORAGE_KEY = 'kg_tracker_state_v6';
     const CLOUD_CONFIG_KEY = 'kg_tracker_cloud_cfg_v1';
-    let activeMainTab = 'garden'; // 'garden' | 'english'
+    let activeMainTab = 'garden';
     let highlightedSubIndex = null;
     let expandedMonthsOverride = new Set();
 
@@ -405,7 +508,6 @@
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
 
-    // Дефолтные данные для Английского языка (точно по вашей Google Таблице)
     const defaultEnglishData = {
       defaultPrice: 5600,
       lessonsPerSub: 8,
@@ -472,7 +574,6 @@
 
     let state = loadState();
     let cloudConfig = loadCloudConfig();
-    // При запуске всегда ставим реальную сегодняшнюю дату
     state.simulatedToday = toISODate(new Date());
 
     function loadState() {
@@ -517,19 +618,19 @@
       if (tab === 'garden') {
         gardenSec.classList.remove('hidden');
         engSec.classList.add('hidden');
-        btnGarden.className = 'flex-1 lg:flex-initial px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 bg-white text-indigo-700 shadow-sm';
-        btnEng.className = 'flex-1 lg:flex-initial px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900';
+        btnGarden.className = 'flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 bg-white text-indigo-700 shadow-sm';
+        btnEng.className = 'flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900';
       } else {
         gardenSec.classList.add('hidden');
         engSec.classList.remove('hidden');
-        btnEng.className = 'flex-1 lg:flex-initial px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 bg-white text-indigo-700 shadow-sm';
-        btnGarden.className = 'flex-1 lg:flex-initial px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900';
+        btnEng.className = 'flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 bg-white text-indigo-700 shadow-sm';
+        btnGarden.className = 'flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900';
       }
       render();
     }
 
     // =========================================================================
-    // ЛОГИКА РАЗДЕЛА «АНГЛИЙСКИЙ ЯЗЫК» (ВТ / ЧТ, 8 ЗАНЯТИЙ, ПЕРЕНОСЫ)
+    // ЛОГИКА РАЗДЕЛА «АНГЛИЙСКИЙ ЯЗЫК»
     // =========================================================================
     const WEEKDAY_NAMES_FULL = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
     const WEEKDAY_NAMES_SHORT = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
@@ -540,7 +641,6 @@
       return short ? WEEKDAY_NAMES_SHORT[d.getDay()] : WEEKDAY_NAMES_FULL[d.getDay()];
     }
 
-    // Ищет следующий вторник (2) или четверг (4) после указанной даты (с учетом праздников сада)
     function getNextTueThuDate(afterIsoStr) {
       let d = new Date(afterIsoStr + 'T00:00:00');
       let safety = 0;
@@ -557,11 +657,9 @@
       return afterIsoStr;
     }
 
-    // Сортирует уроки внутри абонемента по дате и нумерует только активные (не отмененные) занятия 1..8
     function enrichEnglishSubscriptions() {
       const targetCount = state.english.lessonsPerSub || 8;
       return state.english.subscriptions.map((sub, sIdx) => {
-        // Сортируем по дате
         sub.lessons.sort((a, b) => a.date.localeCompare(b.date));
         let activeNumber = 0;
         let attendedCount = 0;
@@ -569,7 +667,6 @@
         let activeDates = [];
 
         const enrichedLessons = sub.lessons.map(lesson => {
-          // Если дата уже наступила/прошла, а статус был 'planned' — считаем посещенным (или пользователь может переключить вручную)
           const effectiveCompleted = (lesson.status === 'attended') || (lesson.status === 'planned' && lesson.date <= state.simulatedToday);
 
           if (lesson.status === 'canceled') {
@@ -601,7 +698,6 @@
       });
     }
 
-    // Переключение статуса урока английского: Проведено/План <-> Отменено (с авто-добавлением +1 занятия в конец!)
     function toggleEngLessonCancel(subId, lessonId) {
       const sub = state.english.subscriptions.find(s => s.id === subId);
       if (!sub) return;
@@ -611,7 +707,6 @@
       const targetCount = state.english.lessonsPerSub || 8;
 
       if (lesson.status !== 'canceled') {
-        // Отменяем занятие и автоматически добавляем новое занятие в конец абонемента (на следующий Вт/Чт)
         lesson.status = 'canceled';
         if (!lesson.note) lesson.note = 'Перенос (+1 занятие)';
 
@@ -627,11 +722,9 @@
           });
         }
       } else {
-        // Возвращаем занятие в строй
         lesson.status = (lesson.date <= state.simulatedToday) ? 'attended' : 'planned';
         if (lesson.note === 'Перенос (+1 занятие)') lesson.note = '';
 
-        // Если активных уроков стало больше 8, убираем последний запланированный урок, который был добавлен взамен
         const activeLessons = sub.lessons.filter(l => l.status !== 'canceled');
         if (activeLessons.length > targetCount) {
           const lastAddedIdx = sub.lessons.map(l => l.note).lastIndexOf('Добавлено взамен пропуска');
@@ -643,7 +736,6 @@
       saveState();
     }
 
-    // Ручная отметка "Проведено / Не проведено"
     function toggleEngLessonAttended(subId, lessonId) {
       const sub = state.english.subscriptions.find(s => s.id === subId);
       if (!sub) return;
@@ -659,7 +751,6 @@
       saveState();
     }
 
-    // Изменение даты конкретного урока (например, со вторника на понедельник или среду)
     function changeEngLessonDate(subId, lessonId, newDate) {
       if (!newDate) return;
       const sub = state.english.subscriptions.find(s => s.id === subId);
@@ -703,7 +794,6 @@
       saveState();
     }
 
-    // Создание следующего абонемента на 8 занятий (автоматически по Вт и Чт после окончания предыдущего)
     function addEnglishSubscription() {
       const subs = state.english.subscriptions;
       const nextId = subs.length > 0 ? Math.max(...subs.map(s => s.id)) + 1 : 1;
@@ -770,13 +860,11 @@
       saveState();
     }
 
-    // Проверка уведомлений по Английскому языку (когда осталось последнее занятие или период не оплачен)
     function checkEnglishNotifications(engStats) {
       const banner = document.getElementById('englishAlertBanner');
       banner.classList.add('hidden');
       if (!engStats || engStats.length === 0) return;
 
-      // Находим текущий актуальный абонемент английского
       const activeSub = engStats.find(s => s.remainingCount > 0) || engStats[engStats.length - 1];
       const nextSub = engStats.find(s => s.index === activeSub.index + 1);
 
@@ -787,24 +875,24 @@
       if (isCurrentUnpaid || isLastLessonRemaining || isFinishedUnpaidNext) {
         banner.className = `rounded-2xl p-3.5 shadow-sm border-l-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-2.5 bg-sky-50 border-sky-600 text-sky-950`;
 
-        let titleBadge = '🇬🇧 Английский язык';
+        let titleBadge = '🎓 Английский язык';
         let messageText = '';
 
         if (isLastLessonRemaining) {
-          titleBadge = '🇬🇧 🔔 Осталось последнее занятие (1 из 8)!';
+          titleBadge = '🎓 🔔 Осталось последнее занятие (1 из 8)!';
           messageText = `В Абонементе английского #${activeSub.index} остался всего 1 урок (${formatHumanDate(activeSub.endDate)}). Пора подготовить оплату следующего периода (${(state.english.defaultPrice || 5600).toLocaleString('ru-RU')} ₽)!`;
         } else if (isCurrentUnpaid) {
-          titleBadge = `🇬🇧 Абонемент #${activeSub.index} не оплачен`;
-          messageText = `Посещено уроков: ${activeSub.attendedCount} из 8. К оплате: ${activeSub.price.toLocaleString('ru-RU')} ₽ (остаток: ${activeSub.price.toLocaleString('ru-RU')} ₽).`;
+          titleBadge = `🎓 Абонемент #${activeSub.index} не оплачен`;
+          messageText = `Посещено уроков: ${activeSub.attendedCount} из 8. К оплате: ${activeSub.price.toLocaleString('ru-RU')} ₽.`;
         } else {
-          titleBadge = `🇬🇧 Абонемент #${activeSub.index} завершен (8 из 8)`;
+          titleBadge = `🎓 Абонемент #${activeSub.index} завершен (8 из 8)`;
           messageText = `Все 8 уроков отхожены! Добавьте или оплатите следующий период английского языка.`;
         }
 
         banner.innerHTML = `
           <div>
             <div class="flex flex-wrap items-center gap-1.5">
-              <span class="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded bg-sky-800 text-white">${titleBadge}</span>
+              <span class="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded bg-blue-700 text-white">${titleBadge}</span>
               <span class="text-xs font-bold opacity-80">Период #${activeSub.index}: ${formatHumanDate(activeSub.startDate)} — ${formatHumanDate(activeSub.endDate)}</span>
             </div>
             <p class="text-xs sm:text-sm font-bold mt-1">${messageText}</p>
@@ -812,21 +900,21 @@
           <div class="flex items-center gap-2 shrink-0">
             ${isCurrentUnpaid ? `
               <button onclick="toggleEngSubPaid(${activeSub.id})" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg shadow">
-                ✓ Отметить оплаченным (${activeSub.price} ₽)
+                ✓ Отметить оплаченным
               </button>
             ` : ''}
             <button onclick="switchMainTab('english')" class="px-3 py-1.5 bg-white text-sky-900 border border-sky-300 text-xs font-bold rounded-lg">
-              Открыть расписание 🇬🇧
+              Открыть 🎓 EN
             </button>
           </div>
         `;
         banner.classList.remove('hidden');
 
-        // Авто-отправка в Telegram, когда осталось ровно 1 последнее занятие (7 из 8 проведено)
         if (isLastLessonRemaining) {
           const alertKey = `eng_sub_${activeSub.index}_last_lesson_date_${state.simulatedToday}`;
           if (!state.telegram.sentAlertsLog[alertKey]) {
-            const tgMsg = `🇬🇧 🔔 Английский язык («Улей»): в Абонементе #${activeSub.index} осталось ПОСЛЕДНЕЕ занятие (${formatHumanDate(activeSub.endDate)})!\nНе забудьте оплатить следующий период (8 занятий — ${activeSub.price.toLocaleString('ru-RU')} ₽).`;
+            const tgMsg = `🎓 🔔 Английский язык («Улей»): в Абонементе #${activeSub.index} осталось ПОСЛЕДНЕЕ занятие (${formatHumanDate(activeSub.endDate)})!\nНе забудьте оплатить следующий период (8 занятий — ${activeSub.price.toLocaleString('ru-RU')} ₽).`;
+            triggerSystemPush('🎓 Английский язык («Улей»)', `Осталось последнее занятие (${formatHumanDate(activeSub.endDate)})! Пора оплатить следующий абонемент.`);
             sendTelegramText(tgMsg, true);
             state.telegram.sentAlertsLog[alertKey] = true;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -958,7 +1046,6 @@
       return `${d}.${m}`;
     }
 
-    // ЯДРО РАСЧЕТА ОСНОВНОГО САДА
     function calculateSchedule() {
       const totalSubscriptions = state.subscriptions.length;
       let currentValDate = new Date(state.startDate + 'T00:00:00');
@@ -1260,6 +1347,7 @@
           const alertKey = `sub_${currentSub.index}_left_${daysLeft}_date_${state.simulatedToday}`;
           if (!state.telegram.sentAlertsLog[alertKey]) {
             const msg = `🐝 Детский сад («Улей»): до окончания Периода #${currentSub.index} (${formatHumanDate(currentSub.endDate)}) осталось ровно ${daysLeft} раб. дн.!\nК оплате за Период #${targetSub.index}: ${targetSub.price.toLocaleString('ru-RU')} ₽ (старт ${formatHumanDate(targetSub.startDate)}).`;
+            triggerSystemPush('🐝 Детский клуб «Улей»', `До конца Периода сада #${currentSub.index} осталось ${daysLeft} раб. дн.! К оплате: ${targetSub.price.toLocaleString('ru-RU')} ₽.`);
             sendTelegramText(msg, true);
             state.telegram.sentAlertsLog[alertKey] = true;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -1280,6 +1368,7 @@
 
     function openNotificationsModal() {
       ensureDataIntegrity(state);
+      updatePushBadge();
       document.getElementById('tgBotTokenInput').value = state.telegram.botToken || '';
       document.getElementById('tgChatIdInput').value = state.telegram.chatId || '';
       const { subStats } = calculateSchedule();
@@ -1303,8 +1392,8 @@
         if (es.endDate) {
           html += `
             <div class="py-1">
-              <div class="font-bold text-sky-900">🇬🇧 Английский — Абонемент #${es.index}:</div>
-              <div class="text-[11px]">Последнее (8-е) занятие и уведомление в ТГ: <b class="text-indigo-700">${formatHumanDate(es.endDate)}</b></div>
+              <div class="font-bold text-sky-900">🎓 Английский — Абонемент #${es.index}:</div>
+              <div class="text-[11px]">Последнее (8-е) занятие и уведомление: <b class="text-indigo-700">${formatHumanDate(es.endDate)}</b></div>
             </div>
           `;
         }
@@ -1363,7 +1452,7 @@
         `1️⃣ Основной сад (Период #${activeSub.index}):\n` +
         `• Даты: ${formatHumanDate(activeSub.startDate)} — ${formatHumanDate(activeSub.endDate)}\n` +
         `• Отхожено: ${activeSub.completedCount}/20 (пропусков: ${activeSub.missedCount})\n\n` +
-        `2️⃣ 🇬🇧 Английский язык (Абонемент #${activeEng.index}):\n` +
+        `2️⃣ 🎓 Английский язык (Абонемент #${activeEng.index}):\n` +
         `• Посещено: ${activeEng.attendedCount} из 8 зан.\n` +
         `• Крайнее занятие периода: ${formatHumanDate(activeEng.endDate)}\n` +
         `• Статус: ${activeEng.isPaid ? 'Оплачен' : 'Не оплачен'} (${activeEng.price} ₽)`;
@@ -1373,6 +1462,7 @@
 
     function downloadICSReminders() {
       const { subStats } = calculateSchedule();
+      const engStats = enrichEnglishSubscriptions();
       let icsLines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Uley Tracker PRO//RU', 'CALSCALE:GREGORIAN'];
       subStats.filter(s => !s.isPast).forEach(sub => {
         getAlertDatesForSub(sub).forEach(m => {
@@ -1380,10 +1470,21 @@
           icsLines.push(
             'BEGIN:VEVENT', `UID:kg-${sub.index}-${m.daysLeft}-${cleanDate}@local`,
             `DTSTAMP:${cleanDate}T060000Z`, `DTSTART;VALUE=DATE:${cleanDate}`,
-            `SUMMARY:🐝 Детский сад: осталось ${m.daysLeft} раб. дн. (Период #${sub.index})`,
+            `SUMMARY:🐝 Детский сад «Улей»: осталось ${m.daysLeft} раб. дн. (Период #${sub.index})`,
             'BEGIN:VALARM', 'TRIGGER:PT9H', 'ACTION:DISPLAY', 'DESCRIPTION:Оплата сада', 'END:VALARM', 'END:VEVENT'
           );
         });
+      });
+      engStats.forEach(es => {
+        if (es.endDate) {
+          const cleanDate = es.endDate.replace(/-/g, '');
+          icsLines.push(
+            'BEGIN:VEVENT', `UID:eng-${es.index}-${cleanDate}@local`,
+            `DTSTAMP:${cleanDate}T060000Z`, `DTSTART;VALUE=DATE:${cleanDate}`,
+            `SUMMARY:🎓 Английский «Улей»: сегодня 8-е заключительное занятие (Абонемент #${es.index})`,
+            'BEGIN:VALARM', 'TRIGGER:PT9H', 'ACTION:DISPLAY', 'DESCRIPTION:Оплата английского', 'END:VALARM', 'END:VEVENT'
+          );
+        }
       });
       icsLines.push('END:VCALENDAR');
       const blob = new Blob([icsLines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
@@ -1422,7 +1523,7 @@
       }
 
       if (scope === 'all' || scope === 'english') {
-        lines.push(`=== 🇬🇧 АНГЛИЙСКИЙ ЯЗЫК ===`);
+        lines.push(`=== 🎓 АНГЛИЙСКИЙ ЯЗЫК ===`);
         engStats.forEach(es => {
           lines.push(`🔸 Абонемент #${es.index} (8 занятий — ${es.price.toLocaleString('ru-RU')} ₽, ${es.isPaid ? '✅ Оплачен' : '⏳ Не оплачен'})`);
           lines.push(`• Посещено: ${es.attendedCount} из 8 | Осталось: ${es.remainingCount}`);
@@ -1447,7 +1548,7 @@
     }
 
     // =========================================================================
-    // ГЛАВНЫЙ РЕНДЕР (И САД, И АНГЛИЙСКИЙ ЯЗЫК)
+    // ГЛАВНЫЙ РЕНДЕР (И САД, И АДАПТИВНЫЙ АНГЛИЙСКИЙ ЯЗЫК)
     // =========================================================================
     function render() {
       document.getElementById('basePriceInput').value = state.defaultPrice;
@@ -1462,7 +1563,6 @@
       const { subStats, dayMap, lastCalculatedDate } = calculateSchedule();
       const engStats = enrichEnglishSubscriptions();
 
-      // Обновляем счетчик на вкладке Английского языка
       const currentEngSub = engStats.find(s => s.remainingCount > 0) || engStats[engStats.length - 1];
       if (currentEngSub) {
         document.getElementById('engTabCounter').textContent = `${currentEngSub.attendedCount}/8`;
@@ -1471,15 +1571,21 @@
       checkPaymentNotifications(subStats);
       checkEnglishNotifications(engStats);
 
-      // Множество дат, в которые есть уроки английского (для значка 🇬🇧 на общем календаре)
-      const englishDatesSet = new Set();
+      // Карта дат английского языка: isoDate -> инфо об уроке (номер урока и проведен ли)
+      const englishDateMap = {};
       engStats.forEach(es => {
         es.enrichedLessons.forEach(l => {
-          if (l.status !== 'canceled') englishDatesSet.add(l.date);
+          if (l.status !== 'canceled') {
+            englishDateMap[l.date] = {
+              subIndex: es.index,
+              lessonNumber: l.lessonNumber,
+              completed: l.effectiveCompleted
+            };
+          }
         });
       });
 
-      // РЕНДЕР ВКЛАДКИ АНГЛИЙСКОГО ЯЗЫКА
+      // РЕНДЕР ВКЛАДКИ АНГЛИЙСКОГО ЯЗЫКА (Мобильные карточки + ПК таблица)
       const engPrice = state.english.defaultPrice || 5600;
       document.getElementById('engBasePriceInput').value = engPrice;
       document.getElementById('engLessonPriceDisplay').textContent = Math.round(engPrice / 8).toLocaleString('ru-RU') + ' ₽';
@@ -1490,26 +1596,26 @@
           ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
           : 'bg-rose-100 text-rose-800 border-rose-300';
 
-        const rowsHtml = es.enrichedLessons.map(l => {
+        // 1. Десктопные строки таблицы (для экранов >= md)
+        const desktopRowsHtml = es.enrichedLessons.map(l => {
           const isCanceled = l.status === 'canceled';
           const isDone = l.effectiveCompleted;
           const rowBg = isCanceled ? 'bg-amber-50/60 text-slate-400' : (isDone ? 'bg-emerald-50/60' : 'bg-white');
 
           return `
             <tr class="border-b border-slate-100 last:border-none ${rowBg}">
-              <td class="py-2.5 px-2 sm:px-3 font-extrabold text-xs text-center">
+              <td class="py-2.5 px-3 font-extrabold text-xs text-center">
                 ${isCanceled ? '<span class="px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 text-[10px]">Отмена</span>' : `<span class="px-2 py-0.5 rounded bg-slate-200 text-slate-800">${l.lessonNumber}</span>`}
               </td>
-              <td class="py-2.5 px-2 sm:px-3">
+              <td class="py-2.5 px-3">
                 <input type="date" value="${l.date}"
                        onchange="changeEngLessonDate(${es.id}, ${l.id}, this.value)"
                        class="text-xs font-bold bg-white border border-slate-300 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500 ${isCanceled ? 'line-through text-slate-400' : 'text-slate-900'}">
               </td>
-              <td class="py-2.5 px-2 sm:px-3 text-xs font-semibold ${isCanceled ? 'line-through text-slate-400' : 'text-slate-600'}">
-                <span class="hidden sm:inline">${getWeekdayName(l.date, false)}</span>
-                <span class="sm:hidden">${getWeekdayName(l.date, true)}</span>
+              <td class="py-2.5 px-3 text-xs font-semibold ${isCanceled ? 'line-through text-slate-400' : 'text-slate-600'}">
+                ${getWeekdayName(l.date, false)}
               </td>
-              <td class="py-2.5 px-2 sm:px-3 text-center">
+              <td class="py-2.5 px-3 text-center">
                 ${isCanceled ? '—' : `
                   <button onclick="toggleEngLessonAttended(${es.id}, ${l.id})"
                           class="px-2.5 py-1 rounded-lg text-xs font-extrabold border transition ${isDone ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'}">
@@ -1517,30 +1623,79 @@
                   </button>
                 `}
               </td>
-              <td class="py-2.5 px-2 sm:px-3">
+              <td class="py-2.5 px-3">
                 <input type="text" value="${l.note || ''}" placeholder="Примечание..."
                        onchange="changeEngLessonNote(${es.id}, ${l.id}, this.value)"
-                       class="w-full text-xs bg-white/80 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500">
+                       class="w-full text-xs bg-white/80 border border-slate-200 rounded-lg px-2.5 py-1 focus:outline-none focus:border-indigo-500">
               </td>
-              <td class="py-2.5 px-2 sm:px-3 text-right whitespace-nowrap">
+              <td class="py-2.5 px-3 text-right whitespace-nowrap">
                 <button onclick="toggleEngLessonCancel(${es.id}, ${l.id})"
-                        class="px-2 py-1 rounded-lg text-[11px] font-bold border transition ${isCanceled ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'}"
-                        title="Отменить занятие и автоматически добавить +1 урок в конец абонемента">
+                        class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition ${isCanceled ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'}">
                   ${isCanceled ? '↩ Вернуть' : 'Перенос (+1)'}
                 </button>
-                <button onclick="deleteEngLessonRow(${es.id}, ${l.id})" class="ml-1 p-1 text-slate-300 hover:text-rose-600 text-xs font-bold" title="Удалить строку">&times;</button>
+                <button onclick="deleteEngLessonRow(${es.id}, ${l.id})" class="ml-1.5 p-1 text-slate-300 hover:text-rose-600 text-sm font-bold" title="Удалить строку">&times;</button>
               </td>
             </tr>
           `;
         }).join('');
 
+        // 2. Мобильные компактные карточки (для смартфонов < md — без горизонтального скролла!)
+        const mobileCardsHtml = es.enrichedLessons.map(l => {
+          const isCanceled = l.status === 'canceled';
+          const isDone = l.effectiveCompleted;
+          const cardBg = isCanceled
+            ? 'bg-amber-50/70 border-amber-300 border-l-4 border-l-amber-500'
+            : (isDone ? 'bg-emerald-50/70 border-emerald-300 border-l-4 border-l-emerald-500' : 'bg-white border-slate-200 border-l-4 border-l-indigo-500');
+
+          return `
+            <div class="p-3 rounded-xl border ${cardBg} space-y-2 shadow-sm">
+              <!-- Верхний ряд карточки: Номер урока + Дата + День недели + Статус -->
+              <div class="flex items-center justify-between gap-1.5">
+                <div class="flex items-center gap-1.5">
+                  ${isCanceled
+                    ? `<span class="px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 text-[10px] font-extrabold">Отмена</span>`
+                    : `<span class="px-2 py-0.5 rounded-lg bg-slate-800 text-white text-xs font-extrabold">#${l.lessonNumber}</span>`
+                  }
+                  <input type="date" value="${l.date}"
+                         onchange="changeEngLessonDate(${es.id}, ${l.id}, this.value)"
+                         class="text-xs font-extrabold bg-white border border-slate-300 rounded-lg px-2 py-1 focus:outline-none ${isCanceled ? 'line-through text-slate-400' : 'text-slate-900'}">
+                  <span class="px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-700 text-[11px] font-bold">
+                    ${getWeekdayName(l.date, true)}
+                  </span>
+                </div>
+
+                <div>
+                  ${isCanceled ? '' : `
+                    <button onclick="toggleEngLessonAttended(${es.id}, ${l.id})"
+                            class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold border transition ${isDone ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm' : 'bg-slate-100 text-slate-700 border-slate-300'}">
+                      ${isDone ? '✓ Проведено' : '⏳ План'}
+                    </button>
+                  `}
+                </div>
+              </div>
+
+              <!-- Нижний ряд карточки: Полноразмерное Примечание + Кнопка Перенос (+1) + Удаление -->
+              <div class="flex items-center gap-1.5">
+                <input type="text" value="${l.note || ''}" placeholder="Примечание к уроку..."
+                       onchange="changeEngLessonNote(${es.id}, ${l.id}, this.value)"
+                       class="flex-1 min-w-0 text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-indigo-500">
+                <button onclick="toggleEngLessonCancel(${es.id}, ${l.id})"
+                        class="shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition ${isCanceled ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-amber-100/80 text-amber-900 border-amber-300'}">
+                  ${isCanceled ? '↩ Вернуть' : 'Перенос (+1)'}
+                </button>
+                <button onclick="deleteEngLessonRow(${es.id}, ${l.id})" class="shrink-0 px-2 py-1 text-slate-400 hover:text-rose-600 text-sm font-bold">&times;</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
         return `
           <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <!-- Шапка карточки абонемента английского (как в вашей Google Таблице) -->
+            <!-- Шапка карточки абонемента английского -->
             <div class="p-4 sm:p-5 bg-slate-50 border-b border-slate-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
               <div>
                 <div class="flex flex-wrap items-center gap-2">
-                  <span class="px-2.5 py-0.5 text-xs font-extrabold uppercase rounded bg-indigo-600 text-white">Абонемент #${es.index}</span>
+                  <span class="px-2.5 py-0.5 text-xs font-extrabold uppercase rounded bg-blue-600 text-white">Абонемент #${es.index}</span>
                   <h3 class="text-base sm:text-lg font-extrabold text-slate-900">
                     ${formatHumanDate(es.startDate)} — ${formatHumanDate(es.endDate)}
                   </h3>
@@ -1551,7 +1706,7 @@
                 </div>
               </div>
 
-              <!-- Плашки статистики точно как в шапке вашей таблицы -->
+              <!-- Плашки статистики -->
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full lg:w-auto text-xs">
                 <div class="bg-white px-3 py-2 rounded-xl border border-slate-200">
                   <span class="text-[10px] text-slate-400 block">Посещено занятий</span>
@@ -1578,28 +1733,33 @@
               </div>
             </div>
 
-            <!-- Таблица 8 занятий с возможностью менять дату/день недели и делать переносы -->
-            <div class="overflow-x-auto">
+            <!-- МОБИЛЬНЫЙ ВИД: Карточки уроков (видно на телефонах < md) -->
+            <div class="md:hidden p-3 space-y-2.5 bg-slate-50/50">
+              ${mobileCardsHtml}
+            </div>
+
+            <!-- ДЕСКТОПНЫЙ ВИД: Таблица (видно на экранах >= md) -->
+            <div class="hidden md:block overflow-x-auto">
               <table class="w-full text-left border-collapse">
                 <thead>
                   <tr class="bg-slate-100/70 text-[11px] font-bold text-slate-500 uppercase border-b border-slate-200">
-                    <th class="py-2 px-2 sm:px-3 text-center w-12">№</th>
-                    <th class="py-2 px-2 sm:px-3">Дата урока</th>
-                    <th class="py-2 px-2 sm:px-3">День недели</th>
-                    <th class="py-2 px-2 sm:px-3 text-center">Посещение</th>
-                    <th class="py-2 px-2 sm:px-3">Примечание</th>
-                    <th class="py-2 px-2 sm:px-3 text-right">Корректировка</th>
+                    <th class="py-2 px-3 text-center w-12">№</th>
+                    <th class="py-2 px-3">Дата урока</th>
+                    <th class="py-2 px-3">День недели</th>
+                    <th class="py-2 px-3 text-center">Посещение</th>
+                    <th class="py-2 px-3">Примечание</th>
+                    <th class="py-2 px-3 text-right">Корректировка</th>
                   </tr>
                 </thead>
                 <tbody>
-                  ${rowsHtml}
+                  ${desktopRowsHtml}
                 </tbody>
               </table>
             </div>
 
-            <div class="p-3 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-xs">
-              <span class="text-slate-500">Нужно провести занятие в другой день недели? Просто выберите новую дату в колонке «Дата урока».</span>
-              <button onclick="addManualEngLessonRow(${es.id})" class="px-3 py-1 bg-white hover:bg-slate-100 text-indigo-700 font-bold rounded-lg border border-slate-300 shrink-0">
+            <div class="p-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs">
+              <span class="text-slate-500 text-[11px]">Чтобы перенести урок на другой день недели — просто нажмите на дату урока и выберите новый день.</span>
+              <button onclick="addManualEngLessonRow(${es.id})" class="w-full sm:w-auto px-3 py-1.5 bg-white hover:bg-slate-100 text-indigo-700 font-bold rounded-lg border border-slate-300 shrink-0 text-center">
                 + Добавить дату вручную
               </button>
             </div>
@@ -1771,13 +1931,23 @@
             const dObj = new Date(iso + 'T00:00:00');
             const isWeekend = (dObj.getDay() === 0 || dObj.getDay() === 6);
             const isToday = (iso === state.simulatedToday);
-            const hasEnglish = englishDatesSet.has(iso);
+            const engInfo = englishDateMap[iso];
             const isSubHidden = info && info.subIndex && hiddenSubIndices.has(info.subIndex);
             const isDimmedByFilter = highlightedSubIndex && (!info || info.subIndex !== highlightedSubIndex);
 
             let cellClasses = 'bg-white border-slate-200 text-slate-400';
             let topRightHtml = '';
             let bottomBadgeHtml = '';
+            let englishPillHtml = '';
+
+            // Яркий и заметный бейдж урока английского языка (и на ПК, и на мобильном)
+            if (engInfo) {
+              englishPillHtml = `
+                <div class="w-full text-center px-1 py-0.5 rounded bg-blue-600 text-white text-[8px] sm:text-[10px] font-black tracking-tight shadow-sm truncate leading-none">
+                  🎓 EN <span class="hidden sm:inline">(${engInfo.lessonNumber}/8)</span>
+                </div>
+              `;
+            }
 
             if (isWeekend) {
               cellClasses = 'bg-slate-100/80 border-slate-200/80 text-slate-400 cursor-not-allowed';
@@ -1824,15 +1994,13 @@
 
             weeksHtml += `
               <div onclick="toggleDayStatus('${iso}')"
-                   class="day-card border rounded-lg sm:rounded-xl p-1 sm:p-2 min-h-[60px] sm:min-h-[84px] flex flex-col justify-between select-none overflow-hidden ${cellClasses}">
+                   class="day-card border rounded-lg sm:rounded-xl p-1 sm:p-2 min-h-[64px] sm:min-h-[88px] flex flex-col justify-between select-none overflow-hidden ${cellClasses}">
                 <div class="flex justify-between items-start gap-0.5">
-                  <div class="flex items-center gap-0.5">
-                    <span class="font-extrabold text-xs sm:text-sm leading-none ${isToday ? 'bg-amber-500 text-white px-1 py-0.5 rounded' : ''}">${day}</span>
-                    ${hasEnglish ? `<span class="text-[10px] sm:text-xs leading-none" title="Занятие по английскому языку">🇬🇧</span>` : ''}
-                  </div>
+                  <span class="font-extrabold text-xs sm:text-sm leading-none ${isToday ? 'bg-amber-500 text-white px-1 py-0.5 rounded' : ''}">${day}</span>
                   ${topRightHtml}
                 </div>
-                <div class="mt-1 flex w-full">
+                <div class="mt-1 flex flex-col gap-0.5 w-full">
+                  ${englishPillHtml}
                   ${bottomBadgeHtml}
                 </div>
               </div>
