@@ -65,7 +65,7 @@
           </button>
           <button id="tabBtnEnglish" onclick="switchMainTab('english')" class="flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900">
             🎓 Английский (8 ур.)
-            <span id="engTabCounter" class="px-1.5 py-0.2 text-[10px] rounded-full bg-indigo-100 text-indigo-800 font-black">2/8</span>
+            <span id="engTabCounter" class="px-1.5 py-0.2 text-[10px] rounded-full bg-indigo-100 text-indigo-800 font-black">0/8</span>
           </button>
         </div>
       </div>
@@ -173,41 +173,55 @@
     </div>
 
     <!-- =================================================================== -->
-    <!-- ВКЛАДКА 2: АНГЛИЙСКИЙ ЯЗЫК (АДАПТИРОВАНО ДЛЯ ТЕЛЕФОНА И ПК)         -->
+    <!-- ВКЛАДКА 2: АНГЛИЙСКИЙ ЯЗЫК (ПОДНЕВНАЯ ОПЛАТА + СКРЫТИЕ ПЕРИОДОВ)     -->
     <!-- =================================================================== -->
     <div id="englishSection" class="hidden space-y-4">
-      <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <div class="flex items-center gap-2">
             <span class="px-2 py-1 rounded-lg bg-blue-600 text-white text-xs font-black">🎓 EN</span>
             <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">Учет занятий: Английский язык</h2>
           </div>
           <p class="text-xs text-slate-500 mt-1">
-            Базовое расписание: <b>Вторник и Четверг</b> (8 занятий в абонементе). Вы можете менять дату любого урока на другой день недели или нажимать «Перенос (+1)».
+            Подневная и полная оплата: отмечайте кнопку <b>«💳 Оплачен»</b> у каждого занятия отдельно или оплачивайте весь абонемент целиком.
           </p>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 w-full md:w-auto justify-between md:justify-end">
-          <div>
-            <span class="block text-[10px] text-slate-500 font-semibold">Абонемент (8 ур.)</span>
-            <div class="flex items-center gap-1 mt-0.5">
-              <input type="number" id="engBasePriceInput" value="5600" step="100"
-                     class="w-20 px-1.5 py-0.5 text-sm font-extrabold bg-white border border-slate-300 rounded"
-                     onchange="updateEngBasePrice(this.value)">
-              <span class="text-xs font-bold text-slate-600">₽</span>
+        <div class="flex flex-wrap items-center gap-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200 w-full lg:w-auto justify-between lg:justify-end">
+          <div class="flex items-center gap-2">
+            <div>
+              <span class="block text-[10px] text-slate-500 font-semibold">Абонемент (8 ур.)</span>
+              <div class="flex items-center gap-1 mt-0.5">
+                <input type="number" id="engBasePriceInput" value="5600" step="100"
+                       class="w-20 px-1.5 py-0.5 text-sm font-extrabold bg-white border border-slate-300 rounded"
+                       onchange="updateEngBasePrice(this.value)">
+                <span class="text-xs font-bold text-slate-600">₽</span>
+              </div>
+            </div>
+            <div class="border-l border-slate-300 pl-2.5">
+              <span class="block text-[10px] text-slate-500 font-semibold">1 урок</span>
+              <span id="engLessonPriceDisplay" class="text-sm font-extrabold text-indigo-600">700 ₽</span>
             </div>
           </div>
-          <div class="border-l border-slate-300 pl-3">
-            <span class="block text-[10px] text-slate-500 font-semibold">Цена 1 урока</span>
-            <span id="engLessonPriceDisplay" class="text-sm font-extrabold text-indigo-600">700 ₽</span>
+
+          <div class="flex flex-wrap items-center gap-1.5">
+            <label class="flex items-center gap-1.5 text-xs font-bold text-indigo-900 bg-indigo-50 px-2.5 py-1.5 rounded-xl border border-indigo-200 cursor-pointer select-none">
+              <input type="checkbox" id="engHidePastCheckbox" onchange="toggleEngHidePast(this.checked)" class="rounded text-indigo-600">
+              Авто-скрытие завершенных
+            </label>
+
+            <button id="engHiddenArchiveBtn" onclick="openEngHiddenModal()" class="hidden px-2.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow-sm transition">
+              📦 Скрытые (0)
+            </button>
+
+            <button onclick="addEnglishSubscription()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold rounded-xl shadow-sm transition">
+              + Новый период
+            </button>
           </div>
-          <button onclick="addEnglishSubscription()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold rounded-xl shadow-sm transition">
-            + Новый период (8 зан.)
-          </button>
         </div>
       </div>
 
-      <!-- Список абонементов Английского языка -->
+      <!-- Список видимых абонементов Английского языка -->
       <div id="englishSubscriptionsContainer" class="space-y-5"></div>
     </div>
 
@@ -218,7 +232,7 @@
     <div class="bg-white rounded-2xl max-w-xl w-full p-5 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center">
         <div>
-          <h3 class="text-base sm:text-lg font-bold text-slate-900">📦 Скрытые периоды</h3>
+          <h3 class="text-base sm:text-lg font-bold text-slate-900">📦 Скрытые периоды (Детский сад)</h3>
           <p class="text-xs text-slate-500">Вы можете вернуть любой период на экран отдельно от остальных или удалить его.</p>
         </div>
         <button onclick="closeHiddenModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
@@ -229,6 +243,28 @@
           👁 Показать вообще все периоды
         </button>
         <button onclick="closeHiddenModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg">
+          Закрыть
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО: АРХИВ СКРЫТЫХ ПЕРИОДОВ АНГЛИЙСКОГО ЯЗЫКА -->
+  <div id="engHiddenModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-3 z-50">
+    <div class="bg-white rounded-2xl max-w-xl w-full p-5 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center">
+        <div>
+          <h3 class="text-base sm:text-lg font-bold text-slate-900">📦 Скрытые абонементы (Английский язык)</h3>
+          <p class="text-xs text-slate-500">Открывайте любые прошлые или будущие периоды в произвольном порядке.</p>
+        </div>
+        <button onclick="closeEngHiddenModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+      </div>
+      <div id="engHiddenSubsList" class="space-y-2.5"></div>
+      <div class="flex justify-between items-center pt-2 border-t border-slate-100">
+        <button onclick="showAllEngHiddenSubs()" class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg transition">
+          👁 Показать все абонементы английского
+        </button>
+        <button onclick="closeEngHiddenModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg">
           Закрыть
         </button>
       </div>
@@ -286,7 +322,7 @@
     </div>
   </div>
 
-  <!-- МОДАЛЬНОЕ ОКНО: УВЕДОМЛЕНИЯ (PUSH + КАЛЕНДАРЬ + TELEGRAM) -->
+  <!-- МОДАЛЬНОЕ ОКНО: УВЕДОМЛЕНИЯ -->
   <div id="notificationsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-3 z-50">
     <div class="bg-white rounded-2xl max-w-xl w-full p-5 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center">
@@ -299,7 +335,6 @@
         <div id="upcomingAlertsList" class="text-xs text-amber-950 space-y-1.5"></div>
       </div>
 
-      <!-- 1. Системные Push-уведомления приложения (работают без Telegram!) -->
       <div class="border border-indigo-200 rounded-xl p-3.5 space-y-2 bg-indigo-50/50">
         <div class="flex justify-between items-start gap-2">
           <div>
@@ -318,20 +353,16 @@
         </div>
       </div>
 
-      <!-- 2. Календарь телефона (.ics) -->
       <div class="border border-slate-200 rounded-xl p-3.5 space-y-2 bg-slate-50">
         <h4 class="text-xs sm:text-sm font-bold text-slate-800">2. Автономные будильники в Календарь телефона (.ics)</h4>
-        <p class="text-[11px] text-slate-500">Записывает напоминания по Саду и Английскому в штатный календарь телефона — сработает в 09:00 утра даже без интернета.</p>
         <button onclick="downloadICSReminders()" class="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg transition">
           📅 Скачать файл напоминаний (.ics)
         </button>
       </div>
 
-      <!-- 3. Telegram-бот -->
       <div class="border border-slate-200 rounded-xl p-3.5 space-y-2.5">
         <div>
           <h4 class="text-xs sm:text-sm font-bold text-slate-800">3. Настройки Telegram-бота (вшиты в код)</h4>
-          <p class="text-[11px] text-slate-500 mt-0.5">Уведомления уходят всем получателям через запятую при остатке 5, 3 и 1 дня сада, а также на последнем (8-м) уроке английского.</p>
         </div>
         <div class="space-y-2 text-xs">
           <div>
@@ -386,7 +417,6 @@
       deferredInstallPrompt = null;
     }
 
-    // СИСТЕМНЫЕ PUSH-УВЕДОМЛЕНИЯ ЧЕРЕЗ SERVICE WORKER (Работают без Telegram)
     function updatePushBadge() {
       const badge = document.getElementById('pushPermissionBadge');
       if (!badge) return;
@@ -399,7 +429,7 @@
         badge.textContent = '✓ Включены';
         badge.className = 'px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-100 text-emerald-800 border border-emerald-300';
       } else if (Notification.permission === 'denied') {
-        badge.textContent = 'Заблокированы в браузере';
+        badge.textContent = 'Заблокированы';
         badge.className = 'px-2 py-0.5 text-[10px] font-bold rounded bg-rose-100 text-rose-800';
       } else {
         badge.textContent = 'Не активированы';
@@ -409,7 +439,7 @@
 
     async function requestSystemPushPermission() {
       if (!('Notification' in window)) {
-        alert(' Ваше устройство или браузер не поддерживает системные уведомления.');
+        alert('Ваше устройство или браузер не поддерживает системные уведомления.');
         return;
       }
       const perm = await Notification.requestPermission();
@@ -417,7 +447,7 @@
       if (perm === 'granted') {
         triggerSystemPush('Детский клуб «Улей»', '✅ Системные Push-уведомления успешно активированы!');
       } else {
-        alert('Разрешение не получено. Проверьте настройки уведомлений для сайта/приложения в настройках телефона.');
+        alert('Разрешение не получено.');
       }
     }
 
@@ -438,9 +468,7 @@
           }
         }
         new Notification(title, { body, icon: './icon.jpg' });
-      } catch (e) {
-        console.error(e);
-      }
+      } catch (e) {}
     }
 
     function sendTestSystemPush() {
@@ -455,7 +483,7 @@
 
       triggerSystemPush(
         '🐝 Детский клуб «Улей»',
-        `Сад (Период #${activeSub.index}): отхожено ${activeSub.completedCount}/20 дн.\nАнглийский (#${activeEng.index}): ${activeEng.attendedCount}/8 ур.`
+        `Сад (Период #${activeSub.index}): отхожено ${activeSub.completedCount}/20 дн.\nАнглийский (#${activeEng.index}): посещено ${activeEng.attendedCount}/8, оплачено ${activeEng.paidLessonsCount}/8.`
       );
     }
 
@@ -511,20 +539,23 @@
     const defaultEnglishData = {
       defaultPrice: 5600,
       lessonsPerSub: 8,
+      hidePastPeriods: false,
       subscriptions: [
         {
           id: 1,
           price: 5600,
           isPaid: false,
+          hiddenManually: false,
+          forceShow: false,
           lessons: [
-            { id: 101, date: '2026-10-12', status: 'attended', note: 'Проведено (Пн)' },
-            { id: 102, date: '2026-10-15', status: 'attended', note: 'Проведено' },
-            { id: 103, date: '2026-10-20', status: 'planned', note: '' },
-            { id: 104, date: '2026-10-22', status: 'planned', note: '' },
-            { id: 105, date: '2026-10-27', status: 'planned', note: '' },
-            { id: 106, date: '2026-10-29', status: 'planned', note: '' },
-            { id: 107, date: '2026-11-03', status: 'planned', note: '' },
-            { id: 108, date: '2026-11-05', status: 'planned', note: '' }
+            { id: 101, date: '2026-10-12', status: 'attended', isPaid: false, note: 'Проведено (Пн)' },
+            { id: 102, date: '2026-10-15', status: 'attended', isPaid: false, note: 'Проведено' },
+            { id: 103, date: '2026-10-20', status: 'planned', isPaid: false, note: '' },
+            { id: 104, date: '2026-10-22', status: 'planned', isPaid: false, note: '' },
+            { id: 105, date: '2026-10-27', status: 'planned', isPaid: false, note: '' },
+            { id: 106, date: '2026-10-29', status: 'planned', isPaid: false, note: '' },
+            { id: 107, date: '2026-11-03', status: 'planned', isPaid: false, note: '' },
+            { id: 108, date: '2026-11-05', status: 'planned', isPaid: false, note: '' }
           ]
         }
       ]
@@ -560,6 +591,7 @@
       }
     };
 
+    // Обеспечивает обратную совместимость для подневной оплаты и скрытия периодов в английском
     function ensureDataIntegrity(targetState) {
       if (!targetState.telegram) targetState.telegram = { sentAlertsLog: {} };
       targetState.telegram.botToken = HARDCODED_TELEGRAM.botToken || targetState.telegram.botToken;
@@ -568,6 +600,22 @@
 
       if (!targetState.english || !Array.isArray(targetState.english.subscriptions)) {
         targetState.english = JSON.parse(JSON.stringify(defaultEnglishData));
+      } else {
+        if (typeof targetState.english.hidePastPeriods !== 'boolean') {
+          targetState.english.hidePastPeriods = false;
+        }
+        targetState.english.subscriptions.forEach(sub => {
+          if (typeof sub.hiddenManually !== 'boolean') sub.hiddenManually = false;
+          if (typeof sub.forceShow !== 'boolean') sub.forceShow = false;
+          if (Array.isArray(sub.lessons)) {
+            sub.lessons.forEach(l => {
+              if (typeof l.isPaid !== 'boolean') {
+                // Если раньше абонемент целиком был отмечен оплаченным — наследуем это для его активных уроков
+                l.isPaid = Boolean(sub.isPaid && l.status !== 'canceled');
+              }
+            });
+          }
+        });
       }
       return targetState;
     }
@@ -630,7 +678,7 @@
     }
 
     // =========================================================================
-    // ЛОГИКА РАЗДЕЛА «АНГЛИЙСКИЙ ЯЗЫК»
+    // ЛОГИКА РАЗДЕЛА «АНГЛИЙСКИЙ ЯЗЫК» (ПОДНЕВНАЯ ОПЛАТА + СКРЫТИЕ ПЕРИОДОВ)
     // =========================================================================
     const WEEKDAY_NAMES_FULL = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
     const WEEKDAY_NAMES_SHORT = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
@@ -663,20 +711,24 @@
         sub.lessons.sort((a, b) => a.date.localeCompare(b.date));
         let activeNumber = 0;
         let attendedCount = 0;
+        let paidLessonsCount = 0;
         let canceledCount = 0;
         let activeDates = [];
+
+        const unitPrice = Math.round((sub.price || 5600) / targetCount);
 
         const enrichedLessons = sub.lessons.map(lesson => {
           const effectiveCompleted = (lesson.status === 'attended') || (lesson.status === 'planned' && lesson.date <= state.simulatedToday);
 
           if (lesson.status === 'canceled') {
             canceledCount++;
-            return { ...lesson, lessonNumber: null, effectiveCompleted: false };
+            return { ...lesson, lessonNumber: null, effectiveCompleted: false, unitPrice: 0 };
           } else {
             activeNumber++;
             activeDates.push(lesson.date);
             if (effectiveCompleted) attendedCount++;
-            return { ...lesson, lessonNumber: activeNumber, effectiveCompleted };
+            if (lesson.isPaid) paidLessonsCount++;
+            return { ...lesson, lessonNumber: activeNumber, effectiveCompleted, unitPrice };
           }
         });
 
@@ -684,18 +736,153 @@
         const endDate = activeDates.length > 0 ? activeDates[activeDates.length - 1] : null;
         const remainingCount = Math.max(0, targetCount - attendedCount);
 
+        // Расчет частичной (подневной) оплаты
+        const totalSubPrice = sub.price || 5600;
+        const isFullyPaid = paidLessonsCount >= activeNumber && activeNumber > 0;
+        const paidAmount = isFullyPaid ? totalSubPrice : Math.min(totalSubPrice, paidLessonsCount * unitPrice);
+        const remainingToPay = Math.max(0, totalSubPrice - paidAmount);
+
+        // Период английского считается прошедшим, если все уроки отхожены и дата окончания позади
+        const isPast = (remainingCount === 0) && endDate && (endDate < state.simulatedToday);
+
         return {
           ...sub,
           index: sIdx + 1,
           startDate,
           endDate,
           attendedCount,
+          paidLessonsCount,
+          paidAmount,
+          remainingToPay,
+          isFullyPaid,
+          unitPrice,
           canceledCount,
           remainingCount,
           activeTotal: activeNumber,
+          isPast,
           enrichedLessons
         };
       });
+    }
+
+    // Проверка, скрыт ли конкретный абонемент английского прямо сейчас
+    function isEngSubCurrentlyHidden(es) {
+      if (es.hiddenManually) return true;
+      if (state.english.hidePastPeriods && es.isPast && !es.forceShow) return true;
+      return false;
+    }
+
+    function toggleEngHidePast(checked) {
+      state.english.hidePastPeriods = checked;
+      if (checked) {
+        state.english.subscriptions.forEach(s => s.forceShow = false);
+      }
+      saveState();
+    }
+
+    function hideEngSubscription(subId, event) {
+      if (event) event.stopPropagation();
+      const sub = state.english.subscriptions.find(s => s.id === subId);
+      if (sub) {
+        sub.hiddenManually = true;
+        sub.forceShow = false;
+        saveState();
+      }
+    }
+
+    function restoreSingleEngSubscription(subId) {
+      const sub = state.english.subscriptions.find(s => s.id === subId);
+      if (sub) {
+        sub.hiddenManually = false;
+        sub.forceShow = true;
+        saveState();
+        renderEngHiddenModalList();
+      }
+    }
+
+    function openEngHiddenModal() {
+      renderEngHiddenModalList();
+      document.getElementById('engHiddenModal').classList.remove('hidden');
+      document.getElementById('engHiddenModal').classList.add('flex');
+    }
+
+    function closeEngHiddenModal() {
+      document.getElementById('engHiddenModal').classList.add('hidden');
+      document.getElementById('engHiddenModal').classList.remove('flex');
+    }
+
+    function renderEngHiddenModalList() {
+      const engStats = enrichEnglishSubscriptions();
+      const hiddenSubs = engStats.filter(es => isEngSubCurrentlyHidden(es));
+      const container = document.getElementById('engHiddenSubsList');
+
+      if (hiddenSubs.length === 0) {
+        container.innerHTML = `<div class="p-4 text-center text-xs text-slate-400 font-medium bg-slate-50 rounded-xl">Нет скрытых абонементов английского.</div>`;
+        return;
+      }
+
+      container.innerHTML = hiddenSubs.map(es => `
+        <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded bg-blue-600 text-white">Абонемент #${es.index}</span>
+              <span class="text-xs font-extrabold text-slate-900">${formatHumanDate(es.startDate)} — ${formatHumanDate(es.endDate)}</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded ${es.isFullyPaid ? 'bg-emerald-100 text-emerald-800' : (es.paidLessonsCount > 0 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800')}">
+                Оплачено: ${es.paidLessonsCount}/${es.activeTotal} (${es.paidAmount.toLocaleString('ru-RU')} ₽)
+              </span>
+            </div>
+            <div class="text-[11px] text-slate-500 mt-1">
+              Посещено: <b>${es.attendedCount}/${es.activeTotal}</b> • Долг к доплате: <b>${es.remainingToPay.toLocaleString('ru-RU')} ₽</b>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0 w-full sm:w-auto justify-end">
+            <button onclick="restoreSingleEngSubscription(${es.id})" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition">
+              👁 Открыть этот период
+            </button>
+            <button onclick="deleteEngSubscription(${es.id}, ${es.index})" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-bold rounded-lg">
+              🗑
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function showAllEngHiddenSubs() {
+      state.english.hidePastPeriods = false;
+      state.english.subscriptions.forEach(s => {
+        s.hiddenManually = false;
+        s.forceShow = false;
+      });
+      closeEngHiddenModal();
+      saveState();
+    }
+
+    // Подневная оплата конкретного урока английского языка
+    function toggleEngLessonPaid(subId, lessonId) {
+      const sub = state.english.subscriptions.find(s => s.id === subId);
+      if (!sub) return;
+      const lesson = sub.lessons.find(l => l.id === lessonId);
+      if (!lesson || lesson.status === 'canceled') return;
+
+      lesson.isPaid = !lesson.isPaid;
+      const activeLessons = sub.lessons.filter(l => l.status !== 'canceled');
+      sub.isPaid = activeLessons.length > 0 && activeLessons.every(l => l.isPaid);
+      saveState();
+    }
+
+    // Переключение оплаты сразу всех уроков абонемента (Оплатить все 8 / Сбросить)
+    function toggleEngSubPaidAll(subId) {
+      const sub = state.english.subscriptions.find(s => s.id === subId);
+      if (!sub) return;
+      const activeLessons = sub.lessons.filter(l => l.status !== 'canceled');
+      const allPaid = activeLessons.length > 0 && activeLessons.every(l => l.isPaid);
+      const nextState = !allPaid;
+
+      sub.lessons.forEach(l => {
+        if (l.status !== 'canceled') l.isPaid = nextState;
+      });
+      sub.isPaid = nextState;
+      saveState();
     }
 
     function toggleEngLessonCancel(subId, lessonId) {
@@ -707,7 +894,10 @@
       const targetCount = state.english.lessonsPerSub || 8;
 
       if (lesson.status !== 'canceled') {
+        // Если отменяемый урок уже был оплачен подневно — переносим эту оплату на новый добавляемый урок!
+        const wasPaid = Boolean(lesson.isPaid);
         lesson.status = 'canceled';
+        lesson.isPaid = false;
         if (!lesson.note) lesson.note = 'Перенос (+1 занятие)';
 
         const activeCount = sub.lessons.filter(l => l.status !== 'canceled').length;
@@ -718,7 +908,8 @@
             id: Date.now() + Math.floor(Math.random() * 1000),
             date: nextDate,
             status: 'planned',
-            note: 'Добавлено взамен пропуска'
+            isPaid: wasPaid,
+            note: wasPaid ? 'Добавлено взамен пропуска (оплата перенесена)' : 'Добавлено взамен пропуска'
           });
         }
       } else {
@@ -727,9 +918,10 @@
 
         const activeLessons = sub.lessons.filter(l => l.status !== 'canceled');
         if (activeLessons.length > targetCount) {
-          const lastAddedIdx = sub.lessons.map(l => l.note).lastIndexOf('Добавлено взамен пропуска');
+          const lastAddedIdx = sub.lessons.map(l => (l.note || '').startsWith('Добавлено взамен пропуска')).lastIndexOf(true);
           if (lastAddedIdx !== -1) {
-            sub.lessons.splice(lastAddedIdx, 1);
+            const removed = sub.lessons.splice(lastAddedIdx, 1)[0];
+            if (removed && removed.isPaid) lesson.isPaid = true;
           }
         }
       }
@@ -789,6 +981,7 @@
         id: Date.now(),
         date: nextDate,
         status: 'planned',
+        isPaid: false,
         note: ''
       });
       saveState();
@@ -813,6 +1006,7 @@
           id: Date.now() + i,
           date: curDate,
           status: 'planned',
+          isPaid: false,
           note: ''
         });
       }
@@ -821,17 +1015,11 @@
         id: nextId,
         price: state.english.defaultPrice || 5600,
         isPaid: false,
+        hiddenManually: false,
+        forceShow: false,
         lessons: newLessons
       });
       saveState();
-    }
-
-    function toggleEngSubPaid(subId) {
-      const sub = state.english.subscriptions.find(s => s.id === subId);
-      if (sub) {
-        sub.isPaid = !sub.isPaid;
-        saveState();
-      }
     }
 
     function updateEngSubPrice(subId, val) {
@@ -850,6 +1038,7 @@
       if (confirm(`Удалить Абонемент английского #${idx}?`)) {
         state.english.subscriptions = state.english.subscriptions.filter(s => s.id !== subId);
         saveState();
+        renderEngHiddenModalList();
       }
     }
 
@@ -869,10 +1058,10 @@
       const nextSub = engStats.find(s => s.index === activeSub.index + 1);
 
       const isLastLessonRemaining = (activeSub.remainingCount === 1);
-      const isFinishedUnpaidNext = (activeSub.remainingCount === 0 && (!nextSub || !nextSub.isPaid));
-      const isCurrentUnpaid = !activeSub.isPaid;
+      const isFinishedUnpaidNext = (activeSub.remainingCount === 0 && (!nextSub || !nextSub.isFullyPaid));
+      const hasUnpaidBalance = activeSub.remainingToPay > 0;
 
-      if (isCurrentUnpaid || isLastLessonRemaining || isFinishedUnpaidNext) {
+      if (hasUnpaidBalance || isLastLessonRemaining || isFinishedUnpaidNext) {
         banner.className = `rounded-2xl p-3.5 shadow-sm border-l-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-2.5 bg-sky-50 border-sky-600 text-sky-950`;
 
         let titleBadge = '🎓 Английский язык';
@@ -880,13 +1069,15 @@
 
         if (isLastLessonRemaining) {
           titleBadge = '🎓 🔔 Осталось последнее занятие (1 из 8)!';
-          messageText = `В Абонементе английского #${activeSub.index} остался всего 1 урок (${formatHumanDate(activeSub.endDate)}). Пора подготовить оплату следующего периода (${(state.english.defaultPrice || 5600).toLocaleString('ru-RU')} ₽)!`;
-        } else if (isCurrentUnpaid) {
-          titleBadge = `🎓 Абонемент #${activeSub.index} не оплачен`;
-          messageText = `Посещено уроков: ${activeSub.attendedCount} из 8. К оплате: ${activeSub.price.toLocaleString('ru-RU')} ₽.`;
+          messageText = `В Абонементе #${activeSub.index} остался 1 урок (${formatHumanDate(activeSub.endDate)}). Оплачено уроков: ${activeSub.paidLessonsCount}/${activeSub.activeTotal} (остаток к доплате: ${activeSub.remainingToPay.toLocaleString('ru-RU')} ₽).`;
+        } else if (hasUnpaidBalance) {
+          titleBadge = activeSub.paidLessonsCount > 0
+            ? `🎓 Частичная оплата (${activeSub.paidLessonsCount} из ${activeSub.activeTotal} ур.)`
+            : `🎓 Абонемент #${activeSub.index} не оплачен`;
+          messageText = `Посещено: ${activeSub.attendedCount} из ${activeSub.activeTotal}. Внесено: ${activeSub.paidAmount.toLocaleString('ru-RU')} ₽, остаток к доплате: ${activeSub.remainingToPay.toLocaleString('ru-RU')} ₽.`;
         } else {
-          titleBadge = `🎓 Абонемент #${activeSub.index} завершен (8 из 8)`;
-          messageText = `Все 8 уроков отхожены! Добавьте или оплатите следующий период английского языка.`;
+          titleBadge = `🎓 Абонемент #${activeSub.index} завершен`;
+          messageText = `Все уроки отхожены! Добавьте или оплатите следующий период английского языка.`;
         }
 
         banner.innerHTML = `
@@ -898,9 +1089,9 @@
             <p class="text-xs sm:text-sm font-bold mt-1">${messageText}</p>
           </div>
           <div class="flex items-center gap-2 shrink-0">
-            ${isCurrentUnpaid ? `
-              <button onclick="toggleEngSubPaid(${activeSub.id})" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg shadow">
-                ✓ Отметить оплаченным
+            ${hasUnpaidBalance ? `
+              <button onclick="toggleEngSubPaidAll(${activeSub.id})" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg shadow">
+                ✓ Оплатить весь (#${activeSub.index})
               </button>
             ` : ''}
             <button onclick="switchMainTab('english')" class="px-3 py-1.5 bg-white text-sky-900 border border-sky-300 text-xs font-bold rounded-lg">
@@ -913,8 +1104,8 @@
         if (isLastLessonRemaining) {
           const alertKey = `eng_sub_${activeSub.index}_last_lesson_date_${state.simulatedToday}`;
           if (!state.telegram.sentAlertsLog[alertKey]) {
-            const tgMsg = `🎓 🔔 Английский язык («Улей»): в Абонементе #${activeSub.index} осталось ПОСЛЕДНЕЕ занятие (${formatHumanDate(activeSub.endDate)})!\nНе забудьте оплатить следующий период (8 занятий — ${activeSub.price.toLocaleString('ru-RU')} ₽).`;
-            triggerSystemPush('🎓 Английский язык («Улей»)', `Осталось последнее занятие (${formatHumanDate(activeSub.endDate)})! Пора оплатить следующий абонемент.`);
+            const tgMsg = `🎓 🔔 Английский язык («Улей»): в Абонементе #${activeSub.index} осталось ПОСЛЕДНЕЕ занятие (${formatHumanDate(activeSub.endDate)})!\nОплачено уроков: ${activeSub.paidLessonsCount}/${activeSub.activeTotal}. Не забудьте оплатить следующий период!`;
+            triggerSystemPush('🎓 Английский язык («Улей»)', `Осталось последнее занятие (${formatHumanDate(activeSub.endDate)})!`);
             sendTelegramText(tgMsg, true);
             state.telegram.sentAlertsLog[alertKey] = true;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -1347,7 +1538,7 @@
           const alertKey = `sub_${currentSub.index}_left_${daysLeft}_date_${state.simulatedToday}`;
           if (!state.telegram.sentAlertsLog[alertKey]) {
             const msg = `🐝 Детский сад («Улей»): до окончания Периода #${currentSub.index} (${formatHumanDate(currentSub.endDate)}) осталось ровно ${daysLeft} раб. дн.!\nК оплате за Период #${targetSub.index}: ${targetSub.price.toLocaleString('ru-RU')} ₽ (старт ${formatHumanDate(targetSub.startDate)}).`;
-            triggerSystemPush('🐝 Детский клуб «Улей»', `До конца Периода сада #${currentSub.index} осталось ${daysLeft} раб. дн.! К оплате: ${targetSub.price.toLocaleString('ru-RU')} ₽.`);
+            triggerSystemPush('🐝 Детский клуб «Улей»', `До конца Периода сада #${currentSub.index} осталось ${daysLeft} раб. дн.!`);
             sendTelegramText(msg, true);
             state.telegram.sentAlertsLog[alertKey] = true;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -1393,7 +1584,7 @@
           html += `
             <div class="py-1">
               <div class="font-bold text-sky-900">🎓 Английский — Абонемент #${es.index}:</div>
-              <div class="text-[11px]">Последнее (8-е) занятие и уведомление: <b class="text-indigo-700">${formatHumanDate(es.endDate)}</b></div>
+              <div class="text-[11px]">Последнее занятие и уведомление: <b class="text-indigo-700">${formatHumanDate(es.endDate)}</b></div>
             </div>
           `;
         }
@@ -1453,9 +1644,8 @@
         `• Даты: ${formatHumanDate(activeSub.startDate)} — ${formatHumanDate(activeSub.endDate)}\n` +
         `• Отхожено: ${activeSub.completedCount}/20 (пропусков: ${activeSub.missedCount})\n\n` +
         `2️⃣ 🎓 Английский язык (Абонемент #${activeEng.index}):\n` +
-        `• Посещено: ${activeEng.attendedCount} из 8 зан.\n` +
-        `• Крайнее занятие периода: ${formatHumanDate(activeEng.endDate)}\n` +
-        `• Статус: ${activeEng.isPaid ? 'Оплачен' : 'Не оплачен'} (${activeEng.price} ₽)`;
+        `• Посещено: ${activeEng.attendedCount}/${activeEng.activeTotal} зан.\n` +
+        `• Оплачено: ${activeEng.paidLessonsCount}/${activeEng.activeTotal} (${activeEng.paidAmount.toLocaleString('ru-RU')} ₽, остаток к доплате: ${activeEng.remainingToPay.toLocaleString('ru-RU')} ₽)`;
 
       sendTelegramText(msg, false);
     }
@@ -1525,11 +1715,13 @@
       if (scope === 'all' || scope === 'english') {
         lines.push(`=== 🎓 АНГЛИЙСКИЙ ЯЗЫК ===`);
         engStats.forEach(es => {
-          lines.push(`🔸 Абонемент #${es.index} (8 занятий — ${es.price.toLocaleString('ru-RU')} ₽, ${es.isPaid ? '✅ Оплачен' : '⏳ Не оплачен'})`);
-          lines.push(`• Посещено: ${es.attendedCount} из 8 | Осталось: ${es.remainingCount}`);
+          lines.push(`🔸 Абонемент #${es.index} (${es.startDate ? formatHumanDate(es.startDate) : ''} — ${es.endDate ? formatHumanDate(es.endDate) : ''})`);
+          lines.push(`• Посещено: ${es.attendedCount} из ${es.activeTotal} | Оплачено: ${es.paidLessonsCount} из ${es.activeTotal} (${es.paidAmount.toLocaleString('ru-RU')} ₽)`);
+          lines.push(`• Остаток к доплате: ${es.remainingToPay.toLocaleString('ru-RU')} ₽`);
           es.enrichedLessons.forEach(l => {
             const st = l.status === 'canceled' ? '❌ Отмена/Перенос' : (l.effectiveCompleted ? '✅ Проведено' : '⏳ План');
-            lines.push(`  ${l.lessonNumber ? `Урок ${l.lessonNumber}` : '—'}: ${formatHumanDate(l.date)} (${getWeekdayName(l.date, true)}) — ${st} ${l.note ? `[${l.note}]` : ''}`);
+            const paySt = l.status === 'canceled' ? '' : (l.isPaid ? ' [💳 Оплачен]' : ' [Не оплачен]');
+            lines.push(`  ${l.lessonNumber ? `Урок ${l.lessonNumber}` : '—'}: ${formatHumanDate(l.date)} (${getWeekdayName(l.date, true)}) — ${st}${paySt} ${l.note ? `(${l.note})` : ''}`);
           });
           lines.push('');
         });
@@ -1548,7 +1740,7 @@
     }
 
     // =========================================================================
-    // ГЛАВНЫЙ РЕНДЕР (И САД, И АДАПТИВНЫЙ АНГЛИЙСКИЙ ЯЗЫК)
+    // ГЛАВНЫЙ РЕНДЕР (САД + АНГЛИЙСКИЙ С ПОДНЕВНОЙ ОПЛАТОЙ И СКРЫТИЕМ)
     // =========================================================================
     function render() {
       document.getElementById('basePriceInput').value = state.defaultPrice;
@@ -1556,6 +1748,7 @@
       document.getElementById('hidePastCheckbox').checked = state.hidePastPeriods;
       document.getElementById('hideWeekendsCheckbox').checked = !!state.hideWeekends;
       document.getElementById('pastStyleSelect').value = state.pastAttendedStyle || 'green';
+      document.getElementById('engHidePastCheckbox').checked = !!state.english.hidePastPeriods;
 
       const perDay = Math.round(state.defaultPrice / state.daysPerSub);
       document.getElementById('pricePerDayDisplay').textContent = perDay.toLocaleString('ru-RU') + ' ₽';
@@ -1571,7 +1764,7 @@
       checkPaymentNotifications(subStats);
       checkEnglishNotifications(engStats);
 
-      // Карта дат английского языка: isoDate -> инфо об уроке (номер урока и проведен ли)
+      // Карта дат английского языка для календаря
       const englishDateMap = {};
       engStats.forEach(es => {
         es.enrichedLessons.forEach(l => {
@@ -1579,24 +1772,40 @@
             englishDateMap[l.date] = {
               subIndex: es.index,
               lessonNumber: l.lessonNumber,
-              completed: l.effectiveCompleted
+              completed: l.effectiveCompleted,
+              isPaid: l.isPaid
             };
           }
         });
       });
 
-      // РЕНДЕР ВКЛАДКИ АНГЛИЙСКОГО ЯЗЫКА (Мобильные карточки + ПК таблица)
+      // РЕНДЕР ВКЛАДКИ АНГЛИЙСКОГО ЯЗЫКА (С ФИЛЬТРОМ СКРЫТЫХ ПЕРИОДОВ И ПОДНЕВНОЙ ОПЛАТОЙ)
       const engPrice = state.english.defaultPrice || 5600;
       document.getElementById('engBasePriceInput').value = engPrice;
       document.getElementById('engLessonPriceDisplay').textContent = Math.round(engPrice / 8).toLocaleString('ru-RU') + ' ₽';
 
-      const engContainer = document.getElementById('englishSubscriptionsContainer');
-      engContainer.innerHTML = engStats.map(es => {
-        const paidBadge = es.isPaid
-          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-          : 'bg-rose-100 text-rose-800 border-rose-300';
+      const hiddenEngSubs = engStats.filter(es => isEngSubCurrentlyHidden(es));
+      const visibleEngSubs = engStats.filter(es => !isEngSubCurrentlyHidden(es));
 
-        // 1. Десктопные строки таблицы (для экранов >= md)
+      const engArchiveBtn = document.getElementById('engHiddenArchiveBtn');
+      if (hiddenEngSubs.length > 0) {
+        engArchiveBtn.textContent = `📦 Скрытые (${hiddenEngSubs.length})`;
+        engArchiveBtn.classList.remove('hidden');
+      } else {
+        engArchiveBtn.classList.add('hidden');
+      }
+
+      const engContainer = document.getElementById('englishSubscriptionsContainer');
+      engContainer.innerHTML = visibleEngSubs.map(es => {
+        const paySummaryBadge = es.isFullyPaid
+          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+          : (es.paidLessonsCount > 0 ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-rose-100 text-rose-800 border-rose-300');
+
+        const paySummaryText = es.isFullyPaid
+          ? `✓ Оплачен полностью (${es.activeTotal}/${es.activeTotal})`
+          : (es.paidLessonsCount > 0 ? `Частично оплачен (${es.paidLessonsCount}/${es.activeTotal})` : `Не оплачен (0/${es.activeTotal})`);
+
+        // 1. Десктопные строки таблицы (с колонкой подневной оплаты)
         const desktopRowsHtml = es.enrichedLessons.map(l => {
           const isCanceled = l.status === 'canceled';
           const isDone = l.effectiveCompleted;
@@ -1623,6 +1832,15 @@
                   </button>
                 `}
               </td>
+              <td class="py-2.5 px-3 text-center">
+                ${isCanceled ? '—' : `
+                  <button onclick="toggleEngLessonPaid(${es.id}, ${l.id})"
+                          class="px-2.5 py-1 rounded-lg text-xs font-extrabold border transition ${l.isPaid ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm' : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'}"
+                          title="Отметить подневную оплату за этот урок (${l.unitPrice} ₽)">
+                    ${l.isPaid ? `💳 Оплачен (${l.unitPrice} ₽)` : `Не оплачен`}
+                  </button>
+                `}
+              </td>
               <td class="py-2.5 px-3">
                 <input type="text" value="${l.note || ''}" placeholder="Примечание..."
                        onchange="changeEngLessonNote(${es.id}, ${l.id}, this.value)"
@@ -1639,7 +1857,7 @@
           `;
         }).join('');
 
-        // 2. Мобильные компактные карточки (для смартфонов < md — без горизонтального скролла!)
+        // 2. Мобильные компактные карточки (с кнопкой подневной оплаты 💳)
         const mobileCardsHtml = es.enrichedLessons.map(l => {
           const isCanceled = l.status === 'canceled';
           const isDone = l.effectiveCompleted;
@@ -1649,8 +1867,8 @@
 
           return `
             <div class="p-3 rounded-xl border ${cardBg} space-y-2 shadow-sm">
-              <!-- Верхний ряд карточки: Номер урока + Дата + День недели + Статус -->
-              <div class="flex items-center justify-between gap-1.5">
+              <!-- Верхний ряд карточки: Номер + Дата + День недели + Кнопки Посещения и Подневной оплаты -->
+              <div class="flex flex-wrap items-center justify-between gap-1.5">
                 <div class="flex items-center gap-1.5">
                   ${isCanceled
                     ? `<span class="px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 text-[10px] font-extrabold">Отмена</span>`
@@ -1664,17 +1882,21 @@
                   </span>
                 </div>
 
-                <div>
-                  ${isCanceled ? '' : `
+                ${isCanceled ? '' : `
+                  <div class="flex items-center gap-1">
                     <button onclick="toggleEngLessonAttended(${es.id}, ${l.id})"
-                            class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold border transition ${isDone ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm' : 'bg-slate-100 text-slate-700 border-slate-300'}">
-                      ${isDone ? '✓ Проведено' : '⏳ План'}
+                            class="px-2 py-1 rounded-lg text-[11px] font-extrabold border transition ${isDone ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm' : 'bg-slate-100 text-slate-700 border-slate-300'}">
+                      ${isDone ? '✓ Был' : '⏳ План'}
                     </button>
-                  `}
-                </div>
+                    <button onclick="toggleEngLessonPaid(${es.id}, ${l.id})"
+                            class="px-2 py-1 rounded-lg text-[11px] font-extrabold border transition ${l.isPaid ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm' : 'bg-rose-50 text-rose-700 border-rose-200'}">
+                      ${l.isPaid ? `💳 ${l.unitPrice}₽` : 'Не опл.'}
+                    </button>
+                  </div>
+                `}
               </div>
 
-              <!-- Нижний ряд карточки: Полноразмерное Примечание + Кнопка Перенос (+1) + Удаление -->
+              <!-- Нижний ряд карточки: Примечание + Перенос (+1) + Удаление -->
               <div class="flex items-center gap-1.5">
                 <input type="text" value="${l.note || ''}" placeholder="Примечание к уроку..."
                        onchange="changeEngLessonNote(${es.id}, ${l.id}, this.value)"
@@ -1696,28 +1918,34 @@
               <div>
                 <div class="flex flex-wrap items-center gap-2">
                   <span class="px-2.5 py-0.5 text-xs font-extrabold uppercase rounded bg-blue-600 text-white">Абонемент #${es.index}</span>
+                  ${es.isPast ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">Завершен ✓</span>` : ''}
                   <h3 class="text-base sm:text-lg font-extrabold text-slate-900">
                     ${formatHumanDate(es.startDate)} — ${formatHumanDate(es.endDate)}
                   </h3>
-                  <button onclick="toggleEngSubPaid(${es.id})" class="px-3 py-0.5 rounded-full text-xs font-bold border ${paidBadge}">
-                    ${es.isPaid ? '✓ Оплачено (8 из 8)' : 'Не оплачено (0 из 8)'}
+                  <button onclick="toggleEngSubPaidAll(${es.id})"
+                          class="px-3 py-0.5 rounded-full text-xs font-bold border ${paySummaryBadge} hover:opacity-80 transition"
+                          title="Нажмите, чтобы отметить оплаченными сразу все 8 занятий или сбросить">
+                    ${paySummaryText}
+                  </button>
+                  <button onclick="hideEngSubscription(${es.id}, event)" class="px-2 py-0.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded text-xs font-bold transition" title="Скрыть этот абонемент в архив">
+                    👁‍🗨 Скрыть
                   </button>
                   <button onclick="deleteEngSubscription(${es.id}, ${es.index})" class="text-slate-400 hover:text-rose-600 text-xs font-bold ml-1" title="Удалить абонемент">🗑</button>
                 </div>
               </div>
 
-              <!-- Плашки статистики -->
+              <!-- Плашки статистики с учетом частичной подневной оплаты -->
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full lg:w-auto text-xs">
                 <div class="bg-white px-3 py-2 rounded-xl border border-slate-200">
                   <span class="text-[10px] text-slate-400 block">Посещено занятий</span>
-                  <span class="font-extrabold text-emerald-700 text-sm">${es.attendedCount} из 8</span>
+                  <span class="font-extrabold text-emerald-700 text-sm">${es.attendedCount} из ${es.activeTotal}</span>
                 </div>
                 <div class="bg-white px-3 py-2 rounded-xl border border-slate-200">
-                  <span class="text-[10px] text-slate-400 block">Оплачено занятий</span>
-                  <span class="font-extrabold text-slate-800 text-sm">${es.isPaid ? '8 из 8' : '0 из 8'}</span>
+                  <span class="text-[10px] text-slate-400 block">Оплачено уроков</span>
+                  <span class="font-extrabold text-indigo-700 text-sm">${es.paidLessonsCount} из ${es.activeTotal} (${es.paidAmount.toLocaleString('ru-RU')} ₽)</span>
                 </div>
                 <div class="bg-white px-3 py-2 rounded-xl border border-slate-200">
-                  <span class="text-[10px] text-slate-400 block">Всего к оплате</span>
+                  <span class="text-[10px] text-slate-400 block">Цена абонемента</span>
                   <div class="flex items-center gap-1">
                     <input type="number" value="${es.price}" step="100" onchange="updateEngSubPrice(${es.id}, this.value)"
                            class="w-16 font-extrabold text-sm text-slate-900 border-b border-slate-300 focus:outline-none">
@@ -1725,20 +1953,20 @@
                   </div>
                 </div>
                 <div class="bg-white px-3 py-2 rounded-xl border border-slate-200">
-                  <span class="text-[10px] text-slate-400 block">Остаток к оплате</span>
-                  <span class="font-extrabold ${es.isPaid ? 'text-emerald-600' : 'text-rose-600'} text-sm">
-                    ${es.isPaid ? '0 ₽' : es.price.toLocaleString('ru-RU') + ' ₽'}
+                  <span class="text-[10px] text-slate-400 block">Остаток к доплате</span>
+                  <span class="font-extrabold ${es.remainingToPay === 0 ? 'text-emerald-600' : 'text-rose-600'} text-sm">
+                    ${es.remainingToPay.toLocaleString('ru-RU')} ₽
                   </span>
                 </div>
               </div>
             </div>
 
-            <!-- МОБИЛЬНЫЙ ВИД: Карточки уроков (видно на телефонах < md) -->
+            <!-- МОБИЛЬНЫЙ ВИД: Карточки уроков -->
             <div class="md:hidden p-3 space-y-2.5 bg-slate-50/50">
               ${mobileCardsHtml}
             </div>
 
-            <!-- ДЕСКТОПНЫЙ ВИД: Таблица (видно на экранах >= md) -->
+            <!-- ДЕСКТОПНЫЙ ВИД: Таблица -->
             <div class="hidden md:block overflow-x-auto">
               <table class="w-full text-left border-collapse">
                 <thead>
@@ -1747,6 +1975,7 @@
                     <th class="py-2 px-3">Дата урока</th>
                     <th class="py-2 px-3">День недели</th>
                     <th class="py-2 px-3 text-center">Посещение</th>
+                    <th class="py-2 px-3 text-center">Оплата (подневно)</th>
                     <th class="py-2 px-3">Примечание</th>
                     <th class="py-2 px-3 text-right">Корректировка</th>
                   </tr>
@@ -1758,7 +1987,7 @@
             </div>
 
             <div class="p-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs">
-              <span class="text-slate-500 text-[11px]">Чтобы перенести урок на другой день недели — просто нажмите на дату урока и выберите новый день.</span>
+              <span class="text-slate-500 text-[11px]">Оплачивайте по одному уроку кнопкой «💳» или сразу весь период кнопкой в шапке абонемента.</span>
               <button onclick="addManualEngLessonRow(${es.id})" class="w-full sm:w-auto px-3 py-1.5 bg-white hover:bg-slate-100 text-indigo-700 font-bold rounded-lg border border-slate-300 shrink-0 text-center">
                 + Добавить дату вручную
               </button>
@@ -1766,6 +1995,15 @@
           </div>
         `;
       }).join('');
+
+      if (hiddenEngSubs.length > 0) {
+        engContainer.innerHTML += `
+          <div onclick="openEngHiddenModal()" class="bg-slate-200/70 hover:bg-slate-200 border-2 border-dashed border-slate-300 rounded-2xl p-5 flex flex-col items-center justify-center text-center gap-1.5 cursor-pointer transition">
+            <span class="text-xs font-extrabold text-slate-700">📦 В архиве скрыто абонементов английского: ${hiddenEngSubs.length}</span>
+            <span class="text-[11px] text-slate-500">Нажмите, чтобы посмотреть сводку или открыть любой скрытый период отдельно</span>
+          </div>
+        `;
+      }
 
       // РЕНДЕР ВКЛАДКИ ОСНОВНОГО САДА
       const hiddenSubs = subStats.filter(s => isSubCurrentlyHidden(s));
@@ -1940,7 +2178,6 @@
             let bottomBadgeHtml = '';
             let englishPillHtml = '';
 
-            // Яркий и заметный бейдж урока английского языка (и на ПК, и на мобильном)
             if (engInfo) {
               englishPillHtml = `
                 <div class="w-full text-center px-1 py-0.5 rounded bg-blue-600 text-white text-[8px] sm:text-[10px] font-black tracking-tight shadow-sm truncate leading-none">
@@ -1985,7 +2222,7 @@
                 bottomBadgeHtml = `<span class="w-full text-center text-[9px] sm:text-[10px] font-extrabold px-0.5 py-0.5 rounded bg-amber-500 text-white truncate leading-none"><span class="sm:hidden">Проп.+1</span><span class="hidden sm:inline">Пропуск (+1)</span></span>`;
               } else if (info.status === 'holiday') {
                 cellClasses = `bg-purple-50 border-purple-300 border-l-[3px] sm:border-l-4 border-l-purple-500 text-purple-950 cursor-pointer hover:bg-purple-100`;
-                bottomBadgeHtml = `<span class="w-full text-center text-[9px] sm:text-[10px] font-bold px-0.5 py-0.5 rounded bg-purple-200 text-purple-900 truncate leading-none">Выходной</span>`;
+                bottomBadgeHtml = `<span class="w-full text-center text-[9px] sm:text-[10px] font-bold px-0.5 py-0.5 rounded bg-purple-200 text-purple-950 truncate leading-none">Выходной</span>`;
               }
             }
 
