@@ -1,5 +1,5 @@
-const CACHE_NAME = 'sadik-pwa-v4';
-const ASSETS = ['./', './index.html', './manifest.json'];
+const CACHE_NAME = 'uley-pwa-v6';
+const ASSETS = ['./', './index.html', './app.js', './manifest.json', './icon.jpg'];
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -9,7 +9,11 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null)))
+    ).then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener('fetch', (event) => {
