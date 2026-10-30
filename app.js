@@ -19,11 +19,31 @@ let analYear = new Date().getFullYear();
 let analMonth = new Date().getMonth(); // 0-11
 let analFilter = 'all';
 
+// Новые переменные для выбора периода
+let analPeriodType = 'month'; // 'month', 'year', 'custom', 'all'
+let analCustomStart = toISODate(new Date(new Date().setDate(new Date().getDate() - 30)));
+let analCustomEnd = toISODate(new Date());
+
 function changeAnalyticMonth(offset) {
-  // Автоматически перелистывает год, если месяц уходит за пределы 1-12
   const d = new Date(analYear, analMonth + offset, 1);
   analYear = d.getFullYear();
   analMonth = d.getMonth();
+  render();
+}
+
+function changeAnalyticYear(offset) {
+  analYear += offset;
+  render();
+}
+
+function changeAnalyticPeriodType(type) {
+  analPeriodType = type;
+  render();
+}
+
+function changeAnalyticCustomDates(start, end) {
+  if (start) analCustomStart = start;
+  if (end) analCustomEnd = end;
   render();
 }
 
@@ -793,35 +813,58 @@ function renderAnalytics(subStats, engStats, dayMap) {
   const container = document.getElementById('analyticsContainer');
   if (!container) return;
 
-  // --- БАЗОВЫЕ РАСЧЕТЫ (ВСЕ ВРЕМЯ) ---
-  const gardenPaid = subStats.filter(s => s.isPaid).reduce((sum, s) => sum + s.price, 0);
-  const gardenDebt = subStats.filter(s => !s.isPaid).reduce((sum, s) => sum + s.price, 0);
-  const gardenTotalMissed = subStats.reduce((sum, s) => sum + s.missedCount, 0);
-  const gardenTotalAttended = subStats.reduce((sum, s) => sum + s.completedCount, 0);
+  // --- 1. ОПРЕДЕЛЕНИЕ ГРАНИЦ ВЫБРАННОГО ПЕРИОДА ---
+  let dateStart = '2000-01-01';
+  let dateEnd = '2100-12-31';
+  let periodLabel = '';
+  const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+
+  if (analPeriodType === 'month') {
+    const lastDay = new Date(analYear, analMonth + 1, 0).getDate();
+    dateStart = `${analYear}-${String(analMonth + 1).padStart(2, '0')}-01`;
+    dateEnd = `${analYear}-${String(analMonth + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    periodLabel = `${monthNames[analMonth]} ${analYear}`;
+  } else if (analPeriodType === 'year') {
+    dateStart = `${analYear}-01-01`;
+    dateEnd = `${analYear}-12-31`;
+    periodLabel = `${analYear} год`;
+  } else if (analPeriodType === 'custom') {
+    dateStart = analCustomStart;
+    dateEnd = analCustomEnd;
+    periodLabel = `${formatShortDate(dateStart)} — ${formatShortDate(dateEnd)}`;
+  } else {
+    periodLabel = 'За всё время';
+  }
+
+  // --- 2. ФИНАНСЫ (Только те абонементы, которые начались в выбранном периоде) ---
   const gardenDayPrice = Math.round(state.defaultPrice / state.daysPerSub) || 0;
+  const filteredSubs = subStats.filter(s => s.startDate >= dateStart && s.startDate <= dateEnd);
+  const gardenPaid = filteredSubs.filter(s => s.isPaid).reduce((sum, s) => sum + s.price, 0);
+  const gardenDebt = filteredSubs.filter(s => !s.isPaid).reduce((sum, s) => sum + s.price, 0);
 
-  const engPaid = engStats.reduce((sum, s) => sum + s.paidAmount, 0);
-  const engDebt = engStats.reduce((sum, s) => sum + s.remainingToPay, 0);
-  const engTotalAttended = engStats.reduce((sum, s) => sum + s.attendedCount, 0);
-  const engTotalCanceled = engStats.reduce((sum, s) => sum + s.canceledCount, 0);
   const engLessonPrice = engStats[0]?.unitPrice || 700;
+  const filteredEng = engStats.filter(s => s.startDate >= dateStart && s.startDate <= dateEnd);
+  const engPaid = filteredEng.reduce((sum, s) => sum + s.paidAmount, 0);
+  const engDebt = filteredEng.reduce((sum, s) => sum + s.remainingToPay, 0);
 
-  // Эффективная стоимость (показывает, как пропуски удорожают реальный 1 день)
-  const gardenEffCost = gardenTotalAttended > 0 ? Math.round(gardenPaid / gardenTotalAttended) : 0;
-  const engEffCost = engTotalAttended > 0 ? Math.round(engPaid / engTotalAttended) : 0;
-
-  // --- РАСЧЕТЫ ДЛЯ ВЫБРАННОГО МЕСЯЦА И СТРИКОВ ---
-  const prefix = `${analYear}-${String(analMonth + 1).padStart(2, '0')}`;
-  let mAttended = 0, mMissed = 0, mHoliday = 0;
+  // Глобальная эффективная стоимость (оставляем за всё время для стабильности метрики)
+  const totalGPaid = subStats.filter(s => s.isPaid).reduce((sum, s) => sum + s.price, 0);
+  const totalGAttended = subStats.reduce((sum, s) => sum + s.completedCount, 0);
+  const globalGardenEffCost = totalGAttended > 0 ? Math.round(totalGPaid / totalGAttended) : 0;
   
-  let currentStreak = 0;
-  let maxStreak = 0;
+  const totalEPaid = engStats.reduce((sum, s) => sum + s.paidAmount, 0);
+  const totalEAttended = engStats.reduce((sum, s) => sum + s.attendedCount, 0);
+  const globalEngEffCost = totalEAttended > 0 ? Math.round(totalEPaid / totalEAttended) : 0;
+
+  // --- 3. ПОСЕЩАЕМОСТЬ И ПРОПУСКИ СТРОГО В ПЕРИОДЕ ---
+  let gAttended = 0, gMissed = 0, gHoliday = 0;
+  let currentStreak = 0, maxStreak = 0;
 
   Object.keys(dayMap).sort().forEach(iso => {
     const item = dayMap[iso];
     if (iso > state.simulatedToday || iso < state.startDate) return;
-    
-    // Стрики (серия посещений без пропусков)
+
+    // Стрики считаем глобально (достижение)
     if (item.status === 'attended' && item.isCompletedVisit) {
       currentStreak++;
       if (currentStreak > maxStreak) maxStreak = currentStreak;
@@ -829,54 +872,114 @@ function renderAnalytics(subStats, engStats, dayMap) {
       currentStreak = 0;
     }
 
-    // Статистика конкретного месяца
-    if (iso.startsWith(prefix)) {
-      if (item.status === 'attended' && item.isCompletedVisit) mAttended++;
-      else if (item.status === 'missed') mMissed++;
-      else if (item.status === 'holiday') mHoliday++;
+    // Дни считаем только внутри фильтра
+    if (iso >= dateStart && iso <= dateEnd) {
+      if (item.status === 'attended' && item.isCompletedVisit) gAttended++;
+      else if (item.status === 'missed') gMissed++;
+      else if (item.status === 'holiday') gHoliday++;
     }
   });
 
-  // --- ПРИМЕНЕНИЕ ФИЛЬТРА ---
+  let eAttended = 0, eCanceled = 0;
+  engStats.forEach(es => {
+    es.enrichedLessons.forEach(l => {
+      if (l.date >= dateStart && l.date <= dateEnd && l.date <= state.simulatedToday) {
+        if (l.effectiveCompleted) eAttended++;
+        if (l.status === 'canceled') eCanceled++;
+      }
+    });
+  });
+
+  // --- 4. ПРИМЕНЕНИЕ НАПРАВЛЕНИЯ (Сад / Английский) ---
   let showPaid = 0, showDebt = 0, showSaved = 0, showEffCost = 0, effLabel = '';
+  const gardenSaved = gMissed * gardenDayPrice;
+  const engSaved = eCanceled * engLessonPrice;
+
   if (analFilter === 'garden') {
-    showPaid = gardenPaid; showDebt = gardenDebt; showSaved = gardenTotalMissed * gardenDayPrice;
-    showEffCost = gardenEffCost; effLabel = 'за 1 визит сада';
+    showPaid = gardenPaid; showDebt = gardenDebt; showSaved = gardenSaved;
+    showEffCost = globalGardenEffCost; effLabel = 'за 1 визит сада (ист.)';
   } else if (analFilter === 'english') {
-    showPaid = engPaid; showDebt = engDebt; showSaved = engTotalCanceled * engLessonPrice;
-    showEffCost = engEffCost; effLabel = 'за 1 урок англ.';
+    showPaid = engPaid; showDebt = engDebt; showSaved = engSaved;
+    showEffCost = globalEngEffCost; effLabel = 'за 1 урок англ. (ист.)';
   } else {
     showPaid = gardenPaid + engPaid; showDebt = gardenDebt + engDebt; 
-    showSaved = (gardenTotalMissed * gardenDayPrice) + (engTotalCanceled * engLessonPrice);
-    const combinedTotalVisits = gardenTotalAttended + engTotalAttended;
-    showEffCost = combinedTotalVisits > 0 ? Math.round((gardenPaid + engPaid) / combinedTotalVisits) : 0;
+    showSaved = gardenSaved + engSaved;
+    const combinedTotalVisits = totalGAttended + totalEAttended;
+    showEffCost = combinedTotalVisits > 0 ? Math.round((totalGPaid + totalEPaid) / combinedTotalVisits) : 0;
     effLabel = 'средняя за любой визит';
   }
 
-  // --- UI ЭЛЕМЕНТЫ ---
-  const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
-  const monthLabel = `${monthNames[analMonth]} ${analYear}`;
-  const mTotal = mAttended + mMissed;
-  const mRate = mTotal > 0 ? Math.round((mAttended / mTotal) * 100) : 0;
+  // Данные для кольцевого графика (с учетом фильтра направления)
+  let ringAttended = analFilter === 'english' ? eAttended : (analFilter === 'garden' ? gAttended : gAttended + eAttended);
+  let ringMissed = analFilter === 'english' ? eCanceled : (analFilter === 'garden' ? gMissed : gMissed + eCanceled);
+  let ringHoliday = analFilter === 'english' ? 0 : gHoliday;
 
-  // Генерация Bento-дашборда
-  container.innerHTML = `
-    <!-- Панель управления -->
-    <div class="flex flex-col sm:flex-row justify-between items-center bg-white p-2 sm:p-3 rounded-2xl border border-slate-200/60 shadow-sm mb-4 gap-3">
-      <div class="flex items-center gap-1 bg-slate-100/50 p-1 rounded-xl border border-slate-200/50 w-full sm:w-auto justify-between">
-        <button onclick="changeAnalyticMonth(-1)" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm rounded-lg transition-all">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
-        </button>
-        <span class="text-sm font-black text-slate-700 min-w-[120px] text-center">${monthLabel}</span>
-        <button onclick="changeAnalyticMonth(1)" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm rounded-lg transition-all">
-           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
-        </button>
+  const rTotal = ringAttended + ringMissed;
+  const rRate = rTotal > 0 ? Math.round((ringAttended / rTotal) * 100) : 0;
+
+  // --- 5. ГЕНЕРАЦИЯ UI УПРАВЛЕНИЯ ПЕРИОДОМ ---
+  const btnBase = "flex-1 px-1 sm:px-3 py-1.5 text-center transition-colors rounded-lg cursor-pointer font-bold leading-tight";
+  const btnAct = `${btnBase} bg-white text-indigo-700 shadow-sm`;
+  const btnInact = `${btnBase} text-slate-500 hover:text-slate-800 hover:bg-slate-200/50`;
+
+  let dateControlsHtml = '';
+  if (analPeriodType === 'month') {
+    dateControlsHtml = `
+      <button onclick="changeAnalyticMonth(-1)" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm rounded-lg transition-all">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+      </button>
+      <span class="text-sm font-black text-slate-700 min-w-[120px] text-center">${periodLabel}</span>
+      <button onclick="changeAnalyticMonth(1)" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm rounded-lg transition-all">
+         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+      </button>
+    `;
+  } else if (analPeriodType === 'year') {
+    dateControlsHtml = `
+      <button onclick="changeAnalyticYear(-1)" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm rounded-lg transition-all">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+      </button>
+      <span class="text-sm font-black text-slate-700 min-w-[120px] text-center">${periodLabel}</span>
+      <button onclick="changeAnalyticYear(1)" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm rounded-lg transition-all">
+         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+      </button>
+    `;
+  } else if (analPeriodType === 'custom') {
+    dateControlsHtml = `
+      <div class="flex items-center gap-1.5 w-full px-1">
+        <input type="date" value="${analCustomStart}" onchange="changeAnalyticCustomDates(this.value, null)" class="text-xs font-bold bg-white border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500 w-full text-slate-700">
+        <span class="text-slate-400 font-bold">—</span>
+        <input type="date" value="${analCustomEnd}" onchange="changeAnalyticCustomDates(null, this.value)" class="text-xs font-bold bg-white border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500 w-full text-slate-700">
       </div>
-      <select onchange="changeAnalyticFilter(this.value)" class="w-full sm:w-auto bg-slate-50 border border-slate-200/60 text-slate-700 text-xs font-bold rounded-xl px-4 py-2.5 outline-none cursor-pointer hover:bg-slate-100 transition-colors">
-        <option value="all" ${analFilter === 'all' ? 'selected' : ''}>📊 Все направления</option>
-        <option value="garden" ${analFilter === 'garden' ? 'selected' : ''}>🐝 Только Сад</option>
-        <option value="english" ${analFilter === 'english' ? 'selected' : ''}>🎓 Только Английский</option>
-      </select>
+    `;
+  } else {
+    dateControlsHtml = `<span class="text-sm font-black text-slate-700 text-center w-full block px-2">Полная выгрузка за всё время</span>`;
+  }
+
+  // --- 6. ВЫВОД ДАШБОРДА ---
+  container.innerHTML = `
+    <!-- Новая панель управления -->
+    <div class="flex flex-col gap-3 bg-white p-2 sm:p-3 rounded-2xl border border-slate-200/60 shadow-sm mb-4">
+      
+      <!-- Верхний ряд: Направление и Тип периода -->
+      <div class="flex flex-col lg:flex-row justify-between items-stretch gap-3">
+        <select onchange="changeAnalyticFilter(this.value)" class="bg-slate-50 border border-slate-200/60 text-slate-700 text-xs font-bold rounded-xl px-4 py-2 outline-none cursor-pointer hover:bg-slate-100 transition-colors w-full lg:w-auto">
+          <option value="all" ${analFilter === 'all' ? 'selected' : ''}>📊 Все направления</option>
+          <option value="garden" ${analFilter === 'garden' ? 'selected' : ''}>🐝 Только Сад</option>
+          <option value="english" ${analFilter === 'english' ? 'selected' : ''}>🎓 Только Английский</option>
+        </select>
+
+        <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-[10px] sm:text-xs">
+          <button onclick="changeAnalyticPeriodType('month')" class="${analPeriodType === 'month' ? btnAct : btnInact}">Месяц</button>
+          <button onclick="changeAnalyticPeriodType('year')" class="${analPeriodType === 'year' ? btnAct : btnInact}">Год</button>
+          <button onclick="changeAnalyticPeriodType('custom')" class="${analPeriodType === 'custom' ? btnAct : btnInact}">Период</button>
+          <button onclick="changeAnalyticPeriodType('all')" class="${analPeriodType === 'all' ? btnAct : btnInact}">Все время</button>
+        </div>
+      </div>
+
+      <!-- Нижний ряд: Конкретные даты -->
+      <div class="flex items-center gap-1 bg-slate-100/50 p-1.5 rounded-xl border border-slate-200/50 justify-between w-full lg:w-2/3 lg:mx-auto min-h-[44px]">
+        ${dateControlsHtml}
+      </div>
     </div>
 
     <!-- Bento Grid (Стеклянные плитки) -->
@@ -885,19 +988,19 @@ function renderAnalytics(subStats, engStats, dayMap) {
       <!-- Главная плитка (Градиент) -->
       <div class="col-span-2 md:col-span-2 bg-gradient-to-br from-indigo-500 to-purple-600 p-5 rounded-3xl shadow-md text-white flex flex-col justify-between relative overflow-hidden group transition-all hover:shadow-lg">
         <div class="relative z-10">
-          <span class="text-[10px] font-bold text-indigo-100 uppercase tracking-wider block mb-1">Всего оплачено</span>
+          <span class="text-[10px] font-bold text-indigo-100 uppercase tracking-wider block mb-1">Оплачено за период</span>
           <span class="text-3xl sm:text-4xl font-black block">${showPaid.toLocaleString('ru-RU')} ₽</span>
         </div>
         <svg class="absolute -bottom-6 -right-6 w-40 h-40 text-white opacity-10 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
       </div>
 
       <div class="bg-white/80 backdrop-blur-xl p-4 rounded-3xl border border-slate-200/50 shadow-sm flex flex-col transition-all hover:-translate-y-1 hover:shadow-md">
-        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Долг (не оплачено)</span>
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Долг (по стартам)</span>
         <span class="text-2xl font-black ${showDebt > 0 ? 'text-rose-600' : 'text-slate-800'} block">${showDebt.toLocaleString('ru-RU')} ₽</span>
       </div>
 
       <div class="bg-emerald-50/50 backdrop-blur-xl p-4 rounded-3xl border border-emerald-100 shadow-sm flex flex-col transition-all hover:-translate-y-1 hover:shadow-md">
-        <span class="text-[10px] font-bold text-emerald-600/80 uppercase tracking-wider block mb-1">Сэкономлено</span>
+        <span class="text-[10px] font-bold text-emerald-600/80 uppercase tracking-wider block mb-1">Сэкономлено в окне</span>
         <span class="text-2xl font-black text-emerald-700 block">+${showSaved.toLocaleString('ru-RU')} ₽</span>
       </div>
 
@@ -921,32 +1024,32 @@ function renderAnalytics(subStats, engStats, dayMap) {
 
       <!-- Кольцевая статистика месяца (Крупная плитка) -->
       <div class="col-span-2 bg-white/80 backdrop-blur-xl p-5 rounded-3xl border border-slate-200/50 shadow-sm flex flex-col transition-all hover:-translate-y-1 hover:shadow-md">
-         <h3 class="text-xs font-extrabold text-slate-800 mb-3 uppercase tracking-wide">Статистика за ${monthLabel.split(' ')[0]}</h3>
+         <h3 class="text-xs font-extrabold text-slate-800 mb-3 uppercase tracking-wide">Статистика: ${periodLabel}</h3>
          <div class="flex items-center gap-5">
            <!-- Кольцевой график (SVG) -->
            <div class="relative w-16 h-16 flex-shrink-0">
              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                <path class="text-slate-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="100, 100" />
-               <path class="${mRate >= 75 ? 'text-emerald-500' : (mRate >= 50 ? 'text-amber-500' : 'text-rose-500')} drop-shadow-sm transition-all duration-1000 ease-out" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="${mRate}, 100" />
+               <path class="${rRate >= 75 ? 'text-emerald-500' : (rRate >= 50 ? 'text-amber-500' : 'text-rose-500')} drop-shadow-sm transition-all duration-1000 ease-out" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="${rRate}, 100" />
              </svg>
              <div class="absolute inset-0 flex items-center justify-center">
-               <span class="text-sm font-black text-slate-700">${mRate}%</span>
+               <span class="text-sm font-black text-slate-700">${rRate}%</span>
              </div>
            </div>
            
-           <!-- Цифры месяца -->
+           <!-- Цифры -->
            <div class="flex-1 space-y-1.5">
               <div class="flex justify-between items-center text-xs">
                 <span class="text-slate-500 font-medium flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Отхожено</span> 
-                <span class="font-black text-slate-800">${mAttended}</span>
+                <span class="font-black text-slate-800">${ringAttended}</span>
               </div>
               <div class="flex justify-between items-center text-xs">
                 <span class="text-slate-500 font-medium flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span>Пропусков</span> 
-                <span class="font-black text-slate-800">${mMissed}</span>
+                <span class="font-black text-slate-800">${ringMissed}</span>
               </div>
               <div class="flex justify-between items-center text-xs">
                 <span class="text-slate-500 font-medium flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-slate-300"></span>Выходных</span> 
-                <span class="font-black text-slate-800">${mHoliday}</span>
+                <span class="font-black text-slate-800">${ringHoliday}</span>
               </div>
            </div>
          </div>
