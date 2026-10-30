@@ -1,3 +1,5 @@
+importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
+
 const CACHE_NAME = 'uley-pwa-v6';
 const ASSETS = ['./', './index.html', './app.js', './manifest.json', './icon.jpg'];
 
