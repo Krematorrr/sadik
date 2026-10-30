@@ -66,6 +66,10 @@
             🎓 Английский (8 ур.)
             <span id="engTabCounter" class="px-1.5 py-0.2 text-[10px] rounded-full bg-indigo-100 text-indigo-800 font-black">0/8</span>
           </button>
+          <!-- НОВАЯ КНОПКА АНАЛИТИКИ -->
+          <button id="tabBtnAnalytics" onclick="switchMainTab('analytics')" class="flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900">
+            📊 Аналитика
+          </button>
         </div>
       </div>
 
@@ -215,7 +219,15 @@
 
       <div id="englishSubscriptionsContainer" class="space-y-5"></div>
     </div>
-
+    
+    <!-- =================================================================== -->
+    <!-- ВКЛАДКА 3: АНАЛИТИКА И ФИНАНСЫ                                      -->
+    <!-- =================================================================== -->
+    <div id="analyticsSection" class="hidden space-y-4 pb-10">
+      <div id="analyticsContainer" class="space-y-4">
+        <!-- Сюда скрипт сгенерирует карточки статистики -->
+      </div>
+    </div>
   </div>
 
   <!-- МОДАЛЬНОЕ ОКНО: АРХИВ СКРЫТЫХ ПЕРИОДОВ САДА -->

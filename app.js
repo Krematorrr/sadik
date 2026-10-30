@@ -290,24 +290,39 @@ async function saveState(skipCloudPush = false) {
   render();
 }
 
-function switchMainTab(tab) {
+funcfunction switchMainTab(tab) {
   activeMainTab = tab;
   const gardenSec = document.getElementById('gardenSection');
   const engSec = document.getElementById('englishSection');
+  const analSec = document.getElementById('analyticsSection'); // Новый блок
+
   const btnGarden = document.getElementById('tabBtnGarden');
   const btnEng = document.getElementById('tabBtnEnglish');
+  const btnAnal = document.getElementById('tabBtnAnalytics'); // Новая кнопка
+
+  const activeClass = 'flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 bg-white text-indigo-700 shadow-sm';
+  const inactiveClass = 'flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900';
+
+  gardenSec.classList.add('hidden');
+  engSec.classList.add('hidden');
+  analSec.classList.add('hidden');
+
+  btnGarden.className = inactiveClass;
+  btnEng.className = inactiveClass;
+  btnAnal.className = inactiveClass;
 
   if (tab === 'garden') {
     gardenSec.classList.remove('hidden');
-    engSec.classList.add('hidden');
-    btnGarden.className = 'flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 bg-white text-indigo-700 shadow-sm';
-    btnEng.className = 'flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900';
-  } else {
-    gardenSec.classList.add('hidden');
+    btnGarden.className = activeClass;
+  } else if (tab === 'english') {
     engSec.classList.remove('hidden');
-    btnEng.className = 'flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 bg-white text-indigo-700 shadow-sm';
-    btnGarden.className = 'flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900';
+    btnEng.className = activeClass;
+  } else if (tab === 'analytics') {
+    analSec.classList.remove('hidden');
+    btnAnal.className = activeClass;
   }
+  
+  // Принудительно вызываем рендер при переключении
   render();
 }
 
@@ -740,6 +755,160 @@ function checkEnglishNotifications(engStats) {
       }
     }
   }
+}
+
+// =========================================================================
+// 4.1 ЛОГИКА РАЗДЕЛА «АНАЛИТИКА»
+// =========================================================================
+
+function renderAnalytics(subStats, engStats, dayMap) {
+  const container = document.getElementById('analyticsContainer');
+  if (!container) return;
+
+  // --- 1. ФИНАНСЫ ---
+  const gardenPaidTotal = subStats.filter(s => s.isPaid).reduce((sum, s) => sum + s.price, 0);
+  const gardenDebtTotal = subStats.filter(s => !s.isPaid).reduce((sum, s) => sum + s.price, 0);
+  const gardenTotalMissed = subStats.reduce((sum, s) => sum + s.missedCount, 0);
+  
+  // Стоимость 1 дня сада (цена абонемента / 20 дней)
+  const gardenDayPrice = Math.round(state.defaultPrice / state.daysPerSub);
+  const gardenSavedMoney = gardenTotalMissed * gardenDayPrice;
+
+  const engPaidTotal = engStats.reduce((sum, s) => sum + s.paidAmount, 0);
+  const engDebtTotal = engStats.reduce((sum, s) => sum + s.remainingToPay, 0);
+  const engCanceledTotal = engStats.reduce((sum, s) => sum + s.canceledCount, 0);
+  
+  // Стоимость 1 урока англ
+  const engLessonPrice = engStats[0]?.unitPrice || 700;
+  const engSavedMoney = engCanceledTotal * engLessonPrice;
+
+  const combinedPaid = gardenPaidTotal + engPaidTotal;
+  const combinedDebt = gardenDebtTotal + engDebtTotal;
+  const combinedSaved = gardenSavedMoney + engSavedMoney;
+
+  // --- 2. ПОСЕЩАЕМОСТЬ САДА ПО МЕСЯЦАМ ---
+  const monthsData = {};
+  Object.keys(dayMap).forEach(iso => {
+    const item = dayMap[iso];
+    if (iso > state.simulatedToday || iso < state.startDate) return;
+
+    const monthKey = iso.slice(0, 7); // формат YYYY-MM
+    if (!monthsData[monthKey]) {
+      monthsData[monthKey] = { attended: 0, missed: 0, holiday: 0 };
+    }
+
+    if (item.status === 'attended' && item.isCompletedVisit) {
+      monthsData[monthKey].attended++;
+    } else if (item.status === 'missed') {
+      monthsData[monthKey].missed++;
+    } else if (item.status === 'holiday') {
+      monthsData[monthKey].holiday++;
+    }
+  });
+
+  const monthNames = {
+    '01': 'Январь', '02': 'Февраль', '03': 'Март', '04': 'Апрель',
+    '05': 'Май', '06': 'Июнь', '07': 'Июль', '08': 'Август',
+    '09': 'Сентябрь', '10': 'Октябрь', '11': 'Ноябрь', '12': 'Декабрь'
+  };
+
+  const monthlyHtml = Object.keys(monthsData).sort().reverse().map(mKey => {
+    const d = monthsData[mKey];
+    const [year, month] = mKey.split('-');
+    const totalWorkdays = d.attended + d.missed;
+    const rate = totalWorkdays > 0 ? Math.round((d.attended / totalWorkdays) * 100) : 100;
+    const color = rate >= 85 ? 'bg-emerald-500' : (rate >= 65 ? 'bg-amber-500' : 'bg-rose-500');
+    const textColor = rate >= 85 ? 'text-emerald-700' : (rate >= 65 ? 'text-amber-700' : 'text-rose-700');
+
+    return `
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+        <div class="flex justify-between items-center text-xs">
+          <span class="font-extrabold text-slate-800">${monthNames[month]} ${year}</span>
+          <span class="font-black ${textColor}">${rate}%</span>
+        </div>
+        <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+          <div class="${color} h-2 rounded-full" style="width: ${rate}%"></div>
+        </div>
+        <div class="flex justify-between text-[10px] text-slate-500 font-medium">
+          <span>✓ ${d.attended} дн.</span>
+          <span>Пропуски: ${d.missed}</span>
+          <span>Вых: ${d.holiday}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // --- 3. СТАТИСТИКА ПО ДНЯМ НЕДЕЛИ (Пн-Пт) ---
+  const weekdayStats = [
+    { name: 'Пн', attended: 0, missed: 0 },
+    { name: 'Вт', attended: 0, missed: 0 },
+    { name: 'Ср', attended: 0, missed: 0 },
+    { name: 'Чт', attended: 0, missed: 0 },
+    { name: 'Пт', attended: 0, missed: 0 }
+  ];
+
+  Object.keys(dayMap).forEach(iso => {
+    const item = dayMap[iso];
+    if (iso > state.simulatedToday || iso < state.startDate) return;
+    const dayIdx = new Date(iso + 'T00:00:00').getDay();
+    if (dayIdx >= 1 && dayIdx <= 5) {
+      if (item.status === 'attended' && item.isCompletedVisit) weekdayStats[dayIdx - 1].attended++;
+      if (item.status === 'missed') weekdayStats[dayIdx - 1].missed++;
+    }
+  });
+
+  const weekdayHtml = weekdayStats.map(w => {
+    const total = w.attended + w.missed;
+    const rate = total > 0 ? Math.round((w.attended / total) * 100) : 0;
+    return `
+      <div class="bg-white p-2 rounded-xl border border-slate-200 text-center space-y-1">
+        <span class="text-xs font-extrabold text-slate-700 block">${w.name}</span>
+        <span class="text-sm font-black ${rate < 50 && total > 0 ? 'text-rose-600' : 'text-slate-900'} block">${total > 0 ? rate + '%' : '-'}</span>
+        <span class="text-[9px] text-slate-400 block">${w.attended} / ${w.missed}</span>
+      </div>
+    `;
+  }).join('');
+
+  // --- 4. СБОРКА И ВЫВОД НА ЭКРАН ---
+  container.innerHTML = `
+    <!-- Финансовые виджеты -->
+    <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
+      <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Всего оплачено</span>
+        <span class="text-xl sm:text-2xl font-black text-slate-900 block">${combinedPaid.toLocaleString('ru-RU')} ₽</span>
+        <span class="text-[10px] text-slate-500 mt-1 block">Сад: ${gardenPaidTotal} ₽ • Англ: ${engPaidTotal} ₽</span>
+      </div>
+
+      <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Текущий долг</span>
+        <span class="text-xl sm:text-2xl font-black ${combinedDebt > 0 ? 'text-rose-600' : 'text-emerald-600'} block">
+          ${combinedDebt.toLocaleString('ru-RU')} ₽
+        </span>
+        <span class="text-[10px] text-slate-500 mt-1 block">Сад: ${gardenDebtTotal} ₽ • Англ: ${engDebtTotal} ₽</span>
+      </div>
+
+      <div class="bg-white p-4 rounded-2xl shadow-sm border border-emerald-200 bg-emerald-50/30 col-span-2 lg:col-span-1">
+        <span class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block mb-1">Сохранено переносами</span>
+        <span class="text-xl sm:text-2xl font-black text-emerald-700 block">+${combinedSaved.toLocaleString('ru-RU')} ₽</span>
+        <span class="text-[10px] text-emerald-600/80 mt-1 block">${gardenTotalMissed} дн. сада + ${engCanceledTotal} зан. англ.</span>
+      </div>
+    </div>
+
+    <!-- Графики -->
+    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+      <h3 class="text-sm font-extrabold text-slate-900">🗓 Посещаемость по дням недели (Сад)</h3>
+      <div class="grid grid-cols-5 gap-2">
+        ${weekdayHtml}
+      </div>
+    </div>
+
+    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+      <h3 class="text-sm font-extrabold text-slate-900">📈 Динамика по месяцам (Сад)</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        ${monthlyHtml || '<p class="text-xs text-slate-400">Нет данных.</p>'}
+      </div>
+    </div>
+  `;
 }
 
 // =========================================================================
@@ -1871,6 +2040,8 @@ function render() {
     curM++;
     if (curM > 11) { curM = 0; curY++; }
   }
+
+  renderAnalytics(subStats, engStats, dayMap);
 }
 
 // Запуск при загрузке
