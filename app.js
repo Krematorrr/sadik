@@ -918,68 +918,68 @@ function renderAnalytics(subStats, engStats, dayMap) {
   const rRate = rTotal > 0 ? Math.round((ringAttended / rTotal) * 100) : 0;
 
   // --- 5. ГЕНЕРАЦИЯ UI УПРАВЛЕНИЯ ПЕРИОДОМ ---
-  const btnBase = "flex-1 px-1 sm:px-3 py-1.5 text-center transition-colors rounded-lg cursor-pointer font-bold leading-tight";
+  const btnBase = "flex-1 lg:flex-none px-2 sm:px-3 py-1 text-center transition-colors rounded-md cursor-pointer font-bold";
   const btnAct = `${btnBase} bg-white text-indigo-700 shadow-sm`;
   const btnInact = `${btnBase} text-slate-500 hover:text-slate-800 hover:bg-slate-200/50`;
 
   let dateControlsHtml = '';
   if (analPeriodType === 'month') {
     dateControlsHtml = `
-      <button onclick="changeAnalyticMonth(-1)" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm rounded-lg transition-all">
+      <button onclick="changeAnalyticMonth(-1)" class="p-1 text-slate-400 hover:text-slate-800 hover:bg-slate-200 rounded transition-all">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
       </button>
-      <span class="text-sm font-black text-slate-700 min-w-[120px] text-center">${periodLabel}</span>
-      <button onclick="changeAnalyticMonth(1)" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm rounded-lg transition-all">
+      <span class="text-xs font-black text-slate-700 min-w-[90px] text-center">${periodLabel}</span>
+      <button onclick="changeAnalyticMonth(1)" class="p-1 text-slate-400 hover:text-slate-800 hover:bg-slate-200 rounded transition-all">
          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
       </button>
     `;
   } else if (analPeriodType === 'year') {
     dateControlsHtml = `
-      <button onclick="changeAnalyticYear(-1)" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm rounded-lg transition-all">
+      <button onclick="changeAnalyticYear(-1)" class="p-1 text-slate-400 hover:text-slate-800 hover:bg-slate-200 rounded transition-all">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
       </button>
-      <span class="text-sm font-black text-slate-700 min-w-[120px] text-center">${periodLabel}</span>
-      <button onclick="changeAnalyticYear(1)" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm rounded-lg transition-all">
+      <span class="text-xs font-black text-slate-700 min-w-[90px] text-center">${periodLabel}</span>
+      <button onclick="changeAnalyticYear(1)" class="p-1 text-slate-400 hover:text-slate-800 hover:bg-slate-200 rounded transition-all">
          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
       </button>
     `;
   } else if (analPeriodType === 'custom') {
     dateControlsHtml = `
-      <div class="flex items-center gap-1.5 w-full px-1">
-        <input type="date" value="${analCustomStart}" onchange="changeAnalyticCustomDates(this.value, null)" class="text-xs font-bold bg-white border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500 w-full text-slate-700">
-        <span class="text-slate-400 font-bold">—</span>
-        <input type="date" value="${analCustomEnd}" onchange="changeAnalyticCustomDates(null, this.value)" class="text-xs font-bold bg-white border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500 w-full text-slate-700">
+      <div class="flex items-center gap-1 w-full px-1">
+        <input type="date" value="${analCustomStart}" onchange="changeAnalyticCustomDates(this.value, null)" class="text-[11px] font-bold bg-transparent border-none p-0 focus:ring-0 w-full text-slate-700 cursor-pointer text-center">
+        <span class="text-slate-300 font-bold">—</span>
+        <input type="date" value="${analCustomEnd}" onchange="changeAnalyticCustomDates(null, this.value)" class="text-[11px] font-bold bg-transparent border-none p-0 focus:ring-0 w-full text-slate-700 cursor-pointer text-center">
       </div>
     `;
   } else {
-    dateControlsHtml = `<span class="text-sm font-black text-slate-700 text-center w-full block px-2">Полная выгрузка за всё время</span>`;
+    dateControlsHtml = `<span class="text-xs font-black text-slate-500 text-center w-full block px-2">За всё время</span>`;
   }
 
   // --- 6. ВЫВОД ДАШБОРДА ---
   container.innerHTML = `
-    <!-- Новая панель управления -->
-    <div class="flex flex-col gap-3 bg-white p-2 sm:p-3 rounded-2xl border border-slate-200/60 shadow-sm mb-4">
+    <!-- Компактная панель управления (В одну строку на ПК) -->
+    <div class="flex flex-col lg:flex-row items-center justify-between gap-2 sm:gap-3 bg-white p-2.5 rounded-2xl border border-slate-200 shadow-sm mb-4">
       
-      <!-- Верхний ряд: Направление и Тип периода -->
-      <div class="flex flex-col lg:flex-row justify-between items-stretch gap-3">
-        <select onchange="changeAnalyticFilter(this.value)" class="bg-slate-50 border border-slate-200/60 text-slate-700 text-xs font-bold rounded-xl px-4 py-2 outline-none cursor-pointer hover:bg-slate-100 transition-colors w-full lg:w-auto">
-          <option value="all" ${analFilter === 'all' ? 'selected' : ''}>📊 Все направления</option>
-          <option value="garden" ${analFilter === 'garden' ? 'selected' : ''}>🐝 Только Сад</option>
-          <option value="english" ${analFilter === 'english' ? 'selected' : ''}>🎓 Только Английский</option>
-        </select>
+      <!-- Левый блок: Направление -->
+      <select onchange="changeAnalyticFilter(this.value)" class="w-full lg:w-auto bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-bold rounded-xl px-3 py-1.5 outline-none cursor-pointer hover:bg-slate-100 transition-colors">
+        <option value="all" ${analFilter === 'all' ? 'selected' : ''}>📊 Все направления</option>
+        <option value="garden" ${analFilter === 'garden' ? 'selected' : ''}>🐝 Только Сад</option>
+        <option value="english" ${analFilter === 'english' ? 'selected' : ''}>🎓 Только Английский</option>
+      </select>
 
-        <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-[10px] sm:text-xs">
-          <button onclick="changeAnalyticPeriodType('month')" class="${analPeriodType === 'month' ? btnAct : btnInact}">Месяц</button>
-          <button onclick="changeAnalyticPeriodType('year')" class="${analPeriodType === 'year' ? btnAct : btnInact}">Год</button>
-          <button onclick="changeAnalyticPeriodType('custom')" class="${analPeriodType === 'custom' ? btnAct : btnInact}">Период</button>
-          <button onclick="changeAnalyticPeriodType('all')" class="${analPeriodType === 'all' ? btnAct : btnInact}">Все время</button>
-        </div>
-      </div>
-
-      <!-- Нижний ряд: Конкретные даты -->
-      <div class="flex items-center gap-1 bg-slate-100/50 p-1.5 rounded-xl border border-slate-200/50 justify-between w-full lg:w-2/3 lg:mx-auto min-h-[44px]">
+      <!-- Центральный блок: Контрол дат -->
+      <div class="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-xl border border-slate-200 w-full lg:w-auto justify-center min-h-[34px]">
         ${dateControlsHtml}
       </div>
+
+      <!-- Правый блок: Табы выбора периода -->
+      <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-[10px] w-full lg:w-auto">
+        <button onclick="changeAnalyticPeriodType('month')" class="${analPeriodType === 'month' ? btnAct : btnInact}">Месяц</button>
+        <button onclick="changeAnalyticPeriodType('year')" class="${analPeriodType === 'year' ? btnAct : btnInact}">Год</button>
+        <button onclick="changeAnalyticPeriodType('custom')" class="${analPeriodType === 'custom' ? btnAct : btnInact}">Период</button>
+        <button onclick="changeAnalyticPeriodType('all')" class="${analPeriodType === 'all' ? btnAct : btnInact}">Всё время</button>
+      </div>
+      
     </div>
 
     <!-- Bento Grid (Стеклянные плитки) -->

@@ -66,7 +66,6 @@
             🎓 Английский (8 ур.)
             <span id="engTabCounter" class="px-1.5 py-0.2 text-[10px] rounded-full bg-indigo-100 text-indigo-800 font-black">0/8</span>
           </button>
-          <!-- НОВАЯ КНОПКА АНАЛИТИКИ -->
           <button id="tabBtnAnalytics" onclick="switchMainTab('analytics')" class="flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900">
             📊 Аналитика
           </button>
@@ -107,45 +106,45 @@
 
     <!-- ВКЛАДКА 1: ОСНОВНОЙ ДЕТСКИЙ САД -->
     <div id="gardenSection" class="space-y-4">
-      <div class="bg-white p-3.5 sm:p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-3">
-        <div class="flex flex-wrap items-center gap-2.5 sm:gap-3">
-          <div class="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
-            <span class="text-xs text-slate-500 font-semibold">Цена (20 дн.):</span>
-            <input type="number" id="basePriceInput" value="28800" step="100"
-                   class="w-20 px-1.5 py-0.5 text-xs sm:text-sm font-extrabold bg-white border border-slate-300 rounded"
-                   onchange="updateBasePrice(this.value)">
-            <span class="text-xs font-bold text-slate-600">₽</span>
-            <span class="text-[11px] text-indigo-600 font-bold ml-1">(<span id="pricePerDayDisplay">1 440 ₽</span>/дн.)</span>
+      
+      <!-- ===================================================================== -->
+      <!-- ИЗМЕНЕНИЕ: ВЕСЬ ЭТОТ БЛОК БЫЛ ЗАМЕНЕН НА КОМПАКТНУЮ ПАНЕЛЬ            -->
+      <!-- ===================================================================== -->
+      <div class="flex flex-col xl:flex-row items-center justify-between gap-3 bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200 shadow-sm">
+        
+        <!-- Левый блок: Цена и Настройки -->
+        <div class="flex flex-wrap items-center justify-center xl:justify-start gap-2 w-full xl:w-auto">
+          
+          <div class="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-200">
+            <span class="text-[11px] font-medium text-slate-500">Цена:</span>
+            <input type="number" id="basePriceInput" onchange="updateBasePrice(this.value)" class="w-14 font-black text-xs text-slate-900 bg-transparent border-none p-0 focus:ring-0 text-right">
+            <span class="text-[11px] font-bold text-slate-900">₽ <span class="text-slate-400 font-medium">(<span id="pricePerDayDisplay"></span>/дн.)</span></span>
           </div>
-
-          <label class="flex items-center gap-1.5 text-xs font-bold text-indigo-900 bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-200 cursor-pointer select-none">
-            <input type="checkbox" id="hidePastCheckbox" onchange="toggleHidePast(this.checked)" class="rounded text-indigo-600">
-            Авто-скрытие завершенных
+          
+          <label class="flex items-center gap-1.5 cursor-pointer text-[11px] font-bold text-slate-600 hover:text-indigo-600 transition bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-200">
+            <input type="checkbox" id="hidePastCheckbox" onchange="toggleHidePast(this.checked)" class="rounded text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 border-slate-300">
+            Авто-скрытие
           </label>
-
-          <button id="hiddenArchiveBtn" onclick="openHiddenModal()" class="hidden px-2.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow-sm transition">
-            📦 Скрытые (0)
+          
+          <button id="hiddenArchiveBtn" onclick="openHiddenModal()" class="hidden px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-[11px] font-bold rounded-xl shadow-sm transition">
+            📦 Скрытые
           </button>
         </div>
 
-        <!-- Контейнер для кнопок управления -->
-        <div class="flex items-center gap-2">
-  
-        <!-- Кнопка архива (компактная, размер текста и скругления как у основной) -->
-        <button onclick="addArchivePeriod('garden')" class="bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold py-2 px-4 rounded-lg border border-slate-200 transition flex items-center justify-center gap-2 text-sm shadow-sm">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          Прошедший период
-        </button>
-
-        <!-- Ваша основная синяя кнопка (остается без изменений) -->
-        <button onclick="addSubscription()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition shadow-sm whitespace-nowrap">
-          + Новый период сада (20 дн.)
-        </button>
-  
-</div>
+        <!-- Правый блок: Кнопки добавления -->
+        <div class="flex items-center gap-2 w-full xl:w-auto">
+          <button onclick="addArchivePeriod('garden')" class="flex-1 xl:flex-none px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] sm:text-xs font-bold rounded-xl border border-slate-200 transition flex items-center justify-center gap-1 shadow-sm">
+             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+             Прошлый период
+          </button>
+          <button onclick="addSubscription()" class="flex-1 xl:flex-none px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] sm:text-xs font-bold rounded-xl shadow-sm transition flex items-center justify-center gap-1">
+             + Новый период (20 дн.)
+          </button>
+        </div>
       </div>
+      <!-- ===================================================================== -->
+      <!-- КОНЕЦ ИЗМЕНЕНИЙ В ПАНЕЛИ САДА                                       -->
+      <!-- ===================================================================== -->
 
       <section id="subscriptionsContainer" class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4"></section>
 
@@ -355,7 +354,8 @@
       <div class="border border-indigo-200 rounded-xl p-3.5 space-y-2 bg-indigo-50/50">
         <div class="flex justify-between items-start gap-2">
           <div>
-            <h4 class="text-xs sm:text-sm font-bold text-indigo-950">1. Системные Push-уведомления на телефон / ПК</h4>
+             <h4 class="text-xs sm:text-sm font-bold text-indigo-950">Системные Push-уведомления на телефон / ПК
+</h4>
             <p class="text-[11px] text-slate-600 mt-0.5">Всплывают в верхней шторке смартфона или Windows со звуком и иконкой «Улей».</p>
           </div>
           <span id="pushPermissionBadge" class="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200 text-slate-700 shrink-0">Проверка...</span>
