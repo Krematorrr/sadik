@@ -251,6 +251,16 @@ function ensureDataIntegrity(targetState) {
   targetState.telegram.chatId = HARDCODED_TELEGRAM.chatId || targetState.telegram.chatId;
   if (!targetState.telegram.sentAlertsLog) targetState.telegram.sentAlertsLog = {};
 
+  // --- ИСПРАВЛЕНИЕ: Автоматическая очистка сломанных текстовых ID в базе ---
+  if (Array.isArray(targetState.subscriptions)) {
+    targetState.subscriptions.forEach(sub => {
+      if (typeof sub.id === 'string' && sub.id.startsWith('arch_')) {
+        sub.id = parseInt(sub.id.replace('arch_', ''), 10) || Date.now();
+      }
+    });
+  }
+  // -------------------------------------------------------------------------
+
   if (!targetState.english || !Array.isArray(targetState.english.subscriptions)) {
     targetState.english = JSON.parse(JSON.stringify(defaultEnglishData));
   } else {
@@ -1158,12 +1168,72 @@ function isSubCurrentlyHidden(sub) {
 
 function toggleDayStatus(isoDate) {
   const d = new Date(isoDate + 'T00:00:00');
-  if (d.getDay() === 0 || d.getDay() === 6) return;
+  if (d.getDay() === 0 || d.getDay() === 6) return; // Игнорируем выходные
+
+  // 1. Узнаем текущее расписание, чтобы понять, ГДЕ мы кликаем
+  const { subStats } = calculateSchedule();
+  // Находим текущий "активный" период (первый, который еще не ушел в прошлое)
+  const activeSub = subStats.find(s => !s.isPast);
+
+  // 2. Проверяем, кликнули ли мы по "архивному" периоду
+  // (день строго до начала текущего абонемента, либо все абонементы уже в прошлом)
+  let isArchiveToggle = false;
+  if (!activeSub) {
+    isArchiveToggle = true; 
+  } else if (isoDate < activeSub.startDate) {
+    isArchiveToggle = true; 
+  }
+
+  // 3. Переключаем статус дня
   const current = state.exceptions[isoDate] || 'attended';
-  if (current === 'attended') state.exceptions[isoDate] = 'missed';
-  else if (current === 'missed') state.exceptions[isoDate] = 'holiday';
+  let toStatus = 'attended';
+  
+  if (current === 'attended') toStatus = 'missed';
+  else if (current === 'missed') toStatus = 'holiday';
   else delete state.exceptions[isoDate];
+
+  if (toStatus !== 'attended') {
+    state.exceptions[isoDate] = toStatus;
+  }
+
+  // 4. --- ЛОГИКА АНТИ-СДВИГА ДЛЯ АРХИВОВ ---
+  if (isArchiveToggle) {
+    const wasConsuming = (current === 'missed' || current === 'holiday');
+    const willConsume = (toStatus === 'missed' || toStatus === 'holiday');
+
+    // Если добавили пропуск/выходной — растягиваем архив назад (-1 день от старта)
+    if (!wasConsuming && willConsume) {
+      state.startDate = shiftWorkingDays(state.startDate, -1);
+    } 
+    // Если убрали пропуск/выходной — сжимаем архив вперед (+1 день к старту)
+    else if (wasConsuming && !willConsume) {
+      state.startDate = shiftWorkingDays(state.startDate, 1);
+    }
+  }
+
   saveState();
+}
+
+// Вспомогательная функция для сдвига даты по рабочим дням
+function shiftWorkingDays(isoDate, offset) {
+  let d = new Date(isoDate + 'T00:00:00');
+  let steps = Math.abs(offset);
+  const dir = offset > 0 ? 1 : -1;
+  
+  while (steps > 0) {
+    d.setDate(d.getDate() + dir);
+    const day = d.getDay();
+    const iso = toISODate(d);
+    
+    const isWeekend = (day === 0 || day === 6);
+    const isHoliday = state.exceptions[iso] === 'holiday';
+    
+    // Считаем шаг только если это реальный рабочий день
+    if (!isWeekend && !isHoliday) {
+      steps--;
+    }
+  }
+  return toISODate(d);
 }
 
 function togglePaidStatus(subId, event) {
@@ -1197,7 +1267,9 @@ function restoreSingleSubscription(subId) {
 // Добавление прошедшего периода
 function addArchivePeriod(type) {
   if (type === 'garden') {
-    // 1. Откатываем глобальную дату старта на 20 рабочих дней назад
+    if (!state.subscriptions) state.subscriptions = [];
+
+    // Откатываем глобальную дату старта на 20 рабочих дней назад
     let curD = new Date(state.startDate + 'T00:00:00');
     let workdaysNeeded = state.daysPerSub || 20;
 
@@ -1217,8 +1289,10 @@ function addArchivePeriod(type) {
     // Устанавливаем новую дату старта трекера
     state.startDate = toISODate(curD);
 
-    // 2. Вставляем новый абонемент в НАЧАЛО массива (unshift)
-    const newId = 'arch_' + Date.now();
+    // ИСПРАВЛЕНИЕ: Используем безопасный числовой ID
+    const newId = Date.now(); 
+    
+    // Вставляем новый абонемент в НАЧАЛО массива (unshift)
     state.subscriptions.unshift({
       id: newId,
       price: state.defaultPrice || 28800,
