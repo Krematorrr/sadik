@@ -1194,67 +1194,41 @@ function restoreSingleSubscription(subId) {
   }
 }
 
-//Добавление прошедшего периода
+// Добавление прошедшего периода
 function addArchivePeriod(type) {
   if (type === 'garden') {
-    // Находим самую раннюю дату из существующих
-    let earliestDate = state.startDate;
-    if (state.subStats && state.subStats.length > 0) {
-      earliestDate = state.subStats.reduce((min, p) => p.startDate < min ? p.startDate : min, state.subStats[0].startDate);
+    // 1. Откатываем глобальную дату старта на 20 рабочих дней назад
+    let curD = new Date(state.startDate + 'T00:00:00');
+    let workdaysNeeded = state.daysPerSub || 20;
+
+    while (workdaysNeeded > 0) {
+      curD.setDate(curD.getDate() - 1);
+      const day = curD.getDay();
+      const iso = toISODate(curD);
+      const isWeekend = (day === 0 || day === 6);
+      const isHoliday = state.exceptions[iso] === 'holiday';
+
+      // Если это обычный рабочий день — засчитываем его
+      if (!isWeekend && !isHoliday) {
+        workdaysNeeded--;
+      }
     }
     
-    // Сдвигаем на месяц назад
-    let endD = new Date(earliestDate);
-    endD.setDate(endD.getDate() - 1);
-    let endIso = endD.toISOString().split('T')[0];
-    
-    let startD = new Date(endD);
-    startD.setDate(startD.getDate() - 30);
-    let startIso = startD.toISOString().split('T')[0];
+    // Устанавливаем новую дату старта трекера
+    state.startDate = toISODate(curD);
 
-    // Добавляем архивный абонемент
-    state.subStats.push({
-      id: 'arch_' + Date.now(),
-      startDate: startIso,
-      endDate: endIso,
-      price: state.defaultPrice || 14000,
-      isPaid: true, // По умолчанию считаем прошлые оплаченными
-      completedCount: 0,
-      missedCount: 0
+    // 2. Вставляем новый абонемент в НАЧАЛО массива (unshift)
+    const newId = 'arch_' + Date.now();
+    state.subscriptions.unshift({
+      id: newId,
+      price: state.defaultPrice || 28800,
+      isPaid: true, // По умолчанию прошлые периоды оплачены
+      hiddenManually: false,
+      forceShow: false
     });
-    
-    // Сортируем историю по возрастанию дат, чтобы архив ушел в начало
-    state.subStats.sort((a, b) => a.startDate.localeCompare(b.startDate));
-    
-    // Сдвигаем глобальную дату начала трекера, если архив старше
-    if (startIso < state.startDate) state.startDate = startIso;
 
   } else if (type === 'english') {
-    let earliestDate = state.startDate;
-    if (state.engStats && state.engStats.length > 0) {
-      earliestDate = state.engStats.reduce((min, p) => p.startDate < min ? p.startDate : min, state.engStats[0].startDate);
-    }
-    
-    let endD = new Date(earliestDate);
-    endD.setDate(endD.getDate() - 1);
-    let endIso = endD.toISOString().split('T')[0];
-    
-    let startD = new Date(endD);
-    startD.setDate(startD.getDate() - 30);
-    let startIso = startD.toISOString().split('T')[0];
-
-    state.engStats.push({
-      id: 'arch_eng_' + Date.now(),
-      startDate: startIso,
-      endDate: endIso,
-      unitPrice: 700,
-      paidAmount: 5600, // 8 * 700
-      remainingToPay: 0,
-      attendedCount: 0,
-      canceledCount: 0
-    });
-    
-    state.engStats.sort((a, b) => a.startDate.localeCompare(b.startDate));
+    alert('Архивы для английского языка пока не используются.');
   }
   
   saveState();
@@ -1966,7 +1940,10 @@ function render() {
   const calContainer = document.getElementById('calendarContainer');
   calContainer.innerHTML = '';
 
-  const startYear = 2026, startMonth = 9;
+  // Теперь календарь всегда будет начинаться с реальной даты старта трекера
+  const trackerStartD = new Date(state.startDate + 'T00:00:00');
+  const startYear = trackerStartD.getFullYear();
+  const startMonth = trackerStartD.getMonth();
   const endD = new Date(lastCalculatedDate + 'T00:00:00');
   const finalYear = Math.max(2026, endD.getFullYear());
   const finalMonth = (finalYear === 2026) ? Math.max(11, endD.getMonth()) : endD.getMonth();
