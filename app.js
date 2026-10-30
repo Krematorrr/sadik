@@ -290,7 +290,7 @@ async function saveState(skipCloudPush = false) {
   render();
 }
 
-funcfunction switchMainTab(tab) {
+function switchMainTab(tab) {
   activeMainTab = tab;
   const gardenSec = document.getElementById('gardenSection');
   const engSec = document.getElementById('englishSection');
