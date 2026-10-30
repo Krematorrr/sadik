@@ -19,27 +19,16 @@
     }
   </style>
   <!-- БЛОК ONESIGNAL -->
-  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+ <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
       appId: "a7b364be-0138-440a-92e8-a3e2852145a8",
-      serviceWorkerPath: "sadik/OneSignalSDKWorker.js",
-      serviceWorkerParam: { scope: "/sadik/" },
-      allowLocalhostAsSecureOrigin: true
+      serviceWorkerPath: "sw.js",
+      serviceWorkerParam: { scope: "/sadik/" }
     });
-
-    // Принудительно показываем всплывающее окно с запросом подписки
-    OneSignal.Slidedown.promptPush();
   });
-
-  // Функция для вызова окна по клику на кнопку в интерфейсе
-  function triggerOneSignalPrompt() {
-    if (window.OneSignal) {
-      window.OneSignal.Slidedown.promptPush();
-    }
-  }
 </script>
 </head>
 
