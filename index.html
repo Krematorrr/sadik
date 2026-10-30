@@ -26,7 +26,7 @@
   OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
       appId: "a7b364be-0138-440a-92e8-a3e2852145a8",
-      serviceWorkerPath: "sw.js",
+      serviceWorkerPath: "OneSignalSDKWorker.js",
       serviceWorkerParam: { scope: "/sadik/" },
       notifyButton: { enable: true }
     });
