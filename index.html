@@ -131,6 +131,11 @@
         <button onclick="addSubscription()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold rounded-xl shadow-sm transition">
           + Новый период сада (20 дн.)
         </button>
+
+        <button onclick="addArchivePeriod('garden')" class="w-full mt-2 bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold py-2 px-4 rounded-xl border border-slate-200 border-dashed transition flex items-center justify-center gap-2 text-xs">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              Добавить прошедший период
+        </button>
       </div>
 
       <section id="subscriptionsContainer" class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4"></section>
@@ -212,11 +217,6 @@
 
             <button onclick="addEnglishSubscription()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold rounded-xl shadow-sm transition">
               + Новый период
-            </button>
-
-            <button onclick="addArchivePeriod('garden')" class="w-full mt-2 bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold py-2 px-4 rounded-xl border border-slate-200 border-dashed transition flex items-center justify-center gap-2 text-xs">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-              Добавить прошедший период
             </button>
           </div>
         </div>
