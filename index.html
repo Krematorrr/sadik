@@ -132,13 +132,15 @@
         </div>
 
         <!-- Правый блок: Кнопки добавления -->
-        <div class="flex items-center gap-2 w-full xl:w-auto">
-          <button onclick="addArchivePeriod('garden')" class="flex-1 xl:flex-none px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] sm:text-xs font-bold rounded-xl border border-slate-200 transition flex items-center justify-center gap-1 shadow-sm">
-             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-             Прошлый период
+       <div class="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 w-full xl:w-auto">
+          <button onclick="openExtraExpensesModal()" class="px-2.5 sm:px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 text-[11px] sm:text-xs font-bold rounded-xl border border-amber-200 transition flex items-center gap-1 shadow-sm">
+             💸 Доп. расходы
           </button>
-          <button onclick="addSubscription()" class="flex-1 xl:flex-none px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] sm:text-xs font-bold rounded-xl shadow-sm transition flex items-center justify-center gap-1">
-             + Новый период (20 дн.)
+          <button onclick="addArchivePeriod('garden')" class="px-2.5 sm:px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] sm:text-xs font-bold rounded-xl border border-slate-200 transition flex items-center gap-1 shadow-sm">
+             ⏳ Архив
+          </button>
+          <button onclick="addSubscription()" class="px-2.5 sm:px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] sm:text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1">
+             + Новый (20 дн.)
           </button>
         </div>
       </div>
@@ -281,6 +283,30 @@
           👁 Показать все абонементы английского
         </button>
         <button onclick="closeEngHiddenModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg">
+          Закрыть
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО: ДОП. РАСХОДЫ -->
+  <div id="extraExpensesModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-3 z-50">
+    <div class="bg-white rounded-2xl max-w-xl w-full p-5 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] flex flex-col">
+      <div class="flex justify-between items-center shrink-0">
+        <div>
+          <h3 class="text-base sm:text-lg font-bold text-slate-900">💸 Дополнительные расходы</h3>
+          <p class="text-[11px] sm:text-xs text-slate-500">Театры, фотографы, коктейли и разовые сборы в саду.</p>
+        </div>
+        <button onclick="closeExtraExpensesModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+      </div>
+      
+      <div id="extraExpensesList" class="space-y-2.5 overflow-y-auto pr-1 flex-1 min-h-[100px] max-h-[50vh]"></div>
+      
+      <div class="flex justify-between items-center pt-3 border-t border-slate-100 shrink-0 gap-2">
+        <button onclick="addExtraExpense()" class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] sm:text-xs font-bold rounded-lg transition border border-indigo-200">
+          + Добавить запись
+        </button>
+        <button onclick="closeExtraExpensesModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg">
           Закрыть
         </button>
       </div>

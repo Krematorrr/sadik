@@ -271,6 +271,9 @@ function ensureDataIntegrity(targetState) {
   targetState.telegram.chatId = HARDCODED_TELEGRAM.chatId || targetState.telegram.chatId;
   if (!targetState.telegram.sentAlertsLog) targetState.telegram.sentAlertsLog = {};
 
+  // Инициализация массива доп. расходов
+  if (!Array.isArray(targetState.extraExpenses)) targetState.extraExpenses = [];
+
   // --- ИСПРАВЛЕНИЕ: Автоматическая очистка сломанных текстовых ID в базе ---
   if (Array.isArray(targetState.subscriptions)) {
     targetState.subscriptions.forEach(sub => {
@@ -336,6 +339,74 @@ async function saveState(skipCloudPush = false) {
     pushToCloud(true);
   }
   render();
+}
+
+// ==========================================
+// ЛОГИКА ДОПОЛНИТЕЛЬНЫХ РАСХОДОВ (САД)
+// ==========================================
+function openExtraExpensesModal() {
+  renderExtraExpensesList();
+  document.getElementById('extraExpensesModal').classList.remove('hidden');
+  document.getElementById('extraExpensesModal').classList.add('flex');
+}
+
+function closeExtraExpensesModal() {
+  document.getElementById('extraExpensesModal').classList.add('hidden');
+  document.getElementById('extraExpensesModal').classList.remove('flex');
+}
+
+function addExtraExpense() {
+  state.extraExpenses.push({
+    id: Date.now(),
+    date: state.simulatedToday,
+    amount: 0,
+    note: ''
+  });
+  state.extraExpenses.sort((a, b) => b.date.localeCompare(a.date)); // Сортируем (новые сверху)
+  saveState();
+  renderExtraExpensesList();
+}
+
+function updateExtraExpense(id, field, value) {
+  const exp = state.extraExpenses.find(e => e.id === id);
+  if (exp) {
+    if (field === 'amount') exp[field] = Number(value) || 0;
+    else exp[field] = value;
+    saveState();
+    
+    // Если поменяли дату — пересортировываем
+    if (field === 'date') {
+      state.extraExpenses.sort((a, b) => b.date.localeCompare(a.date));
+      renderExtraExpensesList();
+    }
+  }
+}
+
+function deleteExtraExpense(id) {
+  if (confirm('Удалить эту запись расходов?')) {
+    state.extraExpenses = state.extraExpenses.filter(e => e.id !== id);
+    saveState();
+    renderExtraExpensesList();
+  }
+}
+
+function renderExtraExpensesList() {
+  const container = document.getElementById('extraExpensesList');
+  if (!state.extraExpenses || state.extraExpenses.length === 0) {
+    container.innerHTML = `<div class="p-4 text-center text-xs text-slate-400 font-medium bg-slate-50 rounded-xl">Пока нет дополнительных расходов.</div>`;
+    return;
+  }
+  container.innerHTML = state.extraExpenses.map(exp => `
+    <div class="p-2.5 sm:p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row gap-2 sm:items-center">
+      <input type="date" value="${exp.date}" onchange="updateExtraExpense(${exp.id}, 'date', this.value)" class="text-[11px] sm:text-xs font-bold bg-white border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none shrink-0">
+      <input type="text" value="${exp.note}" placeholder="На что (театр, фото...)" onchange="updateExtraExpense(${exp.id}, 'note', this.value)" class="w-full text-xs font-medium bg-white border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none placeholder-slate-400">
+      <div class="flex items-center gap-1.5 shrink-0 justify-end">
+        <input type="number" value="${exp.amount}" step="50" onchange="updateExtraExpense(${exp.id}, 'amount', this.value)" class="w-20 text-xs font-black text-right bg-white border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none">
+        <span class="text-xs font-bold text-slate-500">₽</span>
+        <button onclick="deleteExtraExpense(${exp.id})" class="p-1.5 text-slate-300 hover:text-rose-600 transition">🗑</button>
+      </div>
+    </div>
+  `).join('');
 }
 
 function switchMainTab(tab) {
@@ -842,6 +913,10 @@ function renderAnalytics(subStats, engStats, dayMap) {
   const gardenPaid = filteredSubs.filter(s => s.isPaid).reduce((sum, s) => sum + s.price, 0);
   const gardenDebt = filteredSubs.filter(s => !s.isPaid).reduce((sum, s) => sum + s.price, 0);
 
+  // Считаем доп. расходы в рамках дат
+  const filteredExtra = (state.extraExpenses || []).filter(e => e.date >= dateStart && e.date <= dateEnd);
+  const extraTotal = filteredExtra.reduce((sum, e) => sum + e.amount, 0);
+
   const engLessonPrice = engStats[0]?.unitPrice || 700;
   const filteredEng = engStats.filter(s => s.startDate >= dateStart && s.startDate <= dateEnd);
   const engPaid = filteredEng.reduce((sum, s) => sum + s.paidAmount, 0);
@@ -896,18 +971,13 @@ function renderAnalytics(subStats, engStats, dayMap) {
   const engSaved = eCanceled * engLessonPrice;
 
   if (analFilter === 'garden') {
-    showPaid = gardenPaid; showDebt = gardenDebt; showSaved = gardenSaved;
+    showPaid = gardenPaid + extraTotal; showDebt = gardenDebt; showSaved = gardenSaved; // <-- Прибавили extraTotal
     showEffCost = globalGardenEffCost; effLabel = 'за 1 визит сада (ист.)';
   } else if (analFilter === 'english') {
     showPaid = engPaid; showDebt = engDebt; showSaved = engSaved;
     showEffCost = globalEngEffCost; effLabel = 'за 1 урок англ. (ист.)';
   } else {
-    showPaid = gardenPaid + engPaid; showDebt = gardenDebt + engDebt; 
-    showSaved = gardenSaved + engSaved;
-    const combinedTotalVisits = totalGAttended + totalEAttended;
-    showEffCost = combinedTotalVisits > 0 ? Math.round((totalGPaid + totalEPaid) / combinedTotalVisits) : 0;
-    effLabel = 'средняя за любой визит';
-  }
+    showPaid = gardenPaid + engPaid + extraTotal; showDebt = gardenDebt + engDebt; // <-- Прибавили extraTotal
 
   // Данные для кольцевого графика (с учетом фильтра направления)
   let ringAttended = analFilter === 'english' ? eAttended : (analFilter === 'garden' ? gAttended : gAttended + eAttended);
@@ -990,6 +1060,7 @@ function renderAnalytics(subStats, engStats, dayMap) {
         <div class="relative z-10">
           <span class="text-[10px] font-bold text-indigo-100 uppercase tracking-wider block mb-1">Оплачено за период</span>
           <span class="text-3xl sm:text-4xl font-black block">${showPaid.toLocaleString('ru-RU')} ₽</span>
+          ${(extraTotal > 0 && analFilter !== 'english') ? `<div class="mt-2 text-[10px] font-medium text-indigo-100/90 bg-black/10 inline-block px-2 py-1 rounded-lg backdrop-blur-sm border border-white/10">В т.ч. доп. траты: ${extraTotal.toLocaleString('ru-RU')} ₽</div>` : ''}
         </div>
         <svg class="absolute -bottom-6 -right-6 w-40 h-40 text-white opacity-10 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
       </div>
@@ -1748,6 +1819,15 @@ function generateReportText() {
       lines.push(`• Оплата: ${sub.isPaid ? '✅ ОПЛАЧЕН' : '⏳ НЕ ОПЛАЧЕН'} (${sub.price.toLocaleString('ru-RU')} ₽)`);
       lines.push('');
     });
+
+    // НОВЫЙ БЛОК:
+    if (state.extraExpenses && state.extraExpenses.length > 0) {
+      lines.push(`🔸 Разовые доп. расходы (Сад):`);
+      state.extraExpenses.forEach(e => {
+        lines.push(`  • ${formatHumanDate(e.date)}: ${e.note ? e.note + ' — ' : ''}${e.amount.toLocaleString('ru-RU')} ₽`);
+      });
+      lines.push('');
+    }
   }
 
   if (scope === 'all' || scope === 'english') {
