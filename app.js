@@ -296,36 +296,42 @@ async function saveState(skipCloudPush = false) {
 
 function switchMainTab(tab) {
   activeMainTab = tab;
-  const gardenSec = document.getElementById('gardenSection');
-  const engSec = document.getElementById('englishSection');
-  const analSec = document.getElementById('analyticsSection');
-
-  const btnGarden = document.getElementById('tabBtnGarden');
-  const btnEng = document.getElementById('tabBtnEnglish');
-  const btnAnal = document.getElementById('tabBtnAnalytics');
-
-  const activeClass = 'flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 bg-white text-indigo-700 shadow-sm';
-  const inactiveClass = 'flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900';
-
-  gardenSec.classList.add('hidden');
-  engSec.classList.add('hidden');
-  analSec.classList.add('hidden');
-
-  btnGarden.className = inactiveClass;
-  btnEng.className = inactiveClass;
-  btnAnal.className = inactiveClass;
-
-  if (tab === 'garden') {
-    gardenSec.classList.remove('hidden');
-    btnGarden.className = activeClass;
-  } else if (tab === 'english') {
-    engSec.classList.remove('hidden');
-    btnEng.className = activeClass;
-  } else if (tab === 'analytics') {
-    analSec.classList.remove('hidden');
-    btnAnal.className = activeClass;
-  }
   
+  const sections = ['garden', 'english', 'analytics', 'settings'];
+  
+  // 1. Показываем нужный контент, скрываем остальное
+  sections.forEach(s => {
+    const el = document.getElementById(s + 'Section');
+    if (el) el.classList.toggle('hidden', s !== tab);
+  });
+
+  // 2. Меняем заголовок в умной шапке
+  const titles = {
+    'garden': '🐝 Детский сад',
+    'english': '🎓 Английский',
+    'analytics': '📊 Аналитика',
+    'settings': '⚙️ Настройки'
+  };
+  const headerTitle = document.getElementById('headerTitle');
+  if (headerTitle) headerTitle.textContent = titles[tab] || 'Улей';
+
+  // 3. Обновляем подсветку кнопок в меню (ПК и Мобилки)
+  sections.forEach(s => {
+    const isAct = (s === tab);
+    
+    // Для десктопного бокового меню
+    const deskBtn = document.getElementById('deskNav-' + s);
+    if (deskBtn) {
+      deskBtn.className = `flex items-center gap-3 w-full px-4 py-3 rounded-xl font-bold transition ${isAct ? 'text-indigo-600 bg-indigo-50' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`;
+    }
+    
+    // Для мобильной нижней панели
+    const mobBtn = document.getElementById('mobNav-' + s);
+    if (mobBtn) {
+      mobBtn.className = `flex flex-col items-center justify-center w-full h-full space-y-1 transition ${isAct ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`;
+    }
+  });
+
   render();
 }
 
@@ -1764,6 +1770,17 @@ function render() {
   document.getElementById('hideWeekendsCheckbox').checked = !!state.hideWeekends;
   document.getElementById('pastStyleSelect').value = state.pastAttendedStyle || 'green';
   document.getElementById('engHidePastCheckbox').checked = !!state.english.hidePastPeriods;
+
+  const currentEngSub = engStats.find(s => s.remainingCount > 0) || engStats[engStats.length - 1];
+  if (currentEngSub) {
+    const engCountText = `${currentEngSub.attendedCount}`; // Просто цифра
+    // Счетчик для ПК
+    const deskCounter = document.getElementById('engTabCounter');
+    if (deskCounter) deskCounter.textContent = `${engCountText}/8`;
+    // Счетчик для Мобилки
+    const mobCounter = document.getElementById('engTabCounterMob');
+    if (mobCounter) mobCounter.textContent = engCountText;
+  }
 
   const perDay = Math.round(state.defaultPrice / state.daysPerSub);
   document.getElementById('pricePerDayDisplay').textContent = perDay.toLocaleString('ru-RU') + ' ₽';
