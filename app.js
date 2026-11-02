@@ -2112,7 +2112,7 @@ function render() {
 
     return `
       <div onclick="selectSubHighlight(${sub.index})"
-           class="bg-white rounded-2xl p-4 shadow-sm border-l-8 ${theme.cardBorder} ${theme.cardBg} border border-slate-200 flex flex-col justify-between cursor-pointer transition ${isSelected ? 'ring-2 ring-indigo-600 shadow-md' : 'hover:shadow-md'}">
+          class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border-l-8 ${theme.cardBorder} ${theme.cardBg} dark:!bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex flex-col justify-between cursor-pointer transition ${isSelected ? 'ring-2 ring-indigo-600 dark:ring-indigo-400 shadow-md' : 'hover:shadow-md'}"
         <div>
           <div class="flex justify-between items-start gap-1.5">
             <div>
@@ -2120,7 +2120,7 @@ function render() {
                 <span class="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded ${theme.badge}">Период #${sub.index}</span>
                 ${sub.isPast ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">Завершен ✓</span>` : ''}
               </div>
-              <h3 class="text-sm sm:text-base font-extrabold text-slate-900 mt-1">
+              <h3 class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white mt-1">
                 ${formatHumanDate(sub.startDate)} — ${formatHumanDate(sub.endDate)}
               </h3>
             </div>
@@ -2153,7 +2153,7 @@ function render() {
           <span class="text-slate-500 font-medium">Стоимость:</span>
           <div class="flex items-center gap-1">
             <input type="number" value="${sub.price}" step="100" onchange="updateSubPrice(${sub.id}, this.value)"
-                   class="w-20 text-right font-extrabold bg-white px-1.5 py-0.5 rounded border border-slate-300">
+              class="w-20 text-right font-extrabold bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 focus:outline-none">
             <span class="font-bold">₽</span>
           </div>
         </div>
@@ -2255,7 +2255,7 @@ function render() {
         const isSubHidden = info && info.subIndex && hiddenSubIndices.has(info.subIndex);
         const isDimmedByFilter = highlightedSubIndex && (!info || info.subIndex !== highlightedSubIndex);
 
-        let cellClasses = 'bg-white border-slate-200 text-slate-400';
+        let cellClasses = 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500';
         let topRightHtml = '';
         let bottomBadgeHtml = '';
         let englishPillHtml = '';
@@ -2269,9 +2269,9 @@ function render() {
         }
 
         if (isWeekend) {
-          cellClasses = 'bg-slate-100/80 border-slate-200/80 text-slate-400 cursor-not-allowed';
+          cellClasses = 'bg-slate-100/80 dark:bg-slate-900/50 border-slate-200/80 dark:border-slate-700 text-slate-400 cursor-not-allowed';
         } else if (iso < state.startDate || isSubHidden) {
-          cellClasses = 'bg-slate-50 border-dashed border-slate-200 text-slate-300 opacity-45';
+          cellClasses = 'bg-slate-50 dark:bg-slate-900/30 border-dashed border-slate-200 dark:border-slate-700 text-slate-300 opacity-45';
         } else if (info) {
           const theme = info.subIndex ? SUB_THEMES[(info.subIndex - 1) % SUB_THEMES.length] : SUB_THEMES[0];
 
@@ -2335,9 +2335,9 @@ function render() {
     ` : '';
 
     calContainer.innerHTML += `
-      <div class="bg-white p-3 sm:p-5 rounded-2xl shadow-sm border border-slate-200">
+      <div class="bg-white dark:bg-slate-800 p-3 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors duration-300">
         <div class="flex flex-wrap justify-between items-center gap-2 mb-2.5">
-          <h2 class="text-base sm:text-lg font-extrabold text-slate-900">${monthNames[curM]} ${curY}</h2>
+          <h2 class="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">${monthNames[curM]} ${curY}</h2>
           ${hiddenWeeksNoticeHtml}
         </div>
         <div class="grid ${gridColsClass} gap-1 sm:gap-2 text-center text-[11px] sm:text-xs font-bold text-slate-400 mb-1.5">
