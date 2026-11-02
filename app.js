@@ -1771,26 +1771,25 @@ function render() {
   document.getElementById('pastStyleSelect').value = state.pastAttendedStyle || 'green';
   document.getElementById('engHidePastCheckbox').checked = !!state.english.hidePastPeriods;
 
-  const currentEngSub = engStats.find(s => s.remainingCount > 0) || engStats[engStats.length - 1];
-  if (currentEngSub) {
-    const engCountText = `${currentEngSub.attendedCount}`; // Просто цифра
-    // Счетчик для ПК
-    const deskCounter = document.getElementById('engTabCounter');
-    if (deskCounter) deskCounter.textContent = `${engCountText}/8`;
-    // Счетчик для Мобилки
-    const mobCounter = document.getElementById('engTabCounterMob');
-    if (mobCounter) mobCounter.textContent = engCountText;
-  }
-
   const perDay = Math.round(state.defaultPrice / state.daysPerSub);
   document.getElementById('pricePerDayDisplay').textContent = perDay.toLocaleString('ru-RU') + ' ₽';
 
+  // 1. Сначала скрипт должен всё вычислить
   const { subStats, dayMap, lastCalculatedDate } = calculateSchedule();
   const engStats = enrichEnglishSubscriptions();
 
+  // 2. И только теперь мы берем готовый engStats и обновляем счетчики
   const currentEngSub = engStats.find(s => s.remainingCount > 0) || engStats[engStats.length - 1];
   if (currentEngSub) {
-    document.getElementById('engTabCounter').textContent = `${currentEngSub.attendedCount}/8`;
+    const engCountText = `${currentEngSub.attendedCount}`;
+    
+    // Счетчик для десктопа (боковое меню)
+    const deskCounter = document.getElementById('engTabCounter');
+    if (deskCounter) deskCounter.textContent = `${engCountText}/8`;
+    
+    // Счетчик для мобилки (нижняя панель)
+    const mobCounter = document.getElementById('engTabCounterMob');
+    if (mobCounter) mobCounter.textContent = engCountText;
   }
 
   checkPaymentNotifications(subStats);
