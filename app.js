@@ -19,7 +19,6 @@ let analYear = new Date().getFullYear();
 let analMonth = new Date().getMonth(); // 0-11
 let analFilter = 'all';
 
-// Новые переменные для выбора периода
 let analPeriodType = 'month'; // 'month', 'year', 'custom', 'all'
 let analCustomStart = toISODate(new Date(new Date().setDate(new Date().getDate() - 30)));
 let analCustomEnd = toISODate(new Date());
@@ -156,42 +155,10 @@ let highlightedSubIndex = null;
 let expandedMonthsOverride = new Set();
 
 const SUB_THEMES = [
-  {
-    name: 'Индиго',
-    cardBorder: 'border-indigo-600',
-    cardBg: 'bg-indigo-50/40',
-    badge: 'bg-indigo-600 text-white',
-    cellPlanned: 'bg-indigo-50/80 border-indigo-300 text-indigo-950 hover:bg-indigo-100',
-    cellBorderAccent: 'border-l-[3px] sm:border-l-4 border-l-indigo-600',
-    dayPill: 'bg-indigo-200/80 text-indigo-900'
-  },
-  {
-    name: 'Океан',
-    cardBorder: 'border-sky-600',
-    cardBg: 'bg-sky-50/40',
-    badge: 'bg-sky-600 text-white',
-    cellPlanned: 'bg-sky-50/80 border-sky-300 text-sky-950 hover:bg-sky-100',
-    cellBorderAccent: 'border-l-[3px] sm:border-l-4 border-l-sky-600',
-    dayPill: 'bg-sky-200/80 text-sky-900'
-  },
-  {
-    name: 'Фуксия',
-    cardBorder: 'border-fuchsia-600',
-    cardBg: 'bg-fuchsia-50/40',
-    badge: 'bg-fuchsia-600 text-white',
-    cellPlanned: 'bg-fuchsia-50/80 border-fuchsia-300 text-fuchsia-950 hover:bg-fuchsia-100',
-    cellBorderAccent: 'border-l-[3px] sm:border-l-4 border-l-fuchsia-600',
-    dayPill: 'bg-fuchsia-200/80 text-fuchsia-900'
-  },
-  {
-    name: 'Фиолет',
-    cardBorder: 'border-violet-600',
-    cardBg: 'bg-violet-50/40',
-    badge: 'bg-violet-600 text-white',
-    cellPlanned: 'bg-violet-50/80 border-violet-300 text-violet-950 hover:bg-violet-100',
-    cellBorderAccent: 'border-l-[3px] sm:border-l-4 border-l-violet-600',
-    dayPill: 'bg-violet-200/80 text-violet-900'
-  }
+  { name: 'Индиго', cardBorder: 'border-indigo-600', cardBg: 'bg-indigo-50/40', badge: 'bg-indigo-600 text-white', cellPlanned: 'bg-indigo-50/80 border-indigo-300 text-indigo-950 hover:bg-indigo-100', cellBorderAccent: 'border-l-[3px] sm:border-l-4 border-l-indigo-600', dayPill: 'bg-indigo-200/80 text-indigo-900' },
+  { name: 'Океан', cardBorder: 'border-sky-600', cardBg: 'bg-sky-50/40', badge: 'bg-sky-600 text-white', cellPlanned: 'bg-sky-50/80 border-sky-300 text-sky-950 hover:bg-sky-100', cellBorderAccent: 'border-l-[3px] sm:border-l-4 border-l-sky-600', dayPill: 'bg-sky-200/80 text-sky-900' },
+  { name: 'Фуксия', cardBorder: 'border-fuchsia-600', cardBg: 'bg-fuchsia-50/40', badge: 'bg-fuchsia-600 text-white', cellPlanned: 'bg-fuchsia-50/80 border-fuchsia-300 text-fuchsia-950 hover:bg-fuchsia-100', cellBorderAccent: 'border-l-[3px] sm:border-l-4 border-l-fuchsia-600', dayPill: 'bg-fuchsia-200/80 text-fuchsia-900' },
+  { name: 'Фиолет', cardBorder: 'border-violet-600', cardBg: 'bg-violet-50/40', badge: 'bg-violet-600 text-white', cellPlanned: 'bg-violet-50/80 border-violet-300 text-violet-950 hover:bg-violet-100', cellBorderAccent: 'border-l-[3px] sm:border-l-4 border-l-violet-600', dayPill: 'bg-violet-200/80 text-violet-900' }
 ];
 
 function toISODate(d) {
@@ -216,11 +183,7 @@ const defaultEnglishData = {
   hidePastPeriods: false,
   subscriptions: [
     {
-      id: 1,
-      price: 5600,
-      isPaid: false,
-      hiddenManually: false,
-      forceShow: false,
+      id: 1, price: 5600, isPaid: false, hiddenManually: false, forceShow: false,
       lessons: [
         { id: 101, date: '2026-10-12', status: 'attended', isPaid: false, note: 'Проведено (Пн)' },
         { id: 102, date: '2026-10-15', status: 'attended', isPaid: false, note: 'Проведено' },
@@ -244,25 +207,18 @@ const defaultState = {
   defaultPrice: 28800,
   daysPerSub: 20,
   updatedAt: Date.now(),
+  extraExpenses: [],
   subscriptions: [
     { id: 1, price: 28800, isPaid: true, hiddenManually: false, forceShow: false },
     { id: 2, price: 28800, isPaid: false, hiddenManually: false, forceShow: false },
     { id: 3, price: 28800, isPaid: false, hiddenManually: false, forceShow: false }
   ],
   exceptions: {
-    '2026-10-06': 'missed',
-    '2026-10-07': 'missed',
-    '2026-10-08': 'missed',
-    '2026-10-09': 'missed',
-    '2026-11-04': 'holiday',
-    '2026-12-31': 'holiday'
+    '2026-10-06': 'missed', '2026-10-07': 'missed', '2026-10-08': 'missed', '2026-10-09': 'missed',
+    '2026-11-04': 'holiday', '2026-12-31': 'holiday'
   },
   english: JSON.parse(JSON.stringify(defaultEnglishData)),
-  telegram: {
-    botToken: HARDCODED_TELEGRAM.botToken,
-    chatId: HARDCODED_TELEGRAM.chatId,
-    sentAlertsLog: {}
-  }
+  telegram: { botToken: HARDCODED_TELEGRAM.botToken, chatId: HARDCODED_TELEGRAM.chatId, sentAlertsLog: {} }
 };
 
 function ensureDataIntegrity(targetState) {
@@ -271,10 +227,8 @@ function ensureDataIntegrity(targetState) {
   targetState.telegram.chatId = HARDCODED_TELEGRAM.chatId || targetState.telegram.chatId;
   if (!targetState.telegram.sentAlertsLog) targetState.telegram.sentAlertsLog = {};
 
-  // Инициализация массива доп. расходов
   if (!Array.isArray(targetState.extraExpenses)) targetState.extraExpenses = [];
 
-  // --- ИСПРАВЛЕНИЕ: Автоматическая очистка сломанных текстовых ID в базе ---
   if (Array.isArray(targetState.subscriptions)) {
     targetState.subscriptions.forEach(sub => {
       if (typeof sub.id === 'string' && sub.id.startsWith('arch_')) {
@@ -282,7 +236,6 @@ function ensureDataIntegrity(targetState) {
       }
     });
   }
-  // -------------------------------------------------------------------------
 
   if (!targetState.english || !Array.isArray(targetState.english.subscriptions)) {
     targetState.english = JSON.parse(JSON.stringify(defaultEnglishData));
@@ -341,83 +294,15 @@ async function saveState(skipCloudPush = false) {
   render();
 }
 
-// ==========================================
-// ЛОГИКА ДОПОЛНИТЕЛЬНЫХ РАСХОДОВ (САД)
-// ==========================================
-function openExtraExpensesModal() {
-  renderExtraExpensesList();
-  document.getElementById('extraExpensesModal').classList.remove('hidden');
-  document.getElementById('extraExpensesModal').classList.add('flex');
-}
-
-function closeExtraExpensesModal() {
-  document.getElementById('extraExpensesModal').classList.add('hidden');
-  document.getElementById('extraExpensesModal').classList.remove('flex');
-}
-
-function addExtraExpense() {
-  state.extraExpenses.push({
-    id: Date.now(),
-    date: state.simulatedToday,
-    amount: 0,
-    note: ''
-  });
-  state.extraExpenses.sort((a, b) => b.date.localeCompare(a.date)); // Сортируем (новые сверху)
-  saveState();
-  renderExtraExpensesList();
-}
-
-function updateExtraExpense(id, field, value) {
-  const exp = state.extraExpenses.find(e => e.id === id);
-  if (exp) {
-    if (field === 'amount') exp[field] = Number(value) || 0;
-    else exp[field] = value;
-    saveState();
-    
-    // Если поменяли дату — пересортировываем
-    if (field === 'date') {
-      state.extraExpenses.sort((a, b) => b.date.localeCompare(a.date));
-      renderExtraExpensesList();
-    }
-  }
-}
-
-function deleteExtraExpense(id) {
-  if (confirm('Удалить эту запись расходов?')) {
-    state.extraExpenses = state.extraExpenses.filter(e => e.id !== id);
-    saveState();
-    renderExtraExpensesList();
-  }
-}
-
-function renderExtraExpensesList() {
-  const container = document.getElementById('extraExpensesList');
-  if (!state.extraExpenses || state.extraExpenses.length === 0) {
-    container.innerHTML = `<div class="p-4 text-center text-xs text-slate-400 font-medium bg-slate-50 rounded-xl">Пока нет дополнительных расходов.</div>`;
-    return;
-  }
-  container.innerHTML = state.extraExpenses.map(exp => `
-    <div class="p-2.5 sm:p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row gap-2 sm:items-center">
-      <input type="date" value="${exp.date}" onchange="updateExtraExpense(${exp.id}, 'date', this.value)" class="text-[11px] sm:text-xs font-bold bg-white border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none shrink-0">
-      <input type="text" value="${exp.note}" placeholder="На что (театр, фото...)" onchange="updateExtraExpense(${exp.id}, 'note', this.value)" class="w-full text-xs font-medium bg-white border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none placeholder-slate-400">
-      <div class="flex items-center gap-1.5 shrink-0 justify-end">
-        <input type="number" value="${exp.amount}" step="50" onchange="updateExtraExpense(${exp.id}, 'amount', this.value)" class="w-20 text-xs font-black text-right bg-white border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none">
-        <span class="text-xs font-bold text-slate-500">₽</span>
-        <button onclick="deleteExtraExpense(${exp.id})" class="p-1.5 text-slate-300 hover:text-rose-600 transition">🗑</button>
-      </div>
-    </div>
-  `).join('');
-}
-
 function switchMainTab(tab) {
   activeMainTab = tab;
   const gardenSec = document.getElementById('gardenSection');
   const engSec = document.getElementById('englishSection');
-  const analSec = document.getElementById('analyticsSection'); // Новый блок
+  const analSec = document.getElementById('analyticsSection');
 
   const btnGarden = document.getElementById('tabBtnGarden');
   const btnEng = document.getElementById('tabBtnEnglish');
-  const btnAnal = document.getElementById('tabBtnAnalytics'); // Новая кнопка
+  const btnAnal = document.getElementById('tabBtnAnalytics');
 
   const activeClass = 'flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 bg-white text-indigo-700 shadow-sm';
   const inactiveClass = 'flex-1 lg:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900';
@@ -441,7 +326,6 @@ function switchMainTab(tab) {
     btnAnal.className = activeClass;
   }
   
-  // Принудительно вызываем рендер при переключении
   render();
 }
 
@@ -512,21 +396,9 @@ function enrichEnglishSubscriptions() {
     const isPast = (remainingCount === 0) && endDate && (endDate < state.simulatedToday);
 
     return {
-      ...sub,
-      index: sIdx + 1,
-      startDate,
-      endDate,
-      attendedCount,
-      paidLessonsCount,
-      paidAmount,
-      remainingToPay,
-      isFullyPaid,
-      unitPrice,
-      canceledCount,
-      remainingCount,
-      activeTotal: activeNumber,
-      isPast,
-      enrichedLessons
+      ...sub, index: sIdx + 1, startDate, endDate, attendedCount, paidLessonsCount, paidAmount,
+      remainingToPay, isFullyPaid, unitPrice, canceledCount, remainingCount, activeTotal: activeNumber,
+      isPast, enrichedLessons
     };
   });
 }
@@ -539,9 +411,7 @@ function isEngSubCurrentlyHidden(es) {
 
 function toggleEngHidePast(checked) {
   state.english.hidePastPeriods = checked;
-  if (checked) {
-    state.english.subscriptions.forEach(s => s.forceShow = false);
-  }
+  if (checked) state.english.subscriptions.forEach(s => s.forceShow = false);
   saveState();
 }
 
@@ -879,7 +749,6 @@ function checkEnglishNotifications(engStats) {
 // =========================================================================
 // 4.1 ЛОГИКА РАЗДЕЛА «АНАЛИТИКА»
 // =========================================================================
-
 function renderAnalytics(subStats, engStats, dayMap) {
   const container = document.getElementById('analyticsContainer');
   if (!container) return;
@@ -913,16 +782,15 @@ function renderAnalytics(subStats, engStats, dayMap) {
   const gardenPaid = filteredSubs.filter(s => s.isPaid).reduce((sum, s) => sum + s.price, 0);
   const gardenDebt = filteredSubs.filter(s => !s.isPaid).reduce((sum, s) => sum + s.price, 0);
 
-  // Считаем доп. расходы в рамках дат
-  const filteredExtra = (state.extraExpenses || []).filter(e => e.date >= dateStart && e.date <= dateEnd);
-  const extraTotal = filteredExtra.reduce((sum, e) => sum + e.amount, 0);
-
   const engLessonPrice = engStats[0]?.unitPrice || 700;
   const filteredEng = engStats.filter(s => s.startDate >= dateStart && s.startDate <= dateEnd);
   const engPaid = filteredEng.reduce((sum, s) => sum + s.paidAmount, 0);
   const engDebt = filteredEng.reduce((sum, s) => sum + s.remainingToPay, 0);
 
-  // Глобальная эффективная стоимость (оставляем за всё время для стабильности метрики)
+  const filteredExtra = (state.extraExpenses || []).filter(e => e.date >= dateStart && e.date <= dateEnd);
+  const extraTotal = filteredExtra.reduce((sum, e) => sum + e.amount, 0);
+
+  // Глобальная эффективная стоимость (за всё время для стабильности)
   const totalGPaid = subStats.filter(s => s.isPaid).reduce((sum, s) => sum + s.price, 0);
   const totalGAttended = subStats.reduce((sum, s) => sum + s.completedCount, 0);
   const globalGardenEffCost = totalGAttended > 0 ? Math.round(totalGPaid / totalGAttended) : 0;
@@ -939,7 +807,6 @@ function renderAnalytics(subStats, engStats, dayMap) {
     const item = dayMap[iso];
     if (iso > state.simulatedToday || iso < state.startDate) return;
 
-    // Стрики считаем глобально (достижение)
     if (item.status === 'attended' && item.isCompletedVisit) {
       currentStreak++;
       if (currentStreak > maxStreak) maxStreak = currentStreak;
@@ -947,7 +814,6 @@ function renderAnalytics(subStats, engStats, dayMap) {
       currentStreak = 0;
     }
 
-    // Дни считаем только внутри фильтра
     if (iso >= dateStart && iso <= dateEnd) {
       if (item.status === 'attended' && item.isCompletedVisit) gAttended++;
       else if (item.status === 'missed') gMissed++;
@@ -971,15 +837,19 @@ function renderAnalytics(subStats, engStats, dayMap) {
   const engSaved = eCanceled * engLessonPrice;
 
   if (analFilter === 'garden') {
-    showPaid = gardenPaid + extraTotal; showDebt = gardenDebt; showSaved = gardenSaved; // <-- Прибавили extraTotal
+    showPaid = gardenPaid + extraTotal; showDebt = gardenDebt; showSaved = gardenSaved;
     showEffCost = globalGardenEffCost; effLabel = 'за 1 визит сада (ист.)';
   } else if (analFilter === 'english') {
     showPaid = engPaid; showDebt = engDebt; showSaved = engSaved;
     showEffCost = globalEngEffCost; effLabel = 'за 1 урок англ. (ист.)';
   } else {
-    showPaid = gardenPaid + engPaid + extraTotal; showDebt = gardenDebt + engDebt; // <-- Прибавили extraTotal
+    showPaid = gardenPaid + engPaid + extraTotal; showDebt = gardenDebt + engDebt; 
+    showSaved = gardenSaved + engSaved;
+    const combinedTotalVisits = totalGAttended + totalEAttended;
+    showEffCost = combinedTotalVisits > 0 ? Math.round((totalGPaid + totalEPaid) / combinedTotalVisits) : 0;
+    effLabel = 'средняя за любой визит';
+  }
 
-  // Данные для кольцевого графика (с учетом фильтра направления)
   let ringAttended = analFilter === 'english' ? eAttended : (analFilter === 'garden' ? gAttended : gAttended + eAttended);
   let ringMissed = analFilter === 'english' ? eCanceled : (analFilter === 'garden' ? gMissed : gMissed + eCanceled);
   let ringHoliday = analFilter === 'english' ? 0 : gHoliday;
@@ -1027,29 +897,22 @@ function renderAnalytics(subStats, engStats, dayMap) {
 
   // --- 6. ВЫВОД ДАШБОРДА ---
   container.innerHTML = `
-    <!-- Компактная панель управления (В одну строку на ПК) -->
+    <!-- Компактная панель управления -->
     <div class="flex flex-col lg:flex-row items-center justify-between gap-2 sm:gap-3 bg-white p-2.5 rounded-2xl border border-slate-200 shadow-sm mb-4">
-      
-      <!-- Левый блок: Направление -->
       <select onchange="changeAnalyticFilter(this.value)" class="w-full lg:w-auto bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-bold rounded-xl px-3 py-1.5 outline-none cursor-pointer hover:bg-slate-100 transition-colors">
         <option value="all" ${analFilter === 'all' ? 'selected' : ''}>📊 Все направления</option>
         <option value="garden" ${analFilter === 'garden' ? 'selected' : ''}>🐝 Только Сад</option>
         <option value="english" ${analFilter === 'english' ? 'selected' : ''}>🎓 Только Английский</option>
       </select>
-
-      <!-- Центральный блок: Контрол дат -->
       <div class="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-xl border border-slate-200 w-full lg:w-auto justify-center min-h-[34px]">
         ${dateControlsHtml}
       </div>
-
-      <!-- Правый блок: Табы выбора периода -->
       <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-[10px] w-full lg:w-auto">
         <button onclick="changeAnalyticPeriodType('month')" class="${analPeriodType === 'month' ? btnAct : btnInact}">Месяц</button>
         <button onclick="changeAnalyticPeriodType('year')" class="${analPeriodType === 'year' ? btnAct : btnInact}">Год</button>
         <button onclick="changeAnalyticPeriodType('custom')" class="${analPeriodType === 'custom' ? btnAct : btnInact}">Период</button>
         <button onclick="changeAnalyticPeriodType('all')" class="${analPeriodType === 'all' ? btnAct : btnInact}">Всё время</button>
       </div>
-      
     </div>
 
     <!-- Bento Grid (Стеклянные плитки) -->
@@ -1131,7 +994,7 @@ function renderAnalytics(subStats, engStats, dayMap) {
 }
 
 // =========================================================================
-// 5. ОБЛАЧНАЯ СИНХРОНИЗАЦИЯ И ФУНКЦИИ САДА
+// 5. ОБЛАЧНАЯ СИНХРОНИЗАЦИЯ И ФАЙЛЫ
 // =========================================================================
 function updateCloudBadge(statusText, isOk = true) {
   const badge = document.getElementById('cloudSyncBadge');
@@ -1242,6 +1105,9 @@ function importJsonFile(event) {
   reader.readAsText(file);
 }
 
+// =========================================================================
+// 6. ЛОГИКА ДЕТСКОГО САДА И КАЛЕНДАРЯ
+// =========================================================================
 function calculateSchedule() {
   const totalSubscriptions = state.subscriptions.length;
   let currentValDate = new Date(state.startDate + 'T00:00:00');
@@ -1249,18 +1115,8 @@ function calculateSchedule() {
   let attendedInCurrentSub = 0;
 
   const subStats = state.subscriptions.map((sub, idx) => ({
-    ...sub,
-    index: idx + 1,
-    startDate: null,
-    endDate: null,
-    attendedCount: 0,
-    completedCount: 0,
-    missedCount: 0,
-    missedDates: [],
-    holidayDates: [],
-    attendedDates: [],
-    remainingAfterToday: 0,
-    isPast: false
+    ...sub, index: idx + 1, startDate: null, endDate: null, attendedCount: 0, completedCount: 0,
+    missedCount: 0, missedDates: [], holidayDates: [], attendedDates: [], remainingAfterToday: 0, isPast: false
   }));
 
   const dayMap = {};
@@ -1285,13 +1141,8 @@ function calculateSchedule() {
     }
 
     dayMap[iso] = {
-      date: iso,
-      status,
-      subIndex: (!isWeekend && status !== 'holiday') ? (currentSubIndex + 1) : null,
-      dayNumberInSub: null,
-      isSubStart: false,
-      isSubEnd: false,
-      isCompletedVisit: false
+      date: iso, status, subIndex: (!isWeekend && status !== 'holiday') ? (currentSubIndex + 1) : null,
+      dayNumberInSub: null, isSubStart: false, isSubEnd: false, isCompletedVisit: false
     };
 
     if (status === 'attended') {
@@ -1340,17 +1191,30 @@ function isSubCurrentlyHidden(sub) {
   return false;
 }
 
+function shiftWorkingDays(isoDate, offset) {
+  let d = new Date(isoDate + 'T00:00:00');
+  let steps = Math.abs(offset);
+  const dir = offset > 0 ? 1 : -1;
+  
+  while (steps > 0) {
+    d.setDate(d.getDate() + dir);
+    const day = d.getDay();
+    const iso = toISODate(d);
+    const isWeekend = (day === 0 || day === 6);
+    const isHoliday = state.exceptions[iso] === 'holiday';
+    
+    if (!isWeekend && !isHoliday) steps--;
+  }
+  return toISODate(d);
+}
+
 function toggleDayStatus(isoDate) {
   const d = new Date(isoDate + 'T00:00:00');
-  if (d.getDay() === 0 || d.getDay() === 6) return; // Игнорируем выходные
+  if (d.getDay() === 0 || d.getDay() === 6) return; 
 
-  // 1. Узнаем текущее расписание, чтобы понять, ГДЕ мы кликаем
   const { subStats } = calculateSchedule();
-  // Находим текущий "активный" период (первый, который еще не ушел в прошлое)
   const activeSub = subStats.find(s => !s.isPast);
 
-  // 2. Проверяем, кликнули ли мы по "архивному" периоду
-  // (день строго до начала текущего абонемента, либо все абонементы уже в прошлом)
   let isArchiveToggle = false;
   if (!activeSub) {
     isArchiveToggle = true; 
@@ -1358,7 +1222,6 @@ function toggleDayStatus(isoDate) {
     isArchiveToggle = true; 
   }
 
-  // 3. Переключаем статус дня
   const current = state.exceptions[isoDate] || 'attended';
   let toStatus = 'attended';
   
@@ -1370,44 +1233,18 @@ function toggleDayStatus(isoDate) {
     state.exceptions[isoDate] = toStatus;
   }
 
-  // 4. --- ЛОГИКА АНТИ-СДВИГА ДЛЯ АРХИВОВ ---
   if (isArchiveToggle) {
     const wasConsuming = (current === 'missed' || current === 'holiday');
     const willConsume = (toStatus === 'missed' || toStatus === 'holiday');
 
-    // Если добавили пропуск/выходной — растягиваем архив назад (-1 день от старта)
     if (!wasConsuming && willConsume) {
       state.startDate = shiftWorkingDays(state.startDate, -1);
     } 
-    // Если убрали пропуск/выходной — сжимаем архив вперед (+1 день к старту)
     else if (wasConsuming && !willConsume) {
       state.startDate = shiftWorkingDays(state.startDate, 1);
     }
   }
-
   saveState();
-}
-
-// Вспомогательная функция для сдвига даты по рабочим дням
-function shiftWorkingDays(isoDate, offset) {
-  let d = new Date(isoDate + 'T00:00:00');
-  let steps = Math.abs(offset);
-  const dir = offset > 0 ? 1 : -1;
-  
-  while (steps > 0) {
-    d.setDate(d.getDate() + dir);
-    const day = d.getDay();
-    const iso = toISODate(d);
-    
-    const isWeekend = (day === 0 || day === 6);
-    const isHoliday = state.exceptions[iso] === 'holiday';
-    
-    // Считаем шаг только если это реальный рабочий день
-    if (!isWeekend && !isHoliday) {
-      steps--;
-    }
-  }
-  return toISODate(d);
 }
 
 function togglePaidStatus(subId, event) {
@@ -1438,12 +1275,9 @@ function restoreSingleSubscription(subId) {
   }
 }
 
-// Добавление прошедшего периода
 function addArchivePeriod(type) {
   if (type === 'garden') {
     if (!state.subscriptions) state.subscriptions = [];
-
-    // Откатываем глобальную дату старта на 20 рабочих дней назад
     let curD = new Date(state.startDate + 'T00:00:00');
     let workdaysNeeded = state.daysPerSub || 20;
 
@@ -1454,31 +1288,24 @@ function addArchivePeriod(type) {
       const isWeekend = (day === 0 || day === 6);
       const isHoliday = state.exceptions[iso] === 'holiday';
 
-      // Если это обычный рабочий день — засчитываем его
       if (!isWeekend && !isHoliday) {
         workdaysNeeded--;
       }
     }
     
-    // Устанавливаем новую дату старта трекера
     state.startDate = toISODate(curD);
-
-    // ИСПРАВЛЕНИЕ: Используем безопасный числовой ID
     const newId = Date.now(); 
     
-    // Вставляем новый абонемент в НАЧАЛО массива (unshift)
     state.subscriptions.unshift({
       id: newId,
       price: state.defaultPrice || 28800,
-      isPaid: true, // По умолчанию прошлые периоды оплачены
+      isPaid: true,
       hiddenManually: false,
       forceShow: false
     });
-
   } else if (type === 'english') {
     alert('Архивы для английского языка пока не используются.');
   }
-  
   saveState();
 }
 
@@ -1666,6 +1493,9 @@ function getAlertDatesForSub(sub) {
   ];
 }
 
+// =========================================================================
+// 7. МОДАЛЬНЫЕ ОКНА: ОТЧЕТЫ И TELEGRAM
+// =========================================================================
 function openNotificationsModal() {
   ensureDataIntegrity(state);
   updatePushBadge();
@@ -1819,8 +1649,7 @@ function generateReportText() {
       lines.push(`• Оплата: ${sub.isPaid ? '✅ ОПЛАЧЕН' : '⏳ НЕ ОПЛАЧЕН'} (${sub.price.toLocaleString('ru-RU')} ₽)`);
       lines.push('');
     });
-
-    // НОВЫЙ БЛОК:
+    
     if (state.extraExpenses && state.extraExpenses.length > 0) {
       lines.push(`🔸 Разовые доп. расходы (Сад):`);
       state.extraExpenses.forEach(e => {
@@ -1857,8 +1686,76 @@ function copyReportToClipboard() {
   setTimeout(() => btn.textContent = 'Скопировать текст', 2000);
 }
 
+// ==========================================
+// 8. ЛОГИКА ДОПОЛНИТЕЛЬНЫХ РАСХОДОВ (САД)
+// ==========================================
+function openExtraExpensesModal() {
+  renderExtraExpensesList();
+  document.getElementById('extraExpensesModal').classList.remove('hidden');
+  document.getElementById('extraExpensesModal').classList.add('flex');
+}
+
+function closeExtraExpensesModal() {
+  document.getElementById('extraExpensesModal').classList.add('hidden');
+  document.getElementById('extraExpensesModal').classList.remove('flex');
+}
+
+function addExtraExpense() {
+  state.extraExpenses.push({
+    id: Date.now(),
+    date: state.simulatedToday,
+    amount: 0,
+    note: ''
+  });
+  state.extraExpenses.sort((a, b) => b.date.localeCompare(a.date));
+  saveState();
+  renderExtraExpensesList();
+}
+
+function updateExtraExpense(id, field, value) {
+  const exp = state.extraExpenses.find(e => e.id === id);
+  if (exp) {
+    if (field === 'amount') exp[field] = Number(value) || 0;
+    else exp[field] = value;
+    saveState();
+    
+    if (field === 'date') {
+      state.extraExpenses.sort((a, b) => b.date.localeCompare(a.date));
+      renderExtraExpensesList();
+    }
+  }
+}
+
+function deleteExtraExpense(id) {
+  if (confirm('Удалить эту запись расходов?')) {
+    state.extraExpenses = state.extraExpenses.filter(e => e.id !== id);
+    saveState();
+    renderExtraExpensesList();
+  }
+}
+
+function renderExtraExpensesList() {
+  const container = document.getElementById('extraExpensesList');
+  if (!state.extraExpenses || state.extraExpenses.length === 0) {
+    container.innerHTML = `<div class="p-4 text-center text-xs text-slate-400 font-medium bg-slate-50 rounded-xl">Пока нет дополнительных расходов.</div>`;
+    return;
+  }
+  container.innerHTML = state.extraExpenses.map(exp => `
+    <div class="p-2.5 sm:p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row gap-2 sm:items-center">
+      <input type="date" value="${exp.date}" onchange="updateExtraExpense(${exp.id}, 'date', this.value)" class="text-[11px] sm:text-xs font-bold bg-white border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none shrink-0">
+      <input type="text" value="${exp.note}" placeholder="На что (театр, фото...)" onchange="updateExtraExpense(${exp.id}, 'note', this.value)" class="w-full text-xs font-medium bg-white border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none placeholder-slate-400">
+      <div class="flex items-center gap-1.5 shrink-0 justify-end">
+        <input type="number" value="${exp.amount}" step="50" onchange="updateExtraExpense(${exp.id}, 'amount', this.value)" class="w-20 text-xs font-black text-right bg-white border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none">
+        <span class="text-xs font-bold text-slate-500">₽</span>
+        <button onclick="deleteExtraExpense(${exp.id})" class="p-1.5 text-slate-300 hover:text-rose-600 transition">🗑</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+
 // =========================================================================
-// 6. ГЛАВНЫЙ РЕНДЕР ИНТЕРФЕЙСА
+// 9. ГЛАВНЫЙ РЕНДЕР ИНТЕРФЕЙСА
 // =========================================================================
 function render() {
   document.getElementById('basePriceInput').value = state.defaultPrice;
@@ -2194,23 +2091,21 @@ function render() {
     `;
   }
 
+  // --- ИСПРАВЛЕННЫЙ БЛОК ГЕНЕРАЦИИ КАЛЕНДАРЯ ---
   const calContainer = document.getElementById('calendarContainer');
   calContainer.innerHTML = '';
 
-  // === НАЧАЛО ИСПРАВЛЕННОГО БЛОКА ===
-  // 1. Узнаем реальный год и месяц старта
   const trackerStartD = new Date(state.startDate + 'T00:00:00');
   const startYear = trackerStartD.getFullYear();
   const startMonth = trackerStartD.getMonth();
   
-  // 2. Узнаем год и месяц конца
   const endD = new Date(lastCalculatedDate + 'T00:00:00');
-  const finalYear = endD.getFullYear();
-  const finalMonth = endD.getMonth();
-  // === КОНЕЦ ИСПРАВЛЕННОГО БЛОКА ===
+  const finalYear = Math.max(startYear, endD.getFullYear());
+  const finalMonth = (finalYear === startYear) ? Math.max(startMonth, endD.getMonth()) : endD.getMonth();
 
   let curY = startYear, curM = startMonth;
-  const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];  const weekDays = state.hideWeekends ? ['Пн', 'Вт', 'Ср', 'Чт', 'Пт'] : ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+  const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+  const weekDays = state.hideWeekends ? ['Пн', 'Вт', 'Ср', 'Чт', 'Пт'] : ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
   const gridColsClass = state.hideWeekends ? 'grid-cols-5' : 'grid-cols-7';
 
   while (curY < finalYear || (curY === finalYear && curM <= finalMonth)) {
