@@ -174,10 +174,10 @@ let highlightedSubIndex = null;
 let expandedMonthsOverride = new Set();
 
 const SUB_THEMES = [
-  { name: 'Индиго', cardBorder: 'border-indigo-600', cardBg: 'bg-indigo-50/40', badge: 'bg-indigo-600 text-white', cellPlanned: 'bg-indigo-50/80 border-indigo-300 text-indigo-950 hover:bg-indigo-100', cellBorderAccent: 'border-l-[3px] sm:border-l-4 border-l-indigo-600', dayPill: 'bg-indigo-200/80 text-indigo-900' },
-  { name: 'Океан', cardBorder: 'border-sky-600', cardBg: 'bg-sky-50/40', badge: 'bg-sky-600 text-white', cellPlanned: 'bg-sky-50/80 border-sky-300 text-sky-950 hover:bg-sky-100', cellBorderAccent: 'border-l-[3px] sm:border-l-4 border-l-sky-600', dayPill: 'bg-sky-200/80 text-sky-900' },
-  { name: 'Фуксия', cardBorder: 'border-fuchsia-600', cardBg: 'bg-fuchsia-50/40', badge: 'bg-fuchsia-600 text-white', cellPlanned: 'bg-fuchsia-50/80 border-fuchsia-300 text-fuchsia-950 hover:bg-fuchsia-100', cellBorderAccent: 'border-l-[3px] sm:border-l-4 border-l-fuchsia-600', dayPill: 'bg-fuchsia-200/80 text-fuchsia-900' },
-  { name: 'Фиолет', cardBorder: 'border-violet-600', cardBg: 'bg-violet-50/40', badge: 'bg-violet-600 text-white', cellPlanned: 'bg-violet-50/80 border-violet-300 text-violet-950 hover:bg-violet-100', cellBorderAccent: 'border-l-[3px] sm:border-l-4 border-l-violet-600', dayPill: 'bg-violet-200/80 text-violet-900' }
+  { name: 'Индиго', cardBorder: 'border-indigo-600', cardBg: 'bg-indigo-50/40 dark:bg-indigo-900/10', badge: 'bg-indigo-600 text-white', cellPlanned: 'bg-indigo-50/80 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-700/50 text-indigo-950 dark:text-indigo-200 hover:bg-indigo-100 dark:hover:bg-indigo-900/40', cellBorderAccent: 'border-l-[3px] sm:border-l-4 border-l-indigo-600', dayPill: 'bg-indigo-200/80 dark:bg-indigo-800/80 text-indigo-900 dark:text-indigo-100' },
+  { name: 'Океан', cardBorder: 'border-sky-600', cardBg: 'bg-sky-50/40 dark:bg-sky-900/10', badge: 'bg-sky-600 text-white', cellPlanned: 'bg-sky-50/80 dark:bg-sky-900/20 border-sky-300 dark:border-sky-700/50 text-sky-950 dark:text-sky-200 hover:bg-sky-100 dark:hover:bg-sky-900/40', cellBorderAccent: 'border-l-[3px] sm:border-l-4 border-l-sky-600', dayPill: 'bg-sky-200/80 dark:bg-sky-800/80 text-sky-900 dark:text-sky-100' },
+  { name: 'Фуксия', cardBorder: 'border-fuchsia-600', cardBg: 'bg-fuchsia-50/40 dark:bg-fuchsia-900/10', badge: 'bg-fuchsia-600 text-white', cellPlanned: 'bg-fuchsia-50/80 dark:bg-fuchsia-900/20 border-fuchsia-300 dark:border-fuchsia-700/50 text-fuchsia-950 dark:text-fuchsia-200 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40', cellBorderAccent: 'border-l-[3px] sm:border-l-4 border-l-fuchsia-600', dayPill: 'bg-fuchsia-200/80 dark:bg-fuchsia-800/80 text-fuchsia-900 dark:text-fuchsia-100' },
+  { name: 'Фиолет', cardBorder: 'border-violet-600', cardBg: 'bg-violet-50/40 dark:bg-violet-900/10', badge: 'bg-violet-600 text-white', cellPlanned: 'bg-violet-50/80 dark:bg-violet-900/20 border-violet-300 dark:border-violet-700/50 text-violet-950 dark:text-violet-200 hover:bg-violet-100 dark:hover:bg-violet-900/40', cellBorderAccent: 'border-l-[3px] sm:border-l-4 border-l-violet-600', dayPill: 'bg-violet-200/80 dark:bg-violet-800/80 text-violet-900 dark:text-violet-100' }
 ];
 
 function toISODate(d) {
@@ -2108,17 +2108,18 @@ function render() {
   subContainer.innerHTML = visibleSubs.map(sub => {
     const theme = SUB_THEMES[(sub.index - 1) % SUB_THEMES.length];
     const isSelected = highlightedSubIndex === sub.index;
-    const paidBadge = sub.isPaid ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300';
+    const paidBadge = sub.isPaid ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700/50' : 'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-400 border-rose-300 dark:border-rose-700/50';
 
     return `
-      <div onclick="selectSubHighlight(${sub.index})"
-          class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border-l-8 ${theme.cardBorder} ${theme.cardBg} dark:!bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex flex-col justify-between cursor-pointer transition ${isSelected ? 'ring-2 ring-indigo-600 dark:ring-indigo-400 shadow-md' : 'hover:shadow-md'}"
+      <div onclick="selectSubHighlight(${sub.index})" class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border-l-8 ${theme.cardBorder} ${theme.cardBg} border border-slate-200 dark:border-slate-700 flex flex-col justify-between cursor-pointer transition ${isSelected ? 'ring-2 ring-indigo-600 dark:ring-indigo-400 shadow-md' : 'hover:shadow-md'}">
+        
+        <!-- ВЕРХНЯЯ ЧАСТЬ -->
         <div>
           <div class="flex justify-between items-start gap-1.5">
             <div>
               <div class="flex items-center gap-1.5">
                 <span class="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded ${theme.badge}">Период #${sub.index}</span>
-                ${sub.isPast ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">Завершен ✓</span>` : ''}
+                ${sub.isPast ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400">Завершен ✓</span>` : ''}
               </div>
               <h3 class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white mt-1">
                 ${formatHumanDate(sub.startDate)} — ${formatHumanDate(sub.endDate)}
@@ -2128,44 +2129,47 @@ function render() {
               <button onclick="togglePaidStatus(${sub.id}, event)" class="px-2 py-0.5 rounded-full text-[11px] font-bold border ${paidBadge}">
                 ${sub.isPaid ? '✓ Оплачен' : 'Не оплачен'}
               </button>
-              <button onclick="hideSubscription(${sub.id}, event)" class="p-1 text-slate-400 hover:text-indigo-600 rounded text-xs font-bold">👁‍🗨</button>
-              <button onclick="deleteSubscription(${sub.id}, ${sub.index}, event)" class="p-1 text-slate-400 hover:text-rose-600 rounded text-xs font-bold">🗑</button>
+              <button onclick="hideSubscription(${sub.id}, event)" class="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded text-xs font-bold">👁‍🗨</button>
+              <button onclick="deleteSubscription(${sub.id}, ${sub.index}, event)" class="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded text-xs font-bold">🗑</button>
             </div>
           </div>
 
-          <div class="mt-2.5 grid grid-cols-3 gap-1.5 text-xs bg-white/90 p-2 rounded-xl border border-slate-200/80 text-center">
+          <div class="mt-3 grid grid-cols-3 gap-1.5 text-xs bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl border border-slate-200/80 dark:border-slate-700 text-center">
             <div>
               <span class="text-slate-400 block text-[10px]">Отхожено</span>
-              <span class="font-extrabold text-emerald-700">✓ ${sub.completedCount}/${state.daysPerSub}</span>
+              <span class="font-extrabold text-emerald-700 dark:text-emerald-400">✓ ${sub.completedCount}/${state.daysPerSub}</span>
             </div>
             <div>
               <span class="text-slate-400 block text-[10px]">Пропусков</span>
-              <span class="font-extrabold ${sub.missedCount > 0 ? 'text-amber-600' : 'text-slate-700'}">+${sub.missedCount}</span>
+              <span class="font-extrabold ${sub.missedCount > 0 ? 'text-amber-600 dark:text-amber-500' : 'text-slate-700 dark:text-slate-300'}">+${sub.missedCount}</span>
             </div>
             <div>
               <span class="text-slate-400 block text-[10px]">Осталось</span>
-              <span class="font-extrabold text-indigo-600">${sub.remainingAfterToday} дн.</span>
+              <span class="font-extrabold text-indigo-600 dark:text-indigo-400">${sub.remainingAfterToday} дн.</span>
             </div>
           </div>
         </div>
 
-        <div class="mt-2.5 pt-2 border-t border-slate-200/60 flex justify-between items-center text-xs" onclick="event.stopPropagation()">
-          <span class="text-slate-500 font-medium">Стоимость:</span>
+        <!-- НИЖНЯЯ ЧАСТЬ (Цена) -->
+        <div class="mt-3 pt-2 border-t border-slate-200/60 dark:border-slate-700 flex justify-between items-center text-xs" onclick="event.stopPropagation()">
+          <span class="text-slate-500 dark:text-slate-400 font-medium">Стоимость:</span>
           <div class="flex items-center gap-1">
             <input type="number" value="${sub.price}" step="100" onchange="updateSubPrice(${sub.id}, this.value)"
-              class="w-20 text-right font-extrabold bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 focus:outline-none">
-            <span class="font-bold">₽</span>
+                   class="w-20 text-right font-extrabold bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 focus:outline-none">
+            <span class="font-bold dark:text-white">₽</span>
           </div>
         </div>
+        
       </div>
     `;
   }).join('');
 
+  // Заглушка архива (сразу под карточками)
   if (hiddenSubs.length > 0) {
     subContainer.innerHTML += `
-      <div onclick="openHiddenModal()" class="bg-slate-200/70 hover:bg-slate-200 border-2 border-dashed border-slate-300 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 cursor-pointer transition">
-        <span class="text-xs font-extrabold text-slate-700">📦 В архиве скрыто периодов: ${hiddenSubs.length}</span>
-        <span class="text-[11px] text-slate-500">Нажмите, чтобы посмотреть сводку или раскрыть нужный период</span>
+      <div onclick="openHiddenModal()" class="bg-slate-200/70 dark:bg-slate-800/60 hover:bg-slate-200 dark:hover:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 cursor-pointer transition">
+        <span class="text-xs font-extrabold text-slate-700 dark:text-slate-300">📦 В архиве скрыто периодов: ${hiddenSubs.length}</span>
+        <span class="text-[11px] text-slate-500 dark:text-slate-400">Нажмите, чтобы посмотреть сводку или раскрыть нужный период</span>
       </div>
     `;
   }
@@ -2278,11 +2282,11 @@ function render() {
           if (info.status === 'attended') {
             if (info.isCompletedVisit) {
               if (state.pastAttendedStyle === 'gray') {
-                cellClasses = `bg-slate-200/90 border-slate-300 ${theme.cellBorderAccent} text-slate-600 cursor-pointer hover:bg-slate-300/70`;
-                bottomBadgeHtml = `<span class="w-full text-center text-[9px] sm:text-[11px] font-bold px-0.5 py-0.5 rounded bg-slate-300 text-slate-700 truncate leading-none">✓ ${info.dayNumberInSub}/20</span>`;
+                cellClasses = `bg-slate-200/90 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600 ${theme.cellBorderAccent} text-slate-600 dark:text-slate-300 cursor-pointer hover:bg-slate-300/70 dark:hover:bg-slate-700`;
+                bottomBadgeHtml = `<span class="w-full text-center text-[9px] sm:text-[11px] font-bold px-0.5 py-0.5 rounded bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-slate-200 truncate leading-none">✓ ${info.dayNumberInSub}/20</span>`;
               } else {
-                cellClasses = `bg-emerald-50 border-emerald-400 ${theme.cellBorderAccent} text-emerald-950 cursor-pointer hover:bg-emerald-100`;
-                bottomBadgeHtml = `<span class="w-full text-center text-[9px] sm:text-[11px] font-extrabold px-0.5 py-0.5 rounded bg-emerald-200/90 text-emerald-900 truncate leading-none">✓ ${info.dayNumberInSub}/20</span>`;
+                cellClasses = `bg-emerald-50 dark:bg-emerald-900/10 border-emerald-400 dark:border-emerald-600/50 ${theme.cellBorderAccent} text-emerald-950 dark:text-emerald-100 cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-900/30`;
+                bottomBadgeHtml = `<span class="w-full text-center text-[9px] sm:text-[11px] font-extrabold px-0.5 py-0.5 rounded bg-emerald-200/90 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-50 truncate leading-none">✓ ${info.dayNumberInSub}/20</span>`;
               }
             } else {
               cellClasses = `${theme.cellPlanned} ${theme.cellBorderAccent} cursor-pointer`;
@@ -2290,23 +2294,22 @@ function render() {
             }
 
             if (info.isSubStart) {
-              cellClasses += ' ring-1 sm:ring-2 ring-slate-900';
+              cellClasses += ' ring-1 sm:ring-2 ring-slate-900 dark:ring-white/50';
               topRightHtml = `<span class="px-1 py-0.2 text-[8px] sm:text-[10px] font-black rounded bg-slate-900 text-white leading-tight">🚀#${info.subIndex}</span>`;
             } else if (info.isSubEnd) {
-              cellClasses += ' ring-1 sm:ring-2 ring-rose-600';
+              cellClasses += ' ring-1 sm:ring-2 ring-rose-600 dark:ring-rose-500';
               topRightHtml = `<span class="px-1 py-0.2 text-[8px] sm:text-[10px] font-black rounded bg-rose-600 text-white leading-tight">🏁#${info.subIndex}</span>`;
             } else {
               topRightHtml = `<span class="px-1 py-0.2 text-[8px] sm:text-[10px] font-extrabold rounded ${theme.badge} leading-tight">#${info.subIndex}</span>`;
             }
           } else if (info.status === 'missed') {
-            cellClasses = `bg-amber-50 border-amber-400 border-l-[3px] sm:border-l-4 border-l-amber-500 text-amber-950 cursor-pointer hover:bg-amber-100`;
-            topRightHtml = `<span class="px-1 py-0.2 text-[8px] sm:text-[10px] font-bold rounded bg-amber-200 text-amber-900 leading-tight">#${info.subIndex}</span>`;
-            bottomBadgeHtml = `<span class="w-full text-center text-[9px] sm:text-[10px] font-extrabold px-0.5 py-0.5 rounded bg-amber-500 text-white truncate leading-none"><span class="sm:hidden">Проп.+1</span><span class="hidden sm:inline">Пропуск (+1)</span></span>`;
+            cellClasses = `bg-amber-50 dark:bg-amber-900/10 border-amber-400 dark:border-amber-600/50 border-l-[3px] sm:border-l-4 border-l-amber-500 text-amber-950 dark:text-amber-100 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/30`;
+            topRightHtml = `<span class="px-1 py-0.2 text-[8px] sm:text-[10px] font-bold rounded bg-amber-200 dark:bg-amber-700/50 text-amber-900 dark:text-amber-100 leading-tight">#${info.subIndex}</span>`;
+            bottomBadgeHtml = `<span class="w-full text-center text-[9px] sm:text-[10px] font-extrabold px-0.5 py-0.5 rounded bg-amber-500 dark:bg-amber-600 text-white truncate leading-none"><span class="sm:hidden">Проп.+1</span><span class="hidden sm:inline">Пропуск (+1)</span></span>`;
           } else if (info.status === 'holiday') {
-            cellClasses = `bg-purple-50 border-purple-300 border-l-[3px] sm:border-l-4 border-l-purple-500 text-purple-950 cursor-pointer hover:bg-purple-100`;
-            bottomBadgeHtml = `<span class="w-full text-center text-[9px] sm:text-[10px] font-bold px-0.5 py-0.5 rounded bg-purple-200 text-purple-900 truncate leading-none">Выходной</span>`;
+            cellClasses = `bg-purple-50 dark:bg-purple-900/10 border-purple-300 dark:border-purple-600/50 border-l-[3px] sm:border-l-4 border-l-purple-500 text-purple-950 dark:text-purple-100 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30`;
+            bottomBadgeHtml = `<span class="w-full text-center text-[9px] sm:text-[10px] font-bold px-0.5 py-0.5 rounded bg-purple-200 dark:bg-purple-700/50 text-purple-900 dark:text-purple-100 truncate leading-none">Выходной</span>`;
           }
-        }
 
         if (isDimmedByFilter) cellClasses += ' opacity-25 scale-95';
         if (isToday) cellClasses += ' ring-2 ring-amber-500';
