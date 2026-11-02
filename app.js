@@ -52,6 +52,25 @@ function changeAnalyticFilter(val) {
 }
 
 // =========================================================================
+// ТЕМНАЯ ТЕМА (DARK MODE)
+// =========================================================================
+function toggleTheme() {
+  const isDark = document.documentElement.classList.toggle('dark');
+  localStorage.setItem('uley_theme', isDark ? 'dark' : 'light');
+  updateThemeIcon();
+}
+
+function updateThemeIcon() {
+  const btn = document.getElementById('themeToggleBtn');
+  if (!btn) return;
+  const isDark = document.documentElement.classList.contains('dark');
+  btn.innerHTML = isDark ? '☀️' : '🌙';
+}
+
+// Запускаем при старте, чтобы иконка соответствовала теме
+document.addEventListener('DOMContentLoaded', updateThemeIcon);
+
+// =========================================================================
 // 2. PWA SERVICE WORKER И СИСТЕМНЫЕ PUSH-УВЕДОМЛЕНИЯ
 // =========================================================================
 let deferredInstallPrompt = null;

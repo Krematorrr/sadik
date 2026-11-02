@@ -19,15 +19,29 @@
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
+  <script>
+    // Анти-мерцание: сразу ставим темную тему до загрузки страницы, если она включена
+    if (localStorage.getItem('uley_theme') === 'dark' || (!('uley_theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  </script>
 </head>
 
-<body class="bg-slate-100 text-slate-800 font-sans overflow-hidden">
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-sans overflow-hidden transition-colors duration-300">
 
   <!-- ГЛАВНЫЙ КОНТЕЙНЕР ПРИЛОЖЕНИЯ -->
   <div class="flex h-screen w-full">
 
     <!-- БОКОВОЕ МЕНЮ (ТОЛЬКО ДЛЯ ПК) -->
-    <aside class="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 z-30 shrink-0">
+    <aside class="hidden md:flex flex-col w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-30 shrink-0 transition-colors duration-300">
       <div class="p-5 border-b border-slate-100 flex items-center gap-3">
         <img src="./icon.jpg" alt="Улей" onerror="this.style.display='none'" class="w-10 h-10 rounded-xl object-cover border border-amber-200 shadow-sm">
         <div>
@@ -55,17 +69,16 @@
     <div class="flex-1 flex flex-col h-full relative min-w-0">
       
       <!-- УМНАЯ ШАПКА (Sticky Header) -->
-      <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 py-3 sm:px-6 sm:py-4 flex justify-between items-center shadow-sm">
-        <h2 id="headerTitle" class="text-lg sm:text-xl font-black text-slate-900">🐝 Детский сад</h2>
+      <header class="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 py-3 sm:px-6 sm:py-4 flex justify-between items-center shadow-sm transition-colors duration-300">
+        <h2 id="headerTitle" class="text-lg sm:text-xl font-black text-slate-900 dark:text-white">🐝 Детский сад</h2>
         
         <div class="flex items-center gap-3">
-          <!-- Бейдж облака теперь в шапке -->
-          <span id="cloudSyncBadge" onclick="openCloudModal()" class="cursor-pointer px-2.5 py-1 text-[10px] sm:text-xs font-bold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 hover:opacity-80 transition">
+          <span id="cloudSyncBadge" onclick="openCloudModal()" class="cursor-pointer px-2.5 py-1 text-[10px] sm:text-xs font-bold rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/50 hover:opacity-80 transition">
             ☁️ Синхр.
           </span>
-          <!-- Задел под темную тему (Этап 2) -->
-          <button class="p-1.5 text-slate-400 hover:text-indigo-600 transition rounded-lg">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+          <!-- КНОПКА ТЕМЫ -->
+          <button id="themeToggleBtn" onclick="toggleTheme()" class="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition rounded-lg text-lg">
+            🌙
           </button>
         </div>
       </header>
@@ -206,7 +219,7 @@
   <!-- ========================================================================= -->
   <!-- НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ (ТОЛЬКО ДЛЯ МОБИЛЬНЫХ) -->
   <!-- ========================================================================= -->
-  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center px-2 z-50 h-16 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-around items-center px-2 z-50 h-16 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] transition-colors duration-300">
     <button id="mobNav-garden" onclick="switchMainTab('garden')" class="flex flex-col items-center justify-center w-full h-full space-y-1 text-indigo-600 transition">
       <span class="text-xl leading-none">🐝</span>
       <span class="text-[9px] font-bold">Сад</span>
