@@ -2197,17 +2197,20 @@ function render() {
   const calContainer = document.getElementById('calendarContainer');
   calContainer.innerHTML = '';
 
-  // Теперь календарь всегда будет начинаться с реальной даты старта трекера
+  // === НАЧАЛО ИСПРАВЛЕННОГО БЛОКА ===
+  // 1. Узнаем реальный год и месяц старта
   const trackerStartD = new Date(state.startDate + 'T00:00:00');
   const startYear = trackerStartD.getFullYear();
   const startMonth = trackerStartD.getMonth();
+  
+  // 2. Узнаем год и месяц конца
   const endD = new Date(lastCalculatedDate + 'T00:00:00');
-  const finalYear = Math.max(2026, endD.getFullYear());
-  const finalMonth = (finalYear === 2026) ? Math.max(11, endD.getMonth()) : endD.getMonth();
+  const finalYear = endD.getFullYear();
+  const finalMonth = endD.getMonth();
+  // === КОНЕЦ ИСПРАВЛЕННОГО БЛОКА ===
 
   let curY = startYear, curM = startMonth;
-  const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
-  const weekDays = state.hideWeekends ? ['Пн', 'Вт', 'Ср', 'Чт', 'Пт'] : ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+  const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];  const weekDays = state.hideWeekends ? ['Пн', 'Вт', 'Ср', 'Чт', 'Пт'] : ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
   const gridColsClass = state.hideWeekends ? 'grid-cols-5' : 'grid-cols-7';
 
   while (curY < finalYear || (curY === finalYear && curM <= finalMonth)) {
