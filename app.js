@@ -997,6 +997,33 @@ function renderAnalytics(subStats, engStats, dayMap) {
       
     </div>
   `;
+  let historyHtml = '';
+  if (filteredExtra.length === 0) {
+     historyHtml = `<div class="p-4 text-center text-xs text-slate-400 font-medium bg-white rounded-2xl border border-slate-200/50 shadow-sm mt-4">В этом периоде нет дополнительных расходов.</div>`;
+  } else {
+     const listHtml = filteredExtra.map(exp => `
+       <div class="flex items-center justify-between p-3 sm:p-4 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition cursor-pointer" onclick="openEditExpenseModal(${exp.id})">
+         <div class="flex items-center gap-3">
+           <div class="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600 text-lg shrink-0 border border-amber-200/50 shadow-sm">💸</div>
+           <div>
+             <div class="text-sm font-bold text-slate-900">${exp.note || 'Без названия'}</div>
+             <div class="text-[11px] text-slate-500 font-medium mt-0.5">${formatHumanDate(exp.date)}</div>
+           </div>
+         </div>
+         <div class="text-sm sm:text-base font-black text-slate-900">
+           -${exp.amount.toLocaleString('ru-RU')} ₽
+         </div>
+       </div>
+     `).join('');
+     
+     historyHtml = `
+       <div class="bg-white rounded-3xl border border-slate-200/50 shadow-sm mt-4 overflow-hidden">
+         <h3 class="text-[11px] font-black text-slate-500 uppercase tracking-wider bg-slate-50 px-4 py-3 border-b border-slate-200/50">История доп. расходов</h3>
+         <div>${listHtml}</div>
+       </div>
+     `;
+  }
+  container.innerHTML += historyHtml;
 }
 
 // =========================================================================
@@ -1695,8 +1722,13 @@ function copyReportToClipboard() {
 // ==========================================
 // 8. ЛОГИКА ДОПОЛНИТЕЛЬНЫХ РАСХОДОВ (САД)
 // ==========================================
+let editingExpenseId = null;
+
 function openExtraExpensesModal() {
-  renderExtraExpensesList();
+  document.getElementById('newExpDate').value = state.simulatedToday;
+  document.getElementById('newExpNote').value = '';
+  document.getElementById('newExpAmount').value = '';
+  
   document.getElementById('extraExpensesModal').classList.remove('hidden');
   document.getElementById('extraExpensesModal').classList.add('flex');
 }
@@ -1707,56 +1739,68 @@ function closeExtraExpensesModal() {
 }
 
 function addExtraExpense() {
-  state.extraExpenses.push({
-    id: Date.now(),
-    date: state.simulatedToday,
-    amount: 0,
-    note: ''
-  });
-  state.extraExpenses.sort((a, b) => b.date.localeCompare(a.date));
-  saveState();
-  renderExtraExpensesList();
-}
+  const date = document.getElementById('newExpDate').value;
+  const note = document.getElementById('newExpNote').value.trim();
+  const amount = Number(document.getElementById('newExpAmount').value) || 0;
 
-function updateExtraExpense(id, field, value) {
-  const exp = state.extraExpenses.find(e => e.id === id);
-  if (exp) {
-    if (field === 'amount') exp[field] = Number(value) || 0;
-    else exp[field] = value;
-    saveState();
-    
-    if (field === 'date') {
-      state.extraExpenses.sort((a, b) => b.date.localeCompare(a.date));
-      renderExtraExpensesList();
-    }
-  }
-}
-
-function deleteExtraExpense(id) {
-  if (confirm('Удалить эту запись расходов?')) {
-    state.extraExpenses = state.extraExpenses.filter(e => e.id !== id);
-    saveState();
-    renderExtraExpensesList();
-  }
-}
-
-function renderExtraExpensesList() {
-  const container = document.getElementById('extraExpensesList');
-  if (!state.extraExpenses || state.extraExpenses.length === 0) {
-    container.innerHTML = `<div class="p-4 text-center text-xs text-slate-400 font-medium bg-slate-50 rounded-xl">Пока нет дополнительных расходов.</div>`;
+  if (amount <= 0) {
+    alert('Пожалуйста, введите сумму больше нуля.');
     return;
   }
-  container.innerHTML = state.extraExpenses.map(exp => `
-    <div class="p-2.5 sm:p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row gap-2 sm:items-center">
-      <input type="date" value="${exp.date}" onchange="updateExtraExpense(${exp.id}, 'date', this.value)" class="text-[11px] sm:text-xs font-bold bg-white border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none shrink-0">
-      <input type="text" value="${exp.note}" placeholder="На что (театр, фото...)" onchange="updateExtraExpense(${exp.id}, 'note', this.value)" class="w-full text-xs font-medium bg-white border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none placeholder-slate-400">
-      <div class="flex items-center gap-1.5 shrink-0 justify-end">
-        <input type="number" value="${exp.amount}" step="50" onchange="updateExtraExpense(${exp.id}, 'amount', this.value)" class="w-20 text-xs font-black text-right bg-white border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none">
-        <span class="text-xs font-bold text-slate-500">₽</span>
-        <button onclick="deleteExtraExpense(${exp.id})" class="p-1.5 text-slate-300 hover:text-rose-600 transition">🗑</button>
-      </div>
-    </div>
-  `).join('');
+
+  state.extraExpenses.push({
+    id: Date.now(),
+    date: date,
+    amount: amount,
+    note: note
+  });
+  
+  state.extraExpenses.sort((a, b) => b.date.localeCompare(a.date));
+  saveState();
+  closeExtraExpensesModal();
+}
+
+// Функции для редактирования уже созданного расхода (из Аналитики)
+function openEditExpenseModal(id) {
+  const exp = state.extraExpenses.find(e => e.id === id);
+  if (!exp) return;
+  
+  editingExpenseId = id;
+  document.getElementById('editExpDate').value = exp.date;
+  document.getElementById('editExpNote').value = exp.note;
+  document.getElementById('editExpAmount').value = exp.amount;
+  
+  document.getElementById('editExpenseModal').classList.remove('hidden');
+  document.getElementById('editExpenseModal').classList.add('flex');
+}
+
+function closeEditExpenseModal() {
+  editingExpenseId = null;
+  document.getElementById('editExpenseModal').classList.add('hidden');
+  document.getElementById('editExpenseModal').classList.remove('flex');
+}
+
+function saveEditedExpense() {
+  if (!editingExpenseId) return;
+  const exp = state.extraExpenses.find(e => e.id === editingExpenseId);
+  if (exp) {
+    exp.date = document.getElementById('editExpDate').value;
+    exp.note = document.getElementById('editExpNote').value.trim();
+    exp.amount = Number(document.getElementById('editExpAmount').value) || 0;
+    
+    state.extraExpenses.sort((a, b) => b.date.localeCompare(a.date));
+    saveState();
+  }
+  closeEditExpenseModal();
+}
+
+function deleteExpenseFromEdit() {
+  if (!editingExpenseId) return;
+  if (confirm('Удалить эту запись расходов?')) {
+    state.extraExpenses = state.extraExpenses.filter(e => e.id !== editingExpenseId);
+    saveState();
+    closeEditExpenseModal();
+  }
 }
 
 
