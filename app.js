@@ -2184,6 +2184,7 @@ function render() {
       return { cells: week, isWeekHidden };
     });
 
+    const isMonthForceExpanded = expandedMonthsOverride.has(monthKey);
     if (visibleWeeksCount === 0 && hiddenSubIndices.size > 0) { curM++; if (curM > 11) { curM = 0; curY++; } continue; }
     
     let weeksHtml = '';
