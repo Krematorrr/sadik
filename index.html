@@ -25,6 +25,12 @@
     }
   </script>
   <style>
+    /* Плавный переход для всех цветов при смене темы */
+    * {
+      transition-property: background-color, border-color, color, fill, stroke;
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      transition-duration: 300ms;
+    }
     .day-card { transition: transform 0.12s ease, background-color 0.12s ease; }
     .day-card:active { transform: scale(0.95); }
     @media (min-width: 768px) {
@@ -314,26 +320,34 @@
   <!-- ========================================================================= -->
   <!-- НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ (ДЛЯ ТЕЛЕФОНОВ)                                   -->
   <!-- ========================================================================= -->
-  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 flex justify-around items-center px-2 z-40 h-16 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] transition-colors duration-300">
-    <button id="mobNav-garden" onclick="switchMainTab('garden')" class="flex flex-col items-center justify-center w-full h-full space-y-1 text-indigo-600 dark:text-indigo-400 transition">
-      <span class="text-xl leading-none">🐝</span>
-      <span class="text-[10px] font-bold">Сад</span>
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 flex justify-around items-center px-2 pb-safe z-40 h-[68px] shadow-[0_-4px_25px_rgba(0,0,0,0.05)]">
+    <button id="mobNav-garden" onclick="switchMainTab('garden')" class="flex flex-col items-center justify-center w-full h-full space-y-1 transition group">
+      <div id="mobNavBg-garden" class="px-4 py-1 rounded-full transition-colors flex items-center justify-center">
+        <span class="text-xl leading-none transition-transform group-active:scale-90">🐝</span>
+      </div>
+      <span id="mobNavText-garden" class="text-[10px] font-bold transition-colors">Сад</span>
     </button>
 
-    <button id="mobNav-english" onclick="switchMainTab('english')" class="flex flex-col items-center justify-center w-full h-full space-y-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition relative">
-      <span class="text-xl leading-none">🎓</span>
-      <span class="text-[10px] font-bold">Англ</span>
-      <span id="engTabCounterMob" class="absolute top-1.5 right-5 px-1.5 min-w-[18px] h-4 rounded-full bg-blue-600 text-white text-[9px] font-black flex items-center justify-center">0</span>
+    <button id="mobNav-english" onclick="switchMainTab('english')" class="flex flex-col items-center justify-center w-full h-full space-y-1 transition relative group">
+      <div id="mobNavBg-english" class="px-4 py-1 rounded-full transition-colors flex items-center justify-center relative">
+        <span class="text-xl leading-none transition-transform group-active:scale-90">🎓</span>
+        <span id="engTabCounterMob" class="absolute -top-1 -right-2 px-1.5 min-w-[18px] h-4 rounded-full bg-blue-600 text-white text-[9px] font-black flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-sm">0</span>
+      </div>
+      <span id="mobNavText-english" class="text-[10px] font-bold transition-colors">Англ</span>
     </button>
 
-    <button id="mobNav-analytics" onclick="switchMainTab('analytics')" class="flex flex-col items-center justify-center w-full h-full space-y-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
-      <span class="text-xl leading-none">📊</span>
-      <span class="text-[10px] font-bold">Аналитика</span>
+    <button id="mobNav-analytics" onclick="switchMainTab('analytics')" class="flex flex-col items-center justify-center w-full h-full space-y-1 transition group">
+      <div id="mobNavBg-analytics" class="px-4 py-1 rounded-full transition-colors flex items-center justify-center">
+        <span class="text-xl leading-none transition-transform group-active:scale-90">📊</span>
+      </div>
+      <span id="mobNavText-analytics" class="text-[10px] font-bold transition-colors">Аналитика</span>
     </button>
 
-    <button id="mobNav-settings" onclick="switchMainTab('settings')" class="flex flex-col items-center justify-center w-full h-full space-y-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
-      <span class="text-xl leading-none">⚙️</span>
-      <span class="text-[10px] font-bold">Настройки</span>
+    <button id="mobNav-settings" onclick="switchMainTab('settings')" class="flex flex-col items-center justify-center w-full h-full space-y-1 transition group">
+      <div id="mobNavBg-settings" class="px-4 py-1 rounded-full transition-colors flex items-center justify-center">
+        <span class="text-xl leading-none transition-transform group-active:scale-90">⚙️</span>
+      </div>
+      <span id="mobNavText-settings" class="text-[10px] font-bold transition-colors">Настройки</span>
     </button>
   </nav>
 

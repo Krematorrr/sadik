@@ -358,32 +358,28 @@ function switchMainTab(tab) {
     if (el) el.classList.toggle('hidden', s !== tab);
   });
 
-  const titles = {
-    garden: '🐝 Детский сад',
-    english: '🎓 Английский язык',
-    analytics: '📊 Аналитика и Финансы',
-    settings: '⚙️ Настройки'
-  };
+  const titles = { garden: '🐝 Детский сад', english: '🎓 Английский язык', analytics: '📊 Аналитика и Финансы', settings: '⚙️ Настройки' };
   const headerTitle = document.getElementById('headerTitle');
   if (headerTitle) headerTitle.textContent = titles[tab] || 'Улей';
 
   sections.forEach(s => {
     const isAct = (s === tab);
+    
+    // Десктопное меню
     const deskBtn = document.getElementById('deskNav-' + s);
     if (deskBtn) {
-      if (s === 'english') {
-        deskBtn.className = `flex items-center justify-between w-full px-4 py-3 rounded-xl font-bold text-sm transition ${isAct ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'}`;
-      } else {
-        deskBtn.className = `flex items-center gap-3 w-full px-4 py-3 rounded-xl font-bold text-sm transition ${isAct ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'}`;
-      }
+      deskBtn.className = `flex items-center gap-3 w-full px-4 py-3 rounded-xl font-bold text-sm transition ${isAct ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'}`;
+      if (s === 'english') { deskBtn.className = deskBtn.className.replace('gap-3', 'justify-between'); }
     }
 
-    const mobBtn = document.getElementById('mobNav-' + s);
-    if (mobBtn) {
-      mobBtn.className = `flex flex-col items-center justify-center w-full h-full space-y-1 transition relative ${isAct ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`;
+    // Мобильное меню (Новый Pill-дизайн)
+    const mobBg = document.getElementById('mobNavBg-' + s);
+    const mobText = document.getElementById('mobNavText-' + s);
+    if (mobBg && mobText) {
+      mobBg.className = `px-4 py-1 rounded-2xl transition-colors flex items-center justify-center relative ${isAct ? 'bg-indigo-100 dark:bg-indigo-900/40' : 'bg-transparent'}`;
+      mobText.className = `text-[10px] font-bold transition-colors mt-1 ${isAct ? 'text-indigo-700 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`;
     }
   });
-
   render();
 }
 
@@ -1026,10 +1022,11 @@ function renderAnalytics(subStats, engStats, dayMap) {
         </div>
       </div>
 
-      <!-- Долг -->
+      <!-- Ожидает оплаты -->
       <div class="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-center">
-        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Долг (по стартам)</span>
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Ожидает оплаты</span>
         <span class="text-2xl font-black ${showDebt > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-white'} block">${showDebt.toLocaleString('ru-RU')} ₽</span>
+        <span class="text-[9px] text-slate-400 mt-1">По всем начатым периодам</span>
       </div>
 
       <!-- Сэкономлено -->
@@ -2163,11 +2160,21 @@ function render() {
     let visibleWeeksCount = 0, hiddenWeeksCount = 0;
     const processedWeeks = weeks.map(week => {
       const dayCells = week.filter(c => c.type === 'day');
+      if (dayCells.length === 0) return { cells: week, isWeekHidden: true };
+
+      // 1. Неделя скрыта, если она относится к скрытому архивному периоду
       const allBeforeVisible = hiddenSubIndices.size > 0 && dayCells.every(c => c.iso < firstVisibleStartDate);
       const workDaysWithSub = dayCells.filter(c => c.info && c.info.subIndex);
       const allSubsInWeekHidden = workDaysWithSub.length > 0 && workDaysWithSub.every(c => hiddenSubIndices.has(c.info.subIndex));
-      const isWeekHidden = (allBeforeVisible || allSubsInWeekHidden);
-      if (isWeekHidden) hiddenWeeksCount++; else visibleWeeksCount++;
+      
+      // 2. НОВАЯ ЛОГИКА: Скрывать неделю, если ВСЕ её дни меньше сегодняшней даты симуляции
+      const isWeekCompletelyInPast = dayCells.every(c => c.iso < state.simulatedToday);
+
+      const isWeekHidden = (allBeforeVisible || allSubsInWeekHidden || isWeekCompletelyInPast);
+      
+      if (isWeekHidden) hiddenWeeksCount++; 
+      else visibleWeeksCount++;
+      
       return { cells: week, isWeekHidden };
     });
 
