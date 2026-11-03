@@ -31,6 +31,16 @@ function formatShortDate(isoStr) {
   return `${d}.${m}`;
 }
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ АНАЛИТИКИ ---
 let analYear = new Date().getFullYear();
 let analMonth = new Date().getMonth(); // 0-11
@@ -77,10 +87,14 @@ function toggleTheme() {
 }
 
 function updateThemeIcon() {
-  const btn = document.getElementById('themeToggleBtn');
-  if (!btn) return;
   const isDark = document.documentElement.classList.contains('dark');
-  btn.innerHTML = isDark ? '☀️' : '🌙';
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.innerHTML = isDark ? '☀️' : '🌙';
+  
+  const metaTheme = document.getElementById('themeColorMeta');
+  if (metaTheme) {
+    metaTheme.setAttribute('content', isDark ? '#0f172a' : '#ffffff');
+  }
 }
 
 document.addEventListener('DOMContentLoaded', updateThemeIcon);
@@ -260,10 +274,14 @@ function ensureDataIntegrity(targetState) {
   if (!Array.isArray(targetState.extraExpenses)) targetState.extraExpenses = [];
 
   if (Array.isArray(targetState.subscriptions)) {
-    targetState.subscriptions.forEach(sub => {
-      if (typeof sub.id === 'string' && sub.id.startsWith('arch_')) {
-        sub.id = parseInt(sub.id.replace('arch_', ''), 10) || Date.now();
+    const usedIds = new Set();
+    targetState.subscriptions.forEach((sub, idx) => {
+      const numId = Number(sub.id);
+      if (!numId || numId > 100000 || usedIds.has(numId)) {
+        sub.id = idx + 1;
+        while (usedIds.has(sub.id)) sub.id++;
       }
+      usedIds.add(sub.id);
     });
   }
 
@@ -314,12 +332,19 @@ function loadCloudConfig() {
   return { ...HARDCODED_CLOUD };
 }
 
+let cloudPushTimeout = null;
+
 async function saveState(skipCloudPush = false) {
   ensureDataIntegrity(state);
   state.updatedAt = Date.now();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  
   if (!skipCloudPush && cloudConfig.apiKey && cloudConfig.binId) {
-    pushToCloud(true);
+    updateCloudBadge('☁️ Ожидание...', true);
+    clearTimeout(cloudPushTimeout);
+    cloudPushTimeout = setTimeout(() => {
+      pushToCloud(true);
+    }, 1500);
   }
   render();
 }
@@ -948,7 +973,7 @@ function renderAnalytics(subStats, engStats, dayMap) {
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 text-lg shrink-0 border border-amber-200/50 dark:border-amber-700/50">💸</div>
           <div>
-            <div class="text-sm font-bold text-slate-900 dark:text-white">${exp.note || 'Доп. расход'}</div>
+            <div class="text-sm font-bold text-slate-900 dark:text-white">${escapeHtml(exp.note) || 'Доп. расход'}</div>
             <div class="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">${formatHumanDate(exp.date)}</div>
           </div>
         </div>
@@ -1171,6 +1196,7 @@ function shiftWorkingDays(isoDate, offset) {
 }
 
 function toggleDayStatus(isoDate) {
+  if (isoDate < state.startDate) return; // Запрещаем кликать по пустым дням до старта трекера
   const d = new Date(isoDate + 'T00:00:00');
   if (d.getDay() === 0 || d.getDay() === 6) return;
 
@@ -1252,9 +1278,15 @@ function addArchivePeriod(type) {
       }
     }
 
+    // Генерируем аккуратный порядковый ID (1, 2, 3...), игнорируя старые 13-значные таймстампы
+    const validIds = state.subscriptions
+      .map(s => Number(s.id) || 0)
+      .filter(id => id > 0 && id < 100000);
+    const nextId = validIds.length > 0 ? Math.max(...validIds) + 1 : 1;
+
     state.startDate = toISODate(curD);
     state.subscriptions.unshift({
-      id: Date.now(),
+      id: nextId,
       price: state.defaultPrice || 28800,
       isPaid: true,
       hiddenManually: false,
@@ -1298,6 +1330,12 @@ function updateSimulatedToday(val) {
   saveState();
 }
 
+function resetSimulatedToday() {
+  state.simulatedToday = toISODate(new Date());
+  expandedMonthsOverride.clear();
+  saveState();
+}
+
 function updatePastStyle(val) {
   state.pastAttendedStyle = val;
   saveState();
@@ -1327,8 +1365,21 @@ function selectSubHighlight(subIndex) {
 }
 
 function addSubscription() {
-  const nextId = state.subscriptions.length > 0 ? Math.max(...state.subscriptions.map(s => s.id)) + 1 : 1;
-  state.subscriptions.push({ id: nextId, price: state.defaultPrice, isPaid: false, hiddenManually: false, forceShow: false });
+  if (!state.subscriptions) state.subscriptions = [];
+
+  // Генерируем аккуратный порядковый ID (1, 2, 3...), игнорируя старые 13-значные таймстампы
+  const validIds = state.subscriptions
+    .map(s => Number(s.id) || 0)
+    .filter(id => id > 0 && id < 100000);
+  const nextId = validIds.length > 0 ? Math.max(...validIds) + 1 : 1;
+
+  state.subscriptions.push({
+    id: nextId,
+    price: state.defaultPrice,
+    isPaid: false,
+    hiddenManually: false,
+    forceShow: false
+  });
   saveState();
 }
 
@@ -1373,7 +1424,7 @@ function renderHiddenModalList() {
       </div>
       <div class="flex items-center gap-1.5">
         <button onclick="restoreSingleSubscription(${sub.id})" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg">👁 Раскрыть</button>
-        <button onclick="deleteSubscription(${sub.id}, ${sub.index}, event)" class="px-2.5 py-1.5 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 text-xs font-bold rounded-lg">🗑</button>
+        <button onclick="deleteSubscription(${sub.id}, ${sub.index})" class="px-2.5 py-1.5 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 text-xs font-bold rounded-lg">🗑</button>
       </div>
     </div>
   `).join('');
@@ -1596,8 +1647,9 @@ async function pullFromCloud(silent = false) {
     if (res.ok) {
       const data = await res.json();
       if (data.record && data.record.subscriptions) {
+        const currentSimDate = state.simulatedToday; // Сохраняем текущую дату пользователя
         state = ensureDataIntegrity({ ...defaultState, ...data.record });
-        state.simulatedToday = toISODate(new Date());
+        state.simulatedToday = currentSimDate || toISODate(new Date());
         await saveState(true);
         updateCloudBadge('☁️ Синхр.', true);
         if (!silent) showCloudMessage('✅ Данные загружены из облака!');
@@ -1907,7 +1959,7 @@ function render() {
             ${isCanceled ? '—' : `<button onclick="toggleEngLessonPaid(${es.id}, ${l.id})" class="px-2.5 py-1 rounded-lg text-xs font-extrabold border transition ${l.isPaid ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-700/50'}">${l.isPaid ? `💳 Оплачен (${l.unitPrice} ₽)` : `Не оплачен`}</button>`}
           </td>
           <td class="py-2.5 px-3">
-            <input type="text" value="${l.note || ''}" placeholder="Примечание..." onchange="changeEngLessonNote(${es.id}, ${l.id}, this.value)"
+            <input type="text" value="${escapeHtml(l.note)}" placeholder="Примечание..." onchange="changeEngLessonNote(${es.id}, ${l.id}, this.value)"
                    class="w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-200 rounded-lg px-2.5 py-1 focus:outline-none">
           </td>
           <td class="py-2.5 px-3 text-right whitespace-nowrap">
@@ -1941,7 +1993,7 @@ function render() {
             `}
           </div>
           <div class="flex items-center gap-1.5">
-            <input type="text" value="${l.note || ''}" placeholder="Примечание к уроку..." onchange="changeEngLessonNote(${es.id}, ${l.id}, this.value)" class="flex-1 min-w-0 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none">
+            <input type="text" value="${escapeHtml(l.note)}" placeholder="Примечание к уроку..." onchange="changeEngLessonNote(${es.id}, ${l.id}, this.value)" class="flex-1 min-w-0 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none">
             <button onclick="toggleEngLessonCancel(${es.id}, ${l.id})" class="shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition ${isCanceled ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border-indigo-200' : 'bg-amber-100/80 dark:bg-amber-900/30 text-amber-900 dark:text-amber-400 border-amber-300'}">${isCanceled ? '↩ Вернуть' : 'Перенос (+1)'}</button>
             <button onclick="deleteEngLessonRow(${es.id}, ${l.id})" class="shrink-0 px-2 py-1 text-slate-400 hover:text-rose-600 text-sm font-bold">&times;</button>
           </div>
