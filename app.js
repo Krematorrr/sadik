@@ -11,6 +11,8 @@ const HARDCODED_TELEGRAM = {
   chatId: '340778976, 413769416'
 };
 
+let disableAlerts = true; // Блокируем отправку уведомлений до загрузки облака
+
 const STORAGE_KEY = 'kg_tracker_state_v6';
 const CLOUD_CONFIG_KEY = 'kg_tracker_cloud_cfg_v1';
 
@@ -1350,6 +1352,11 @@ function toggleHideWeekends(checked) {
   saveState();
 }
 
+function toggleHidePastWeeks(checked) {
+  state.hidePastWeeks = checked;
+  saveState();
+}
+
 function toggleMonthHiddenWeeks(monthKey) {
   if (expandedMonthsOverride.has(monthKey)) expandedMonthsOverride.delete(monthKey);
   else expandedMonthsOverride.add(monthKey);
@@ -1479,7 +1486,7 @@ function checkPaymentNotifications(subStats) {
     `;
     banner.classList.remove('hidden');
 
-    if (isMilestone) {
+    if (isMilestone && !disableAlerts) {
       const alertKey = `sub_${currentSub.index}_left_${daysLeft}_date_${state.simulatedToday}`;
       if (!state.telegram.sentAlertsLog[alertKey]) {
         const msg = `🐝 Детский сад («Улей»): до окончания Периода #${currentSub.index} (${formatHumanDate(currentSub.endDate)}) осталось ровно ${daysLeft} раб. дн.!\nК оплате за Период #${targetSub.index}: ${targetSub.price.toLocaleString('ru-RU')} ₽ (старт ${formatHumanDate(targetSub.startDate)}).`;
@@ -1511,7 +1518,8 @@ function checkEnglishNotifications(engStats) {
     let titleBadge = '🎓 Английский язык';
     let messageText = '';
 
-    if (isLastLessonRemaining) {
+    if (isLastLessonRemaining && !disableAlerts) {
+      const alertKey = `eng_sub_${activeSub.index}_last_lesson_date_${state.simulatedToday}`;
       titleBadge = '🎓 🔔 Осталось последнее занятие (1 из 8)!';
       messageText = `В Абонементе #${activeSub.index} остался 1 урок (${formatHumanDate(activeSub.endDate)}). Оплачено уроков: ${activeSub.paidLessonsCount}/${activeSub.activeTotal} (остаток к доплате: ${activeSub.remainingToPay.toLocaleString('ru-RU')} ₽).`;
     } else if (hasUnpaidBalance) {
@@ -1885,6 +1893,7 @@ function render() {
   document.getElementById('simulatedTodayInput').value = state.simulatedToday;
   document.getElementById('hidePastCheckbox').checked = state.hidePastPeriods;
   document.getElementById('hideWeekendsCheckbox').checked = !!state.hideWeekends;
+  document.getElementById('hidePastWeeksCheckbox').checked = !!state.hidePastWeeks; // <-- ДОБАВИТЬ ЭТУ СТРОКУ
   document.getElementById('pastStyleSelect').value = state.pastAttendedStyle || 'green';
   document.getElementById('engHidePastCheckbox').checked = !!state.english.hidePastPeriods;
 
@@ -2162,32 +2171,25 @@ function render() {
       const dayCells = week.filter(c => c.type === 'day');
       if (dayCells.length === 0) return { cells: week, isWeekHidden: true };
 
-      // 1. Неделя скрыта, если она относится к скрытому архивному периоду
       const allBeforeVisible = hiddenSubIndices.size > 0 && dayCells.every(c => c.iso < firstVisibleStartDate);
       const workDaysWithSub = dayCells.filter(c => c.info && c.info.subIndex);
       const allSubsInWeekHidden = workDaysWithSub.length > 0 && workDaysWithSub.every(c => hiddenSubIndices.has(c.info.subIndex));
       
-      // 2. НОВАЯ ЛОГИКА: Скрывать неделю, если ВСЕ её дни меньше сегодняшней даты симуляции
-      const isWeekCompletelyInPast = dayCells.every(c => c.iso < state.simulatedToday);
+      // Скрывать текущий период ТОЛЬКО если включена галочка в фильтрах
+      const isWeekCompletelyInPast = state.hidePastWeeks && dayCells.every(c => c.iso < state.simulatedToday);
 
       const isWeekHidden = (allBeforeVisible || allSubsInWeekHidden || isWeekCompletelyInPast);
-      
-      if (isWeekHidden) hiddenWeeksCount++; 
-      else visibleWeeksCount++;
+      if (isWeekHidden) hiddenWeeksCount++; else visibleWeeksCount++;
       
       return { cells: week, isWeekHidden };
     });
 
-    if (visibleWeeksCount === 0 && hiddenSubIndices.size > 0) {
-      curM++; if (curM > 11) { curM = 0; curY++; }
-      continue;
-    }
-
-    const isMonthForceExpanded = expandedMonthsOverride.has(monthKey);
+    if (visibleWeeksCount === 0 && hiddenSubIndices.size > 0) { curM++; if (curM > 11) { curM = 0; curY++; } continue; }
+    
     let weeksHtml = '';
 
     processedWeeks.forEach(w => {
-      if (w.isWeekHidden && !isMonthForceExpanded) return;
+      if (w.isWeekHidden) return; // Просто пропускаем скрытые недели без всяких кнопок
       w.cells.forEach(cell => {
         if (state.hideWeekends && (cell.colIndex === 5 || cell.colIndex === 6)) return;
         if (cell.type === 'empty') { weeksHtml += `<div class="p-1"></div>`; return; }
@@ -2264,7 +2266,6 @@ function render() {
       <div class="bg-white dark:bg-slate-900 p-3 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 transition-colors duration-300">
         <div class="flex flex-wrap justify-between items-center gap-2 mb-2.5">
           <h2 class="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">${monthNames[curM]} ${curY}</h2>
-          ${hiddenWeeksNoticeHtml}
         </div>
         <div class="grid ${gridColsClass} gap-1 sm:gap-2 text-center text-[11px] sm:text-xs font-bold text-slate-400 mb-1.5">${weekDays.map(w => `<div>${w}</div>`).join('')}</div>
         <div class="grid ${gridColsClass} gap-1 sm:gap-2">${weeksHtml}</div>
@@ -2276,10 +2277,18 @@ function render() {
   renderAnalytics(subStats, engStats, dayMap);
 }
 
-// Старт приложения
-updateCloudBadge();
-updatePushBadge();
-render();
-if (cloudConfig.apiKey && cloudConfig.binId) {
-  pullFromCloud(true);
+// ПРАВИЛЬНЫЙ СТАРТ ПРИЛОЖЕНИЯ
+async function bootApp() {
+  updateCloudBadge();
+  updatePushBadge();
+  render(); // Быстрая отрисовка без отправки уведомлений
+  
+  if (cloudConfig.apiKey && cloudConfig.binId) {
+    await pullFromCloud(true); // Ждем, пока прилетят ваши Периоды #9 и #10
+  }
+  
+  disableAlerts = false; // Снимаем замок
+  render(); // Финальная отрисовка — теперь уведомления сработают только по реальным датам
 }
+
+bootApp();
