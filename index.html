@@ -25,19 +25,25 @@
     }
   </script>
   <style>
-    /* Плавный переход для всех цветов при смене темы */
-    * {
-      transition-property: background-color, border-color, color, fill, stroke;
-      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-      transition-duration: 300ms;
-    }
-    .day-card { transition: transform 0.12s ease, background-color 0.12s ease; }
+    /* Базовые стили анимации карточек */
+    .day-card { transition: transform 0.12s ease, background-color 0.15s ease; }
     .day-card:active { transform: scale(0.95); }
-    @media (min-width: 768px) {
-      .day-card:hover { transform: translateY(-2px); }
-    }
+    @media (min-width: 768px) { .day-card:hover { transform: translateY(-2px); } }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Отключаем стандартный кроссфейд для View Transitions API */
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+      animation: none;
+      mix-blend-mode: normal;
+    }
+    
+    /* Убираем задержку смены цвета у системных элементов на время эффекта */
+    ::view-transition-old(root) { z-index: 1; }
+    ::view-transition-new(root) { z-index: 2; }
+    .dark::view-transition-old(root) { z-index: 2; }
+    .dark::view-transition-new(root) { z-index: 1; }
   </style>
 </head>
 
@@ -96,7 +102,7 @@
           <span id="cloudSyncBadge" onclick="openCloudModal()" class="cursor-pointer px-2.5 py-1 text-[10px] sm:text-xs font-bold rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/50 hover:opacity-80 transition">
             ☁️ Синхр.
           </span>
-          <button id="themeToggleBtn" onclick="toggleTheme()" class="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition text-base">
+          <button id="themeToggleBtn" onclick="toggleTheme(event)" class="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition text-base">
             🌙
           </button>
         </div>
@@ -308,7 +314,7 @@
 
                 <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs text-slate-400">
                   <span>Тема оформления:</span>
-                  <button onclick="toggleTheme()" class="font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+                  <button onclick="toggleTheme(event)" class="font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
                     Переключить (Светлая / Темная)
                   </button>
                 </div>

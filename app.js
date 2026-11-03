@@ -80,23 +80,61 @@ function changeAnalyticFilter(val) {
 }
 
 // =========================================================================
-// ТЕМНАЯ ТЕМА (DARK MODE)
+// ТЕМНАЯ ТЕМА (DARK MODE) + VIEW TRANSITIONS API
 // =========================================================================
-function toggleTheme() {
-  const isDark = document.documentElement.classList.toggle('dark');
-  localStorage.setItem('uley_theme', isDark ? 'dark' : 'light');
-  updateThemeIcon();
+function toggleTheme(event) {
+  const toggle = () => {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('uley_theme', isDark ? 'dark' : 'light');
+    updateThemeIcon();
+  };
+
+  // Если браузер старый или не переданы координаты клика — просто меняем тему
+  if (!document.startViewTransition || !event) {
+    toggle();
+    return;
+  }
+
+  // Получаем координаты клика мыши / тапа
+  const x = event.clientX;
+  const y = event.clientY;
+  
+  // Вычисляем расстояние до самого дальнего угла экрана
+  const endRadius = Math.hypot(
+    Math.max(x, innerWidth - x),
+    Math.max(y, innerHeight - y)
+  );
+
+  // Запускаем нативный браузерный снимок состояния
+  const transition = document.startViewTransition(toggle);
+
+  // Как только DOM обновился, запускаем анимацию расширяющегося круга
+  transition.ready.then(() => {
+    const clipPath = [
+      `circle(0px at ${x}px ${y}px)`,
+      `circle(${endRadius}px at ${x}px ${y}px)`
+    ];
+
+    // Рисуем маску, которая плавно раскрывается
+    document.documentElement.animate(
+      {
+        clipPath: document.documentElement.classList.contains('dark') ? clipPath : [...clipPath].reverse()
+      },
+      {
+        duration: 450, // Длительность анимации (в миллисекундах)
+        easing: 'ease-in-out',
+        pseudoElement: document.documentElement.classList.contains('dark') ? '::view-transition-new(root)' : '::view-transition-old(root)'
+      }
+    );
+  });
 }
 
 function updateThemeIcon() {
   const isDark = document.documentElement.classList.contains('dark');
   const btn = document.getElementById('themeToggleBtn');
   if (btn) btn.innerHTML = isDark ? '☀️' : '🌙';
-  
   const metaTheme = document.getElementById('themeColorMeta');
-  if (metaTheme) {
-    metaTheme.setAttribute('content', isDark ? '#0f172a' : '#ffffff');
-  }
+  if (metaTheme) metaTheme.setAttribute('content', isDark ? '#0f172a' : '#ffffff');
 }
 
 document.addEventListener('DOMContentLoaded', updateThemeIcon);
