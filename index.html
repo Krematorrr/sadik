@@ -3,456 +3,557 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Улей — Трекер посещений</title>
+  <title>Улей — Трекер посещений и Английский</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#ffffff">
+  <meta name="theme-color" content="#0f172a">
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/jpeg" href="./icon.jpg">
   <link rel="apple-touch-icon" href="./icon.jpg">
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .day-card { transition: transform 0.12s ease, background-color 0.12s ease; }
-    .day-card:active { transform: scale(0.95); }
-    @media (min-width: 768px) { .day-card:hover { transform: translateY(-2px); } }
-    /* Скрываем скроллбар для красоты, но оставляем прокрутку */
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-  </style>
-
   <script>
     tailwind.config = {
       darkMode: 'class'
-    }
-  </script>
-  <script>
-    // Анти-мерцание: сразу ставим темную тему до загрузки страницы, если она включена
+    };
     if (localStorage.getItem('uley_theme') === 'dark' || (!('uley_theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
   </script>
+  <style>
+    .day-card { transition: transform 0.12s ease, background-color 0.12s ease; }
+    .day-card:active { transform: scale(0.95); }
+    @media (min-width: 768px) {
+      .day-card:hover { transform: translateY(-2px); }
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
 </head>
 
-<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-sans overflow-hidden transition-colors duration-300">
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans overflow-hidden select-none transition-colors duration-300">
 
-  <!-- ГЛАВНЫЙ КОНТЕЙНЕР ПРИЛОЖЕНИЯ -->
-  <div class="flex h-screen w-full">
+  <!-- ГЛАВНЫЙ КАРКАС ПРИЛОЖЕНИЯ -->
+  <div class="flex h-[100dvh] w-full overflow-hidden">
 
-    <!-- БОКОВОЕ МЕНЮ (ТОЛЬКО ДЛЯ ПК) -->
+    <!-- БОКОВОЕ МЕНЮ (ДЛЯ ПК) -->
     <aside class="hidden md:flex flex-col w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-30 shrink-0 transition-colors duration-300">
-      <div class="p-5 border-b border-slate-100 flex items-center gap-3">
-        <img src="./icon.jpg" alt="Улей" onerror="this.style.display='none'" class="w-10 h-10 rounded-xl object-cover border border-amber-200 shadow-sm">
+      <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+        <img src="./icon.jpg" alt="Улей" onerror="this.style.display='none'" class="w-11 h-11 rounded-2xl object-cover border border-amber-200 dark:border-slate-700 shadow-sm shrink-0">
         <div>
-          <h1 class="text-lg font-black text-slate-900 leading-tight">Улей</h1>
-          <p class="text-[10px] text-slate-500 font-medium">Детский клуб</p>
+          <h1 class="text-lg font-black text-slate-900 dark:text-white leading-tight">Детский «Улей»</h1>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Трекер абонементов</p>
         </div>
       </div>
-      <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
-        <button id="deskNav-garden" onclick="switchMainTab('garden')" class="flex items-center gap-3 w-full px-4 py-3 rounded-xl font-bold transition text-indigo-600 bg-indigo-50">
-          <span class="text-lg">🐝</span> Сад
+
+      <nav class="flex-1 p-3 space-y-1.5 overflow-y-auto">
+        <button id="deskNav-garden" onclick="switchMainTab('garden')" class="flex items-center gap-3 w-full px-4 py-3 rounded-xl font-bold text-sm transition text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400">
+          <span class="text-lg">🐝</span>
+          <span>Детский сад</span>
         </button>
-        <button id="deskNav-english" onclick="switchMainTab('english')" class="flex items-center gap-3 w-full px-4 py-3 rounded-xl font-bold transition text-slate-500 hover:text-slate-900 hover:bg-slate-100">
-          <span class="text-lg">🎓</span> Английский
+
+        <button id="deskNav-english" onclick="switchMainTab('english')" class="flex items-center justify-between w-full px-4 py-3 rounded-xl font-bold text-sm transition text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800">
+          <span class="flex items-center gap-3">
+            <span class="text-lg">🎓</span>
+            <span>Английский</span>
+          </span>
+          <span id="engTabCounter" class="px-2 py-0.5 text-[10px] rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300 font-black">0/8</span>
         </button>
-        <button id="deskNav-analytics" onclick="switchMainTab('analytics')" class="flex items-center gap-3 w-full px-4 py-3 rounded-xl font-bold transition text-slate-500 hover:text-slate-900 hover:bg-slate-100">
-          <span class="text-lg">📊</span> Аналитика
+
+        <button id="deskNav-analytics" onclick="switchMainTab('analytics')" class="flex items-center gap-3 w-full px-4 py-3 rounded-xl font-bold text-sm transition text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800">
+          <span class="text-lg">📊</span>
+          <span>Аналитика</span>
         </button>
-        <button id="deskNav-settings" onclick="switchMainTab('settings')" class="flex items-center gap-3 w-full px-4 py-3 rounded-xl font-bold transition text-slate-500 hover:text-slate-900 hover:bg-slate-100 mt-4">
-          <span class="text-lg">⚙️</span> Настройки
+
+        <button id="deskNav-settings" onclick="switchMainTab('settings')" class="flex items-center gap-3 w-full px-4 py-3 rounded-xl font-bold text-sm transition text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800">
+          <span class="text-lg">⚙️</span>
+          <span>Настройки</span>
         </button>
       </nav>
     </aside>
 
-    <!-- ПРАВАЯ/ЦЕНТРАЛЬНАЯ ЧАСТЬ (КОНТЕНТ + ШАПКА) -->
-    <div class="flex-1 flex flex-col h-full relative min-w-0">
-      
+    <!-- ОСНОВНАЯ ЧАСТЬ ЭКРАНА -->
+    <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
+
       <!-- УМНАЯ ШАПКА (Sticky Header) -->
-      <header class="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 py-3 sm:px-6 sm:py-4 flex justify-between items-center shadow-sm transition-colors duration-300">
-        <h2 id="headerTitle" class="text-lg sm:text-xl font-black text-slate-900 dark:text-white">🐝 Детский сад</h2>
-        
-        <div class="flex items-center gap-3">
-          <span id="cloudSyncBadge" onclick="openCloudModal()" class="cursor-pointer px-2.5 py-1 text-[10px] sm:text-xs font-bold rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/50 hover:opacity-80 transition">
+      <header class="shrink-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 py-3 sm:px-6 flex justify-between items-center shadow-sm transition-colors duration-300">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <img src="./icon.jpg" alt="Улей" onerror="this.style.display='none'" class="md:hidden w-8 h-8 rounded-xl object-cover border border-amber-200 dark:border-slate-700 shrink-0">
+          <h2 id="headerTitle" class="text-base sm:text-xl font-black text-slate-900 dark:text-white truncate">🐝 Детский сад</h2>
+        </div>
+
+        <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+          <span id="cloudSyncBadge" onclick="openCloudModal()" class="cursor-pointer px-2.5 py-1 text-[10px] sm:text-xs font-bold rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/50 hover:opacity-80 transition">
             ☁️ Синхр.
           </span>
-          <!-- КНОПКА ТЕМЫ -->
-          <button id="themeToggleBtn" onclick="toggleTheme()" class="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition rounded-lg text-lg">
+          <button id="themeToggleBtn" onclick="toggleTheme()" class="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition text-base">
             🌙
           </button>
         </div>
       </header>
 
-      <!-- СКРОЛЛИРУЕМАЯ ОБЛАСТЬ С КОНТЕНТОМ -->
-      <main class="flex-1 overflow-y-auto no-scrollbar p-3 sm:p-5 pb-24 md:pb-8 space-y-4">
-        
-        <!-- Баннеры уведомлений (Общие) -->
-        <div id="pwaInstallBanner" class="hidden bg-indigo-600 text-white rounded-2xl p-3.5 shadow-md flex justify-between items-center gap-3">
-          <div class="text-xs sm:text-sm font-bold flex items-center gap-2"><span>📲 Установите приложение на главный экран!</span></div>
-          <button onclick="installPWA()" class="px-3.5 py-1.5 bg-white text-indigo-700 text-xs font-extrabold rounded-xl shadow">Установить</button>
-        </div>
-        <div id="paymentAlertBanner" class="hidden rounded-2xl p-3.5 sm:p-4 shadow-md border-l-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-3"></div>
-        <div id="englishAlertBanner" class="hidden rounded-2xl p-3.5 sm:p-4 shadow-md border-l-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-3"></div>
+      <!-- ПРОКРУЧИВАЕМЫЙ КОНТЕНТ -->
+      <main class="flex-1 overflow-y-auto no-scrollbar p-3 sm:p-5 pb-24 md:pb-8">
+        <div class="max-w-6xl mx-auto space-y-4">
 
-        <!-- === 1. РАЗДЕЛ: САД === -->
-        <div id="gardenSection" class="space-y-4">
-          <!-- Единая панель управления садом -->
-          <div class="flex flex-col xl:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-800 p-2.5 sm:p-3 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors duration-300">
-            <div class="flex flex-wrap items-center justify-center xl:justify-start gap-2 w-full xl:w-auto">
-              <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900/50 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
-                <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Цена:</span>
-                <input type="number" id="basePriceInput" onchange="updateBasePrice(this.value)" class="w-14 font-black text-xs text-slate-900 dark:text-white bg-transparent border-none p-0 focus:ring-0 text-right">
-                <span class="text-[11px] font-bold text-slate-900 dark:text-white">₽ <span class="text-slate-400 dark:text-slate-500 font-medium">(<span id="pricePerDayDisplay"></span>/дн.)</span></span>
-              </div>
-              <label class="flex items-center gap-1.5 cursor-pointer text-[11px] font-bold text-slate-600 bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-200">
-                <input type="checkbox" id="hidePastCheckbox" onchange="toggleHidePast(this.checked)" class="rounded text-indigo-600 w-3.5 h-3.5 border-slate-300">
-                Авто-скрытие
-              </label>
-              <button id="hiddenArchiveBtn" onclick="openHiddenModal()" class="hidden px-2.5 py-1.5 bg-slate-800 text-white text-[11px] font-bold rounded-xl shadow-sm">📦 Скрытые</button>
+          <!-- Баннер установки PWA -->
+          <div id="pwaInstallBanner" class="hidden bg-indigo-600 text-white rounded-2xl p-3.5 shadow-md flex justify-between items-center gap-3">
+            <div class="text-xs sm:text-sm font-bold flex items-center gap-2">
+              <span class="text-lg">📲</span>
+              <span>Установите «Улей» на главный экран телефона!</span>
             </div>
-            <div class="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 w-full xl:w-auto">
-              <button onclick="openExtraExpensesModal()" class="px-2.5 sm:px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-[11px] sm:text-xs font-bold rounded-xl border border-amber-200 dark:border-amber-700/50 transition flex items-center gap-1 shadow-sm">
-                💸 Доп. расходы
-              </button>
-              <button onclick="addArchivePeriod('garden')" class="px-2.5 sm:px-3 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-[11px] sm:text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-600 transition shadow-sm">
-                ⏳ Архив
-              </button>
-              <button onclick="addSubscription()" class="px-2.5 sm:px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] sm:text-xs font-bold rounded-xl shadow-sm transition">
-                + Новый (20 дн.)
-              </button>
-            </div>
+            <button onclick="installPWA()" class="shrink-0 px-3.5 py-1.5 bg-white text-indigo-700 text-xs font-extrabold rounded-xl shadow hover:bg-indigo-50 transition">
+              Установить
+            </button>
           </div>
-          <section id="subscriptionsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"></section>
-          
-          <div class="bg-white dark:bg-slate-800 px-3.5 py-2.5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-wrap justify-between items-center gap-2.5 text-xs transition-colors duration-300">
-            <div class="flex flex-wrap items-center gap-2.5 sm:gap-4 font-medium text-[11px] sm:text-xs">
-              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-emerald-500 inline-block"></span> Посещено (✓)</span>
-              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-indigo-500 inline-block"></span> План</span>
-              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-amber-500 inline-block"></span> Пропуск (+1)</span>
-              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-purple-500 inline-block"></span> Выходной</span>
-            </div>
-              <!-- Внутри легенды красим тексты чекбоксов и селектов: -->
-              <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-900/50 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 text-[11px]">
-                <span class="text-slate-500 dark:text-slate-400 font-semibold">Прошедшие:</span>
-                <select id="pastStyleSelect" onchange="updatePastStyle(this.value)" class="bg-transparent font-bold text-slate-800 dark:text-white focus:outline-none cursor-pointer">
-                  <option value="green" class="dark:bg-slate-800">Зеленые (✓)</option>
-                  <option value="gray" class="dark:bg-slate-800">Серые (✓)</option>
-                </select>
-              </div>
-              <label class="flex items-center gap-1 text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900/50 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 cursor-pointer">
-                <input type="checkbox" id="hideWeekendsCheckbox" onchange="toggleHideWeekends(this.checked)" class="rounded text-indigo-600"> Только Пн–Пт
-              </label>
-              <button id="resetFiltersBtn" onclick="resetViewFilters()" class="hidden text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded border border-indigo-200">✕ Сброс</button>
-            </div>
-          </div>
-          <section id="calendarContainer" class="space-y-4"></section>
-        </div>
 
-        <!-- === 2. РАЗДЕЛ: АНГЛИЙСКИЙ === -->
-        <div id="englishSection" class="hidden space-y-4">
-          <div class="bg-white dark:bg-slate-800 p-3.5 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 transition-colors duration-300">
-            <div class="flex items-center gap-2.5">
-               <span class="px-2.5 py-1 rounded-lg bg-blue-600 text-white text-xs font-black shrink-0">🎓 EN</span>
-               <p class="text-[11px] sm:text-xs text-slate-500">Отмечайте кнопку «💳 Оплачен» у каждого занятия или оплачивайте весь абонемент целиком.</p>
-            </div>
-            <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 w-full lg:w-auto justify-end">
-              <div class="flex items-center gap-1 mr-2">
-                <span class="text-[10px] text-slate-500 font-semibold">Цена:</span>
-                <input type="number" id="engBasePriceInput" step="100" class="w-14 bg-transparent font-black text-xs text-slate-900 dark:text-white border-none p-0 focus:ring-0 text-right" onchange="updateEngBasePrice(this.value)">
-                <span class="text-[10px] font-bold text-slate-900 dark:text-white">₽ <span class="text-slate-400 dark:text-slate-500 font-medium">(<span id="engLessonPriceDisplay"></span>/ур.)</span></span>
-              </div>
-              <label class="flex items-center gap-1 text-[11px] font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer">
-                <input type="checkbox" id="engHidePastCheckbox" onchange="toggleEngHidePast(this.checked)" class="rounded text-indigo-600"> Авто-скрытие
-              </label>
-              <button id="engHiddenArchiveBtn" onclick="openEngHiddenModal()" class="hidden px-2.5 py-1.5 bg-slate-800 text-white text-[11px] font-bold rounded-lg">📦 Скрытые</button>
-              <button onclick="addEnglishSubscription()" class="px-3 py-1.5 bg-indigo-600 text-white text-[11px] font-extrabold rounded-lg">+ Новый</button>
-            </div>
-          </div>
-          <div id="englishSubscriptionsContainer" class="space-y-4"></div>
-        </div>
+          <!-- Баннеры уведомлений -->
+          <div id="paymentAlertBanner" class="hidden rounded-2xl p-3.5 sm:p-4 shadow-sm border-l-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-3"></div>
+          <div id="englishAlertBanner" class="hidden rounded-2xl p-3.5 sm:p-4 shadow-sm border-l-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-3"></div>
 
-        <!-- === 3. РАЗДЕЛ: АНАЛИТИКА === -->
-        <div id="analyticsSection" class="hidden space-y-4">
-          <div id="analyticsContainer" class="space-y-4"></div>
-        </div>
+          <!-- =============================================================== -->
+          <!-- ВКЛАДКА 1: ОСНОВНОЙ ДЕТСКИЙ САД                                 -->
+          <!-- =============================================================== -->
+          <div id="gardenSection" class="space-y-4">
 
-        <!-- === 4. НОВЫЙ РАЗДЕЛ: НАСТРОЙКИ === -->
-        <div id="settingsSection" class="hidden space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-              <h3 class="font-black text-slate-900 flex items-center gap-2"><span class="text-xl">🛠</span> Управление данными</h3>
-              <p class="text-xs text-slate-500">Симуляция времени, резервные копии и генерация отчетов.</p>
-              
-              <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
-                <span class="text-xs font-bold text-slate-700">Машина времени (Сегодня):</span>
-                <input type="date" id="simulatedTodayInput" class="text-xs font-bold bg-white border border-slate-300 rounded-lg px-2 py-1 focus:outline-none text-indigo-700" onchange="updateSimulatedToday(this.value)">
-              </div>
-              
-              <div class="flex gap-2">
-                <button onclick="exportJsonFile()" class="flex-1 py-2 bg-slate-800 text-white text-xs font-bold rounded-xl shadow-sm hover:bg-slate-700">⬇ Скачать бэкап</button>
-                <label class="flex-1 py-2 bg-white text-slate-700 border border-slate-300 text-xs font-bold rounded-xl shadow-sm hover:bg-slate-50 text-center cursor-pointer">
-                  ⬆ Загрузить JSON
-                  <input type="file" accept=".json" class="hidden" onchange="importJsonFile(event)">
+            <!-- Компактная панель управления садом -->
+            <div class="flex flex-col xl:flex-row items-center justify-between gap-2.5 bg-white dark:bg-slate-900 p-2.5 sm:p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors duration-300">
+              <div class="flex flex-wrap items-center justify-center xl:justify-start gap-2 w-full xl:w-auto">
+                <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/70 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Цена:</span>
+                  <input type="number" id="basePriceInput" step="100" onchange="updateBasePrice(this.value)" class="w-16 font-black text-xs text-slate-900 dark:text-white bg-transparent border-none p-0 focus:outline-none text-right">
+                  <span class="text-[11px] font-bold text-slate-900 dark:text-white">₽ <span class="text-slate-400 dark:text-slate-500 font-medium">(<span id="pricePerDayDisplay">1 440 ₽</span>/дн.)</span></span>
+                </div>
+
+                <label class="flex items-center gap-1.5 cursor-pointer text-[11px] font-bold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/70 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 select-none">
+                  <input type="checkbox" id="hidePastCheckbox" onchange="toggleHidePast(this.checked)" class="rounded text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5">
+                  <span>Авто-скрытие</span>
                 </label>
+
+                <button id="hiddenArchiveBtn" onclick="openHiddenModal()" class="hidden px-2.5 py-1.5 bg-slate-800 dark:bg-slate-700 hover:bg-slate-700 text-white text-[11px] font-bold rounded-xl shadow-sm transition">
+                  📦 Скрытые (0)
+                </button>
               </div>
 
-              <button onclick="openReportModal()" class="w-full py-2 bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-black rounded-xl hover:bg-emerald-200">
-                📋 Сгенерировать текстовый отчет
-              </button>
+              <div class="flex flex-wrap items-center justify-center xl:justify-end gap-1.5 sm:gap-2 w-full xl:w-auto">
+                <button onclick="openExtraExpensesModal()" class="flex-1 sm:flex-none justify-center px-2.5 sm:px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-[11px] sm:text-xs font-bold rounded-xl border border-amber-200 dark:border-amber-700/50 transition flex items-center gap-1 shadow-sm">
+                  💸 Доп. расходы
+                </button>
+                <button onclick="addArchivePeriod('garden')" class="flex-1 sm:flex-none justify-center px-2.5 sm:px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px] sm:text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center gap-1 shadow-sm">
+                  ⏳ Архив
+                </button>
+                <button onclick="addSubscription()" class="flex-1 sm:flex-none justify-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] sm:text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1 whitespace-nowrap">
+                  + Новый (20 дн.)
+                </button>
+              </div>
             </div>
 
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-              <h3 class="font-black text-slate-900 flex items-center gap-2"><span class="text-xl">🔔</span> Уведомления и Облако</h3>
-              <p class="text-xs text-slate-500">Настройка системных оповещений и синхронизации с другими устройствами.</p>
-              
-              <button onclick="openNotificationsModal()" class="w-full py-3 bg-amber-50 text-amber-700 border border-amber-300 text-xs font-black rounded-xl hover:bg-amber-100 flex justify-center items-center gap-2">
-                Настроить Push и Telegram бота
-              </button>
-              
-              <button onclick="openCloudModal()" class="w-full py-3 bg-sky-50 text-sky-700 border border-sky-300 text-xs font-black rounded-xl hover:bg-sky-100 flex justify-center items-center gap-2">
-                ☁️ Настроить облако JSONBin
-              </button>
+            <!-- Карточки периодов сада -->
+            <section id="subscriptionsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"></section>
+
+            <!-- Легенда и фильтры календаря -->
+            <div class="bg-white dark:bg-slate-900 px-3.5 py-2.5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-wrap justify-between items-center gap-2.5 text-xs transition-colors duration-300">
+              <div class="flex flex-wrap items-center gap-2.5 sm:gap-4 font-medium text-[11px] sm:text-xs text-slate-600 dark:text-slate-300">
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-emerald-500 inline-block"></span> Посещено (✓)</span>
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-indigo-500 inline-block"></span> План</span>
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-amber-500 inline-block"></span> Пропуск (+1)</span>
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-purple-500 inline-block"></span> Выходной</span>
+                <span class="flex items-center gap-1">
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-600 text-white text-[9px] font-black">🎓 EN</span>
+                  <span>Английский</span>
+                </span>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2">
+                <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px]">
+                  <span class="text-slate-500 dark:text-slate-400 font-semibold">Прошедшие:</span>
+                  <select id="pastStyleSelect" onchange="updatePastStyle(this.value)" class="bg-transparent font-bold text-slate-800 dark:text-white focus:outline-none cursor-pointer">
+                    <option value="green" class="dark:bg-slate-800">Зеленые (✓)</option>
+                    <option value="gray" class="dark:bg-slate-800">Серые (✓)</option>
+                  </select>
+                </div>
+
+                <label class="flex items-center gap-1 text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer select-none">
+                  <input type="checkbox" id="hideWeekendsCheckbox" onchange="toggleHideWeekends(this.checked)" class="rounded text-indigo-600">
+                  <span>Только Пн–Пт</span>
+                </label>
+
+                <button id="resetFiltersBtn" onclick="resetViewFilters()" class="hidden text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-lg border border-indigo-200 dark:border-indigo-800/50 transition">
+                  ✕ Сброс
+                </button>
+              </div>
             </div>
 
+            <!-- Сетка календаря по месяцам -->
+            <section id="calendarContainer" class="space-y-4"></section>
           </div>
-        </div>
 
+          <!-- =============================================================== -->
+          <!-- ВКЛАДКА 2: АНГЛИЙСКИЙ ЯЗЫК                                      -->
+          <!-- =============================================================== -->
+          <div id="englishSection" class="hidden space-y-4">
+            <div class="bg-white dark:bg-slate-900 p-3.5 sm:p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 transition-colors duration-300">
+              <div class="flex items-center gap-2.5">
+                <span class="px-2.5 py-1 rounded-xl bg-blue-600 text-white text-xs font-black shrink-0">🎓 EN</span>
+                <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
+                  Отмечайте кнопку <b>«💳 Оплачен»</b> у каждого урока отдельно или оплачивайте весь абонемент целиком.
+                </p>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/70 p-2 rounded-xl border border-slate-200 dark:border-slate-700 w-full lg:w-auto justify-between lg:justify-end">
+                <div class="flex items-center gap-1.5 px-2">
+                  <span class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">Цена (8 ур.):</span>
+                  <input type="number" id="engBasePriceInput" value="5600" step="100" onchange="updateEngBasePrice(this.value)" class="w-16 bg-transparent font-black text-xs text-slate-900 dark:text-white border-none p-0 focus:outline-none text-right">
+                  <span class="text-[11px] font-bold text-slate-900 dark:text-white">₽ <span class="text-slate-400 dark:text-slate-500 font-medium">(<span id="engLessonPriceDisplay">700 ₽</span>/ур.)</span></span>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <label class="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer select-none">
+                    <input type="checkbox" id="engHidePastCheckbox" onchange="toggleEngHidePast(this.checked)" class="rounded text-indigo-600">
+                    <span>Авто-скрытие</span>
+                  </label>
+
+                  <button id="engHiddenArchiveBtn" onclick="openEngHiddenModal()" class="hidden px-2.5 py-1.5 bg-slate-800 dark:bg-slate-700 text-white text-[11px] font-bold rounded-xl">
+                    📦 Скрытые (0)
+                  </button>
+
+                  <button onclick="addEnglishSubscription()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-extrabold rounded-xl shadow-sm transition">
+                    + Новый период
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div id="englishSubscriptionsContainer" class="space-y-4"></div>
+          </div>
+
+          <!-- =============================================================== -->
+          <!-- ВКЛАДКА 3: АНАЛИТИКА И ФИНАНСЫ                                  -->
+          <!-- =============================================================== -->
+          <div id="analyticsSection" class="hidden space-y-4">
+            <div id="analyticsContainer" class="space-y-4"></div>
+          </div>
+
+          <!-- =============================================================== -->
+          <!-- ВКЛАДКА 4: НАСТРОЙКИ И УПРАВЛЕНИЕ                               -->
+          <!-- =============================================================== -->
+          <div id="settingsSection" class="hidden space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 space-y-4">
+                <div>
+                  <h3 class="font-black text-slate-900 dark:text-white flex items-center gap-2 text-base">
+                    <span>🛠</span> Управление данными
+                  </h3>
+                  <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Симуляция текущей даты, резервные копии и текстовые сводки.</p>
+                </div>
+
+                <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/70 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Сегодняшняя дата:</span>
+                  <input type="date" id="simulatedTodayInput" onchange="updateSimulatedToday(this.value)" class="text-xs font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none text-indigo-600 dark:text-indigo-400">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                  <button onclick="exportJsonFile()" class="py-2.5 px-3 bg-slate-800 dark:bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl shadow-sm transition">
+                    ⬇ Скачать бэкап
+                  </button>
+                  <label class="py-2.5 px-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs font-bold rounded-xl text-center cursor-pointer transition">
+                    ⬆ Загрузить JSON
+                    <input type="file" accept=".json" class="hidden" onchange="importJsonFile(event)">
+                  </label>
+                </div>
+
+                <button onclick="openReportModal()" class="w-full py-2.5 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 text-xs font-black rounded-xl transition">
+                  📋 Сгенерировать текстовый отчет
+                </button>
+              </div>
+
+              <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 space-y-4 flex flex-col justify-between">
+                <div class="space-y-4">
+                  <div>
+                    <h3 class="font-black text-slate-900 dark:text-white flex items-center gap-2 text-base">
+                      <span>🔔</span> Синхронизация и Уведомления
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Настройка системных Push-уведомлений, Telegram-бота и облака JSONBin.</p>
+                  </div>
+
+                  <button onclick="openNotificationsModal()" class="w-full py-3 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50 text-xs font-black rounded-xl transition flex justify-center items-center gap-2">
+                    🔔 Настроить Push, Календарь и Telegram
+                  </button>
+
+                  <button onclick="openCloudModal()" class="w-full py-3 bg-sky-50 dark:bg-sky-900/20 hover:bg-sky-100 dark:hover:bg-sky-900/40 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-800/50 text-xs font-black rounded-xl transition flex justify-center items-center gap-2">
+                    ☁️ Настроить облако JSONBin (ПК ↔ Телефон)
+                  </button>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs text-slate-400">
+                  <span>Тема оформления:</span>
+                  <button onclick="toggleTheme()" class="font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+                    Переключить (Светлая / Темная)
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
       </main>
     </div>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ (ТОЛЬКО ДЛЯ МОБИЛЬНЫХ) -->
+  <!-- НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ (ДЛЯ ТЕЛЕФОНОВ)                                   -->
   <!-- ========================================================================= -->
-  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-around items-center px-2 z-50 h-16 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] transition-colors duration-300">
-    <button id="mobNav-garden" onclick="switchMainTab('garden')" class="flex flex-col items-center justify-center w-full h-full space-y-1 text-indigo-600 transition">
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 flex justify-around items-center px-2 z-40 h-16 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] transition-colors duration-300">
+    <button id="mobNav-garden" onclick="switchMainTab('garden')" class="flex flex-col items-center justify-center w-full h-full space-y-1 text-indigo-600 dark:text-indigo-400 transition">
       <span class="text-xl leading-none">🐝</span>
-      <span class="text-[9px] font-bold">Сад</span>
+      <span class="text-[10px] font-bold">Сад</span>
     </button>
-    <button id="mobNav-english" onclick="switchMainTab('english')" class="flex flex-col items-center justify-center w-full h-full space-y-1 text-slate-400 hover:text-slate-600 transition relative">
+
+    <button id="mobNav-english" onclick="switchMainTab('english')" class="flex flex-col items-center justify-center w-full h-full space-y-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition relative">
       <span class="text-xl leading-none">🎓</span>
-      <span class="text-[9px] font-bold">Англ</span>
-      <span id="engTabCounterMob" class="absolute top-1.5 right-4 w-4 h-4 rounded-full bg-blue-600 text-white text-[8px] font-black flex items-center justify-center">0</span>
+      <span class="text-[10px] font-bold">Англ</span>
+      <span id="engTabCounterMob" class="absolute top-1.5 right-5 px-1.5 min-w-[18px] h-4 rounded-full bg-blue-600 text-white text-[9px] font-black flex items-center justify-center">0</span>
     </button>
-    <button id="mobNav-analytics" onclick="switchMainTab('analytics')" class="flex flex-col items-center justify-center w-full h-full space-y-1 text-slate-400 hover:text-slate-600 transition">
+
+    <button id="mobNav-analytics" onclick="switchMainTab('analytics')" class="flex flex-col items-center justify-center w-full h-full space-y-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
       <span class="text-xl leading-none">📊</span>
-      <span class="text-[9px] font-bold">Аналитика</span>
+      <span class="text-[10px] font-bold">Аналитика</span>
     </button>
-    <button id="mobNav-settings" onclick="switchMainTab('settings')" class="flex flex-col items-center justify-center w-full h-full space-y-1 text-slate-400 hover:text-slate-600 transition">
+
+    <button id="mobNav-settings" onclick="switchMainTab('settings')" class="flex flex-col items-center justify-center w-full h-full space-y-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
       <span class="text-xl leading-none">⚙️</span>
-      <span class="text-[9px] font-bold">Настройки</span>
+      <span class="text-[10px] font-bold">Настройки</span>
     </button>
   </nav>
 
-  <!-- МОДАЛЬНЫЕ ОКНА ОСТАЮТСЯ БЕЗ ИЗМЕНЕНИЙ -->
-  <!-- (Здесь скрытые архивы, доп расходы, облако, отчеты, ТГ) -->
-  <!-- Для краткости я использую заглушку-комментарий, но в вашем файле ОСТАВЬТЕ ВСЕ МОДАЛКИ КАК ЕСТЬ (id="hiddenModal", "engHiddenModal", "extraExpensesModal", "cloudModal", "reportModal", "notificationsModal") -->
+  <!-- ========================================================================= -->
+  <!-- ВСЕ МОДАЛЬНЫЕ ОКНА                                                        -->
+  <!-- ========================================================================= -->
 
-  <div id="hiddenModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-3 z-50">
-    <div class="bg-white rounded-2xl max-w-xl w-full p-5 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+  <!-- 1. МОДАЛЬНОЕ ОКНО: СКРЫТЫЕ ПЕРИОДЫ САДА -->
+  <div id="hiddenModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-3 z-50">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-xl w-full p-5 shadow-xl border border-slate-200 dark:border-slate-800 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center">
-        <div><h3 class="text-base sm:text-lg font-bold text-slate-900">📦 Скрытые периоды (Сад)</h3></div>
-        <button onclick="closeHiddenModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+        <div>
+          <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">📦 Скрытые периоды (Детский сад)</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Вы можете вернуть любой период на экран или удалить его.</p>
+        </div>
+        <button onclick="closeHiddenModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl font-bold">&times;</button>
       </div>
       <div id="hiddenSubsList" class="space-y-2.5"></div>
-      <div class="flex justify-between items-center pt-2 border-t border-slate-100">
-        <button onclick="showAllHiddenSubs()" class="px-3.5 py-2 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-lg">👁 Показать все</button>
-        <button onclick="closeHiddenModal()" class="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg">Закрыть</button>
+      <div class="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-800">
+        <button onclick="showAllHiddenSubs()" class="px-3.5 py-2 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-400 text-xs font-bold rounded-xl transition">
+          👁 Показать все периоды
+        </button>
+        <button onclick="closeHiddenModal()" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl">
+          Закрыть
+        </button>
       </div>
     </div>
   </div>
 
-  <div id="engHiddenModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-3 z-50">
-     <!-- Структура идентична предыдущей, оставляем как есть -->
-     <div class="bg-white rounded-2xl max-w-xl w-full p-5 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+  <!-- 2. МОДАЛЬНОЕ ОКНО: СКРЫТЫЕ ПЕРИОДЫ АНГЛИЙСКОГО -->
+  <div id="engHiddenModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-3 z-50">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-xl w-full p-5 shadow-xl border border-slate-200 dark:border-slate-800 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center">
-        <div><h3 class="text-base sm:text-lg font-bold text-slate-900">📦 Скрытые абонементы (Английский)</h3></div>
-        <button onclick="closeEngHiddenModal()" class="text-slate-400 text-xl font-bold">&times;</button>
+        <div>
+          <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">📦 Скрытые абонементы (Английский)</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Открывайте любые прошлые или будущие периоды.</p>
+        </div>
+        <button onclick="closeEngHiddenModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl font-bold">&times;</button>
       </div>
       <div id="engHiddenSubsList" class="space-y-2.5"></div>
-      <button onclick="closeEngHiddenModal()" class="w-full py-2 mt-2 bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg">Закрыть</button>
+      <div class="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-800">
+        <button onclick="showAllEngHiddenSubs()" class="px-3.5 py-2 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-400 text-xs font-bold rounded-xl transition">
+          👁 Показать все абонементы
+        </button>
+        <button onclick="closeEngHiddenModal()" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl">
+          Закрыть
+        </button>
+      </div>
     </div>
   </div>
 
- <!-- МОДАЛЬНОЕ ОКНО: БЫСТРОЕ ДОБАВЛЕНИЕ РАСХОДА (Bottom Sheet) -->
-  <div id="extraExpensesModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-3 z-50 transition-opacity">
-    <div class="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-sm p-5 sm:p-6 shadow-2xl transform transition-transform duration-300">
+  <!-- 3. МОДАЛЬНОЕ ОКНО: БЫСТРОЕ ДОБАВЛЕНИЕ ДОП. РАСХОДА -->
+  <div id="extraExpensesModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-3 z-50">
+    <div class="bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl w-full max-w-sm p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
       <div class="flex justify-between items-center mb-5">
-        <h3 class="text-lg font-black text-slate-900">💸 Новый расход</h3>
-        <button onclick="closeExtraExpensesModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center pb-1">&times;</button>
+        <h3 class="text-lg font-black text-slate-900 dark:text-white">💸 Новый расход</h3>
+        <button onclick="closeExtraExpensesModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl font-bold bg-slate-100 dark:bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center pb-0.5">&times;</button>
       </div>
-      
+
       <div class="space-y-3">
-        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center justify-between shadow-inner">
+        <div class="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Сумма</span>
           <div class="flex items-center gap-1">
-            <input type="number" id="newExpAmount" placeholder="0" class="w-32 bg-transparent text-right text-3xl font-black text-slate-900 focus:outline-none placeholder-slate-300">
-            <span class="text-2xl font-black text-slate-900">₽</span>
+            <input type="number" id="newExpAmount" placeholder="0" class="w-32 bg-transparent text-right text-3xl font-black text-slate-900 dark:text-white focus:outline-none placeholder-slate-300 dark:placeholder-slate-600">
+            <span class="text-2xl font-black text-slate-900 dark:text-white">₽</span>
           </div>
         </div>
-        
-        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition">
-          <span class="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Дата</span>
-          <input type="date" id="newExpDate" class="w-full text-sm font-bold text-slate-800 bg-transparent focus:outline-none cursor-pointer">
+
+        <div class="bg-white dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-200 dark:border-slate-700">
+          <span class="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Дата платежа</span>
+          <input type="date" id="newExpDate" class="w-full text-sm font-bold text-slate-800 dark:text-white bg-transparent focus:outline-none cursor-pointer">
         </div>
 
-        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition">
+        <div class="bg-white dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-200 dark:border-slate-700">
           <span class="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Комментарий</span>
-          <input type="text" id="newExpNote" placeholder="Например: Фотограф, Театр..." class="w-full text-sm font-semibold text-slate-800 bg-transparent focus:outline-none placeholder-slate-300">
+          <input type="text" id="newExpNote" placeholder="Например: Театр, Фотограф..." class="w-full text-sm font-semibold text-slate-800 dark:text-white bg-transparent focus:outline-none placeholder-slate-400">
         </div>
       </div>
 
-      <button onclick="addExtraExpense()" class="w-full mt-5 py-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black rounded-2xl shadow-lg shadow-indigo-200/50 transition-all active:scale-95">
+      <button onclick="addExtraExpense()" class="w-full mt-5 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-black rounded-2xl shadow-lg transition active:scale-95">
         Добавить расход
       </button>
     </div>
   </div>
 
-  <!-- МОДАЛЬНОЕ ОКНО: РЕДАКТИРОВАНИЕ РАСХОДА -->
-  <div id="editExpenseModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-3 z-50">
-    <div class="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-sm p-5 sm:p-6 shadow-2xl">
+  <!-- 4. МОДАЛЬНОЕ ОКНО: РЕДАКТИРОВАНИЕ ДОП. РАСХОДА -->
+  <div id="editExpenseModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-3 z-50">
+    <div class="bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl w-full max-w-sm p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
       <div class="flex justify-between items-center mb-5">
-        <h3 class="text-lg font-black text-slate-900">✏️ Детали расхода</h3>
-        <button onclick="closeEditExpenseModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center pb-1">&times;</button>
+        <h3 class="text-lg font-black text-slate-900 dark:text-white">✏️ Детали расхода</h3>
+        <button onclick="closeEditExpenseModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl font-bold bg-slate-100 dark:bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center pb-0.5">&times;</button>
       </div>
-      
+
       <div class="space-y-3">
-        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center justify-between shadow-inner">
+        <div class="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Сумма</span>
           <div class="flex items-center gap-1">
-            <input type="number" id="editExpAmount" class="w-32 bg-transparent text-right text-3xl font-black text-slate-900 focus:outline-none">
-            <span class="text-2xl font-black text-slate-900">₽</span>
+            <input type="number" id="editExpAmount" class="w-32 bg-transparent text-right text-3xl font-black text-slate-900 dark:text-white focus:outline-none">
+            <span class="text-2xl font-black text-slate-900 dark:text-white">₽</span>
           </div>
         </div>
-        
-        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm focus-within:border-indigo-500 transition">
-          <span class="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Дата</span>
-          <input type="date" id="editExpDate" class="w-full text-sm font-bold text-slate-800 bg-transparent focus:outline-none cursor-pointer">
+
+        <div class="bg-white dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-200 dark:border-slate-700">
+          <span class="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Дата платежа</span>
+          <input type="date" id="editExpDate" class="w-full text-sm font-bold text-slate-800 dark:text-white bg-transparent focus:outline-none cursor-pointer">
         </div>
 
-        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm focus-within:border-indigo-500 transition">
+        <div class="bg-white dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-200 dark:border-slate-700">
           <span class="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Комментарий</span>
-          <input type="text" id="editExpNote" class="w-full text-sm font-semibold text-slate-800 bg-transparent focus:outline-none">
+          <input type="text" id="editExpNote" class="w-full text-sm font-semibold text-slate-800 dark:text-white bg-transparent focus:outline-none">
         </div>
       </div>
 
       <div class="flex gap-3 mt-5">
-        <button onclick="deleteExpenseFromEdit()" class="p-4 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl border border-rose-200 transition-all shadow-sm">
+        <button onclick="deleteExpenseFromEdit()" class="p-3.5 bg-rose-50 dark:bg-rose-900/30 hover:bg-rose-100 text-rose-600 dark:text-rose-400 rounded-2xl border border-rose-200 dark:border-rose-800/50 transition">
           🗑
         </button>
-        <button onclick="saveEditedExpense()" class="flex-1 py-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black rounded-2xl shadow-lg shadow-indigo-200/50 transition-all active:scale-95">
+        <button onclick="saveEditedExpense()" class="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-black rounded-2xl shadow-lg transition active:scale-95">
           Сохранить
         </button>
       </div>
     </div>
   </div>
-  
-  <!-- Модалки Облака, Отчетов и ТГ тоже оставляем, я скрыл их внутренности для краткости ответа, вставьте их из старого файла! -->
-  <div id="cloudModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-3 z-50">
-     <div class="bg-white rounded-2xl max-w-xl w-full p-5 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+
+  <!-- 5. МОДАЛЬНОЕ ОКНО: ОБЛАЧНАЯ СИНХРОНИЗАЦИЯ -->
+  <div id="cloudModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-3 z-50">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-xl w-full p-5 shadow-xl border border-slate-200 dark:border-slate-800 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center">
-        <h3 class="text-base sm:text-lg font-bold text-slate-900">☁️ Облачная синхронизация (ПК ↔ Телефон)</h3>
-        <button onclick="closeCloudModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+        <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">☁️ Облачная синхронизация (ПК ↔ Телефон)</h3>
+        <button onclick="closeCloudModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl font-bold">&times;</button>
       </div>
       <div class="space-y-3 text-xs">
         <div>
-          <label class="block text-slate-700 font-bold mb-1">API Ключ (X-Master-Key):</label>
-          <input type="password" id="cloudApiKeyInput" class="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono">
+          <label class="block text-slate-700 dark:text-slate-300 font-bold mb-1">API Ключ (X-Master-Key):</label>
+          <input type="password" id="cloudApiKeyInput" class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl font-mono text-slate-900 dark:text-white">
         </div>
         <div>
-          <label class="block text-slate-700 font-bold mb-1">ID вашей базы (Bin ID):</label>
-          <input type="text" id="cloudBinIdInput" class="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono">
+          <label class="block text-slate-700 dark:text-slate-300 font-bold mb-1">ID вашей базы (Bin ID):</label>
+          <input type="text" id="cloudBinIdInput" class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl font-mono text-slate-900 dark:text-white">
         </div>
       </div>
-      <div id="cloudStatusMsg" class="text-xs font-bold hidden p-2.5 rounded-lg"></div>
-      <div class="flex flex-wrap justify-between items-center gap-2 pt-2 border-t border-slate-100">
+      <div id="cloudStatusMsg" class="text-xs font-bold hidden p-2.5 rounded-xl"></div>
+      <div class="flex flex-wrap justify-between items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
         <div class="flex gap-2">
-          <button onclick="pullFromCloud(false)" class="px-3 py-2 bg-sky-100 hover:bg-sky-200 text-sky-900 text-xs font-bold rounded-lg">⬇ Загрузить из облака</button>
-          <button onclick="pushToCloud(false)" class="px-3 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-900 text-xs font-bold rounded-lg">⬆ Отправить в облако</button>
+          <button onclick="pullFromCloud(false)" class="px-3 py-2 bg-sky-100 dark:bg-sky-900/30 hover:bg-sky-200 text-sky-900 dark:text-sky-300 text-xs font-bold rounded-xl">⬇ Загрузить из облака</button>
+          <button onclick="pushToCloud(false)" class="px-3 py-2 bg-indigo-100 dark:bg-indigo-900/30 hover:bg-indigo-200 text-indigo-900 dark:text-indigo-300 text-xs font-bold rounded-xl">⬆ Отправить в облако</button>
         </div>
-        <button onclick="saveCloudConfig()" class="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow">Сохранить</button>
+        <button onclick="saveCloudConfig()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow">Сохранить</button>
       </div>
-    </div>  
+    </div>
   </div>
 
-  <div id="reportModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-3 z-50">
-     <div class="bg-white rounded-2xl max-w-xl w-full p-5 shadow-xl border border-slate-200 space-y-3">
+  <!-- 6. МОДАЛЬНОЕ ОКНО: ГЕНЕРАТОР ТЕКСТОВОГО ОТЧЕТА -->
+  <div id="reportModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-3 z-50">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-xl w-full p-5 shadow-xl border border-slate-200 dark:border-slate-800 space-y-3">
       <div class="flex justify-between items-center">
-        <h3 class="text-base sm:text-lg font-bold text-slate-900">📋 Генератор отчета (Сад + Английский)</h3>
-        <button onclick="closeReportModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+        <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">📋 Генератор отчета</h3>
+        <button onclick="closeReportModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl font-bold">&times;</button>
       </div>
       <div class="flex gap-2 items-center text-xs">
-        <span class="text-slate-500 font-medium">Раздел:</span>
-        <select id="reportScopeSelect" onchange="generateReportText()" class="border border-slate-300 rounded-lg px-2 py-1.5 font-semibold text-slate-700 w-full">
+        <span class="text-slate-500 dark:text-slate-400 font-medium">Раздел:</span>
+        <select id="reportScopeSelect" onchange="generateReportText()" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 font-semibold text-slate-700 dark:text-slate-200 w-full">
           <option value="all">Полный отчет (Детский сад + Английский)</option>
           <option value="english">Только Английский язык</option>
           <option value="garden">Только Детский сад</option>
         </select>
       </div>
-      <textarea id="reportTextarea" rows="12" class="w-full p-3 text-xs font-mono bg-slate-50 border border-slate-300 rounded-xl focus:outline-none"></textarea>
+      <textarea id="reportTextarea" rows="12" class="w-full p-3 text-xs font-mono bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none"></textarea>
       <div class="flex justify-end gap-2">
-        <button onclick="copyReportToClipboard()" id="copyReportBtn" class="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow">Скопировать текст</button>
-        <button onclick="closeReportModal()" class="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg">Закрыть</button>
+        <button onclick="copyReportToClipboard()" id="copyReportBtn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow">Скопировать текст</button>
+        <button onclick="closeReportModal()" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl">Закрыть</button>
       </div>
     </div>
   </div>
 
-  <div id="notificationsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-3 z-50">
-     <div class="bg-white rounded-2xl max-w-xl w-full p-5 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+  <!-- 7. МОДАЛЬНОЕ ОКНО: УВЕДОМЛЕНИЯ -->
+  <div id="notificationsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-3 z-50">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-xl w-full p-5 shadow-xl border border-slate-200 dark:border-slate-800 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center">
-        <h3 class="text-base sm:text-lg font-bold text-slate-900">🔔 Уведомления (Push + Календарь + Telegram)</h3>
-        <button onclick="closeNotificationsModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+        <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">🔔 Уведомления (Push + Календарь + ТГ)</h3>
+        <button onclick="closeNotificationsModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl font-bold">&times;</button>
       </div>
 
-      <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
-        <h4 class="text-xs font-bold uppercase text-amber-900">Ближайшие контрольные даты:</h4>
-        <div id="upcomingAlertsList" class="text-xs text-amber-950 space-y-1.5"></div>
+      <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-xl p-3 space-y-2">
+        <h4 class="text-xs font-bold uppercase text-amber-900 dark:text-amber-400">Ближайшие контрольные даты:</h4>
+        <div id="upcomingAlertsList" class="text-xs text-amber-950 dark:text-amber-200 space-y-1.5"></div>
       </div>
 
-      <div class="border border-indigo-200 rounded-xl p-3.5 space-y-2 bg-indigo-50/50">
+      <div class="border border-indigo-200 dark:border-indigo-800/50 rounded-xl p-3.5 space-y-2 bg-indigo-50/50 dark:bg-indigo-900/20">
         <div class="flex justify-between items-start gap-2">
           <div>
-             <h4 class="text-xs sm:text-sm font-bold text-indigo-950">Системные Push-уведомления на телефон / ПК
-</h4>
-            <p class="text-[11px] text-slate-600 mt-0.5">Всплывают в верхней шторке смартфона или Windows со звуком и иконкой «Улей».</p>
+            <h4 class="text-xs sm:text-sm font-bold text-indigo-950 dark:text-indigo-300">1. Системные Push-уведомления</h4>
+            <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">Всплывают в шторке смартфона или ПК со звуком.</p>
           </div>
           <span id="pushPermissionBadge" class="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200 text-slate-700 shrink-0">Проверка...</span>
         </div>
         <div class="flex flex-wrap gap-2 pt-1">
-          <button onclick="requestSystemPushPermission()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition">
-            📲 Включить Push-уведомления
+          <button onclick="requestSystemPushPermission()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-sm transition">
+            📲 Включить Push
           </button>
-          <button onclick="sendTestSystemPush()" class="px-3 py-1.5 bg-white hover:bg-slate-50 text-indigo-700 border border-indigo-300 text-xs font-bold rounded-lg transition">
+          <button onclick="sendTestSystemPush()" class="px-3 py-1.5 bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-400 border border-indigo-300 dark:border-indigo-700 text-xs font-bold rounded-xl transition">
             🔔 Проверить Push сейчас
           </button>
         </div>
       </div>
 
-      <div class="border border-slate-200 rounded-xl p-3.5 space-y-2 bg-slate-50">
-        <h4 class="text-xs sm:text-sm font-bold text-slate-800">2. Автономные будильники в Календарь телефона (.ics)</h4>
-        <button onclick="downloadICSReminders()" class="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg transition">
+      <div class="border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-2 bg-slate-50 dark:bg-slate-800/50">
+        <h4 class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">2. Напоминания в Календарь телефона (.ics)</h4>
+        <button onclick="downloadICSReminders()" class="w-full py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition">
           📅 Скачать файл напоминаний (.ics)
         </button>
       </div>
 
-      <div class="border border-slate-200 rounded-xl p-3.5 space-y-2.5">
-        <div>
-          <h4 class="text-xs sm:text-sm font-bold text-slate-800">3. Настройки Telegram-бота (вшиты в app.js)</h4>
-        </div>
+      <div class="border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-2.5">
+        <h4 class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">3. Настройки Telegram-бота</h4>
         <div class="space-y-2 text-xs">
           <div>
-            <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">Bot Token:</label>
-            <input type="password" id="tgBotTokenInput" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg font-mono">
+            <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-0.5">Bot Token:</label>
+            <input type="password" id="tgBotTokenInput" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl font-mono text-slate-900 dark:text-white">
           </div>
           <div>
-            <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">Chat ID получателей (через запятую):</label>
-            <input type="text" id="tgChatIdInput" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg font-mono">
+            <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-0.5">Chat ID получателей (через запятую):</label>
+            <input type="text" id="tgChatIdInput" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl font-mono text-slate-900 dark:text-white">
           </div>
         </div>
         <div class="flex flex-wrap gap-2 pt-1">
-          <button onclick="saveTelegramConfig()" class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg">Сохранить ТГ</button>
-          <button onclick="sendTestTelegramMessage()" class="px-3 py-1.5 bg-sky-100 text-sky-800 text-xs font-bold rounded-lg border border-sky-300">✈ Отправить тест в ТГ</button>
+          <button onclick="saveTelegramConfig()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl">Сохранить ТГ</button>
+          <button onclick="sendTestTelegramMessage()" class="px-3 py-1.5 bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-300 text-xs font-bold rounded-xl border border-sky-300 dark:border-sky-700">✈ Отправить тест в ТГ</button>
         </div>
         <p id="tgStatusMsg" class="text-xs font-bold text-emerald-600 hidden"></p>
       </div>

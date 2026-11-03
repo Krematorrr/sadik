@@ -14,11 +14,27 @@ const HARDCODED_TELEGRAM = {
 const STORAGE_KEY = 'kg_tracker_state_v6';
 const CLOUD_CONFIG_KEY = 'kg_tracker_cloud_cfg_v1';
 
+// --- БАЗОВЫЕ УТИЛИТЫ ДАТ ---
+function toISODate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function formatHumanDate(isoStr) {
+  if (!isoStr) return '—';
+  const [y, m, d] = isoStr.split('-');
+  return `${d}.${m}.${y}`;
+}
+
+function formatShortDate(isoStr) {
+  if (!isoStr) return '—';
+  const [y, m, d] = isoStr.split('-');
+  return `${d}.${m}`;
+}
+
 // --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ АНАЛИТИКИ ---
 let analYear = new Date().getFullYear();
 let analMonth = new Date().getMonth(); // 0-11
 let analFilter = 'all';
-
 let analPeriodType = 'month'; // 'month', 'year', 'custom', 'all'
 let analCustomStart = toISODate(new Date(new Date().setDate(new Date().getDate() - 30)));
 let analCustomEnd = toISODate(new Date());
@@ -67,7 +83,6 @@ function updateThemeIcon() {
   btn.innerHTML = isDark ? '☀️' : '🌙';
 }
 
-// Инициализация иконки темы при загрузке
 document.addEventListener('DOMContentLoaded', updateThemeIcon);
 
 // =========================================================================
@@ -162,7 +177,7 @@ function sendTestSystemPush() {
 
   triggerSystemPush(
     '🐝 Детский клуб «Улей»',
-    `Сад (Период #${activeSub?.index || 0}): отхожено ${activeSub?.completedCount || 0}/20 дн.\nАнглийский (#${activeEng?.index || 0}): посещено ${activeEng?.attendedCount || 0}/8.`
+    `Сад (Период #${activeSub?.index || 1}): отхожено ${activeSub?.completedCount || 0}/20 дн.\nАнглийский (#${activeEng?.index || 1}): посещено ${activeEng?.attendedCount || 0}/8, оплачено ${activeEng?.paidLessonsCount || 0}/8.`
   );
 }
 
@@ -180,30 +195,27 @@ const SUB_THEMES = [
   { name: 'Фиолет', cardBorder: 'border-violet-600', cardBg: 'bg-violet-50/40 dark:bg-violet-900/10', badge: 'bg-violet-600 text-white', cellPlanned: 'bg-violet-50/80 dark:bg-violet-900/20 border-violet-300 dark:border-violet-700/50 text-violet-950 dark:text-violet-200 hover:bg-violet-100 dark:hover:bg-violet-900/40', cellBorderAccent: 'border-l-[3px] sm:border-l-4 border-l-violet-600', dayPill: 'bg-violet-200/80 dark:bg-violet-800/80 text-violet-900 dark:text-violet-100' }
 ];
 
-function toISODate(d) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function formatHumanDate(isoStr) {
-  if (!isoStr) return '—';
-  const [y, m, d] = isoStr.split('-');
-  return `${d}.${m}.${y}`;
-}
-
-function formatShortDate(isoStr) {
-  if (!isoStr) return '—';
-  const [y, m, d] = isoStr.split('-');
-  return `${d}.${m}`;
-}
-
 const defaultEnglishData = {
   defaultPrice: 5600,
   lessonsPerSub: 8,
   hidePastPeriods: false,
   subscriptions: [
     {
-      id: 1, price: 5600, isPaid: false, hiddenManually: false, forceShow: false,
-      lessons: []
+      id: 1,
+      price: 5600,
+      isPaid: false,
+      hiddenManually: false,
+      forceShow: false,
+      lessons: [
+        { id: 101, date: '2026-10-12', status: 'attended', isPaid: false, note: 'Проведено (Пн)' },
+        { id: 102, date: '2026-10-15', status: 'attended', isPaid: false, note: 'Проведено' },
+        { id: 103, date: '2026-10-20', status: 'planned', isPaid: false, note: '' },
+        { id: 104, date: '2026-10-22', status: 'planned', isPaid: false, note: '' },
+        { id: 105, date: '2026-10-27', status: 'planned', isPaid: false, note: '' },
+        { id: 106, date: '2026-10-29', status: 'planned', isPaid: false, note: '' },
+        { id: 107, date: '2026-11-03', status: 'planned', isPaid: false, note: '' },
+        { id: 108, date: '2026-11-05', status: 'planned', isPaid: false, note: '' }
+      ]
     }
   ]
 };
@@ -220,11 +232,23 @@ const defaultState = {
   extraExpenses: [],
   subscriptions: [
     { id: 1, price: 28800, isPaid: true, hiddenManually: false, forceShow: false },
-    { id: 2, price: 28800, isPaid: false, hiddenManually: false, forceShow: false }
+    { id: 2, price: 28800, isPaid: false, hiddenManually: false, forceShow: false },
+    { id: 3, price: 28800, isPaid: false, hiddenManually: false, forceShow: false }
   ],
-  exceptions: {},
+  exceptions: {
+    '2026-10-06': 'missed',
+    '2026-10-07': 'missed',
+    '2026-10-08': 'missed',
+    '2026-10-09': 'missed',
+    '2026-11-04': 'holiday',
+    '2026-12-31': 'holiday'
+  },
   english: JSON.parse(JSON.stringify(defaultEnglishData)),
-  telegram: { botToken: HARDCODED_TELEGRAM.botToken, chatId: HARDCODED_TELEGRAM.chatId, sentAlertsLog: {} }
+  telegram: {
+    botToken: HARDCODED_TELEGRAM.botToken,
+    chatId: HARDCODED_TELEGRAM.chatId,
+    sentAlertsLog: {}
+  }
 };
 
 function ensureDataIntegrity(targetState) {
@@ -302,39 +326,36 @@ async function saveState(skipCloudPush = false) {
 
 function switchMainTab(tab) {
   activeMainTab = tab;
-  
   const sections = ['garden', 'english', 'analytics', 'settings'];
-  
-  // 1. Показываем нужный контент, скрываем остальное
+
   sections.forEach(s => {
     const el = document.getElementById(s + 'Section');
     if (el) el.classList.toggle('hidden', s !== tab);
   });
 
-  // 2. Меняем заголовок в умной шапке
   const titles = {
-    'garden': '🐝 Детский сад',
-    'english': '🎓 Английский',
-    'analytics': '📊 Аналитика',
-    'settings': '⚙️ Настройки'
+    garden: '🐝 Детский сад',
+    english: '🎓 Английский язык',
+    analytics: '📊 Аналитика и Финансы',
+    settings: '⚙️ Настройки'
   };
   const headerTitle = document.getElementById('headerTitle');
   if (headerTitle) headerTitle.textContent = titles[tab] || 'Улей';
 
-  // 3. Обновляем подсветку кнопок в меню (ПК и Мобилки)
   sections.forEach(s => {
     const isAct = (s === tab);
-    
-    // Для десктопного бокового меню
     const deskBtn = document.getElementById('deskNav-' + s);
     if (deskBtn) {
-      deskBtn.className = `flex items-center gap-3 w-full px-4 py-3 rounded-xl font-bold transition ${isAct ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'}`;
+      if (s === 'english') {
+        deskBtn.className = `flex items-center justify-between w-full px-4 py-3 rounded-xl font-bold text-sm transition ${isAct ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'}`;
+      } else {
+        deskBtn.className = `flex items-center gap-3 w-full px-4 py-3 rounded-xl font-bold text-sm transition ${isAct ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'}`;
+      }
     }
-    
-    // Для мобильной нижней панели
+
     const mobBtn = document.getElementById('mobNav-' + s);
     if (mobBtn) {
-      mobBtn.className = `flex flex-col items-center justify-center w-full h-full space-y-1 transition ${isAct ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`;
+      mobBtn.className = `flex flex-col items-center justify-center w-full h-full space-y-1 transition relative ${isAct ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`;
     }
   });
 
@@ -469,18 +490,22 @@ function renderEngHiddenModalList() {
   }
 
   container.innerHTML = hiddenSubs.map(es => `
-    <div class="p-3.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl flex justify-between items-center gap-3">
+    <div class="p-3.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
       <div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <span class="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded bg-blue-600 text-white">Абонемент #${es.index}</span>
+          <span class="text-xs font-extrabold text-slate-900 dark:text-white">${formatHumanDate(es.startDate)} — ${formatHumanDate(es.endDate)}</span>
         </div>
         <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-          Долг к доплате: <b>${es.remainingToPay.toLocaleString('ru-RU')} ₽</b>
+          Посещено: <b>${es.attendedCount}/${es.activeTotal}</b> • Долг к доплате: <b>${es.remainingToPay.toLocaleString('ru-RU')} ₽</b>
         </div>
       </div>
       <div class="flex items-center gap-1.5 shrink-0 w-full sm:w-auto justify-end">
-        <button onclick="restoreSingleEngSubscription(${es.id})" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition">
-          👁 Открыть этот период
+        <button onclick="restoreSingleEngSubscription(${es.id})" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow-sm transition">
+          👁 Открыть
+        </button>
+        <button onclick="deleteEngSubscription(${es.id}, ${es.index})" class="px-2.5 py-1.5 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 text-xs font-bold rounded-lg">
+          🗑
         </button>
       </div>
     </div>
@@ -546,7 +571,7 @@ function toggleEngLessonCancel(subId, lessonId) {
         date: nextDate,
         status: 'planned',
         isPaid: wasPaid,
-        note: wasPaid ? 'Добавлено взамен (оплата перенесена)' : 'Добавлено взамен'
+        note: wasPaid ? 'Добавлено взамен пропуска (оплата перенесена)' : 'Добавлено взамен пропуска'
       });
     }
   } else {
@@ -686,17 +711,16 @@ function updateEngBasePrice(val) {
   saveState();
 }
 
-
-// ==========================================
-// 5. ЛОГИКА ДОПОЛНИТЕЛЬНЫХ РАСХОДОВ (Bottom Sheet)
-// ==========================================
+// =========================================================================
+// 5. ЛОГИКА ДОПОЛНИТЕЛЬНЫХ РАСХОДОВ (БАНКОВСКАЯ МОДЕЛЬ)
+// =========================================================================
 let editingExpenseId = null;
 
 function openExtraExpensesModal() {
   document.getElementById('newExpDate').value = state.simulatedToday;
   document.getElementById('newExpNote').value = '';
   document.getElementById('newExpAmount').value = '';
-  
+
   document.getElementById('extraExpensesModal').classList.remove('hidden');
   document.getElementById('extraExpensesModal').classList.add('flex');
 }
@@ -707,7 +731,7 @@ function closeExtraExpensesModal() {
 }
 
 function addExtraExpense() {
-  const date = document.getElementById('newExpDate').value;
+  const date = document.getElementById('newExpDate').value || state.simulatedToday;
   const note = document.getElementById('newExpNote').value.trim();
   const amount = Number(document.getElementById('newExpAmount').value) || 0;
 
@@ -722,7 +746,7 @@ function addExtraExpense() {
     amount: amount,
     note: note
   });
-  
+
   state.extraExpenses.sort((a, b) => b.date.localeCompare(a.date));
   saveState();
   closeExtraExpensesModal();
@@ -731,12 +755,12 @@ function addExtraExpense() {
 function openEditExpenseModal(id) {
   const exp = state.extraExpenses.find(e => e.id === id);
   if (!exp) return;
-  
+
   editingExpenseId = id;
   document.getElementById('editExpDate').value = exp.date;
   document.getElementById('editExpNote').value = exp.note;
   document.getElementById('editExpAmount').value = exp.amount;
-  
+
   document.getElementById('editExpenseModal').classList.remove('hidden');
   document.getElementById('editExpenseModal').classList.add('flex');
 }
@@ -751,10 +775,10 @@ function saveEditedExpense() {
   if (!editingExpenseId) return;
   const exp = state.extraExpenses.find(e => e.id === editingExpenseId);
   if (exp) {
-    exp.date = document.getElementById('editExpDate').value;
+    exp.date = document.getElementById('editExpDate').value || state.simulatedToday;
     exp.note = document.getElementById('editExpNote').value.trim();
     exp.amount = Number(document.getElementById('editExpAmount').value) || 0;
-    
+
     state.extraExpenses.sort((a, b) => b.date.localeCompare(a.date));
     saveState();
   }
@@ -770,15 +794,13 @@ function deleteExpenseFromEdit() {
   }
 }
 
-
 // =========================================================================
-// 6. ЛОГИКА АНАЛИТИКИ
+// 6. ЛОГИКА РАЗДЕЛА «АНАЛИТИКА» (ПОЛНАЯ ВЕРСИЯ BENTO + ИСТОРИЯ ОПЕРАЦИЙ)
 // =========================================================================
 function renderAnalytics(subStats, engStats, dayMap) {
   const container = document.getElementById('analyticsContainer');
   if (!container) return;
 
-  // 1. ОПРЕДЕЛЕНИЕ ГРАНИЦ ВЫБРАННОГО ПЕРИОДА
   let dateStart = '2000-01-01';
   let dateEnd = '2100-12-31';
   let periodLabel = '';
@@ -801,7 +823,7 @@ function renderAnalytics(subStats, engStats, dayMap) {
     periodLabel = 'За всё время';
   }
 
-  // 2. ФИНАНСЫ
+  // Финансы в выбранном периоде
   const gardenDayPrice = Math.round(state.defaultPrice / state.daysPerSub) || 0;
   const filteredSubs = subStats.filter(s => s.startDate >= dateStart && s.startDate <= dateEnd);
   const gardenPaid = filteredSubs.filter(s => s.isPaid).reduce((sum, s) => sum + s.price, 0);
@@ -815,7 +837,16 @@ function renderAnalytics(subStats, engStats, dayMap) {
   const filteredExtra = (state.extraExpenses || []).filter(e => e.date >= dateStart && e.date <= dateEnd);
   const extraTotal = filteredExtra.reduce((sum, e) => sum + e.amount, 0);
 
-  // 3. ПОСЕЩАЕМОСТЬ И ПРОПУСКИ СТРОГО В ПЕРИОДЕ
+  // Глобальная реальная цена визита
+  const totalGPaid = subStats.filter(s => s.isPaid).reduce((sum, s) => sum + s.price, 0);
+  const totalGAttended = subStats.reduce((sum, s) => sum + s.completedCount, 0);
+  const globalGardenEffCost = totalGAttended > 0 ? Math.round(totalGPaid / totalGAttended) : 0;
+
+  const totalEPaid = engStats.reduce((sum, s) => sum + s.paidAmount, 0);
+  const totalEAttended = engStats.reduce((sum, s) => sum + s.attendedCount, 0);
+  const globalEngEffCost = totalEAttended > 0 ? Math.round(totalEPaid / totalEAttended) : 0;
+
+  // Посещаемость и серия (стрик)
   let gAttended = 0, gMissed = 0, gHoliday = 0;
   let currentStreak = 0, maxStreak = 0;
 
@@ -847,22 +878,39 @@ function renderAnalytics(subStats, engStats, dayMap) {
     });
   });
 
-  // 4. ПРИМЕНЕНИЕ НАПРАВЛЕНИЯ
-  let showPaid = 0, showDebt = 0, showSaved = 0;
+  let showPaid = 0, showDebt = 0, showSaved = 0, showEffCost = 0, effLabel = '';
   const gardenSaved = gMissed * gardenDayPrice;
   const engSaved = eCanceled * engLessonPrice;
 
   if (analFilter === 'garden') {
-    showPaid = gardenPaid + extraTotal; showDebt = gardenDebt; showSaved = gardenSaved;
+    showPaid = gardenPaid + extraTotal;
+    showDebt = gardenDebt;
+    showSaved = gardenSaved;
+    showEffCost = globalGardenEffCost;
+    effLabel = 'за 1 визит сада (ист.)';
   } else if (analFilter === 'english') {
-    showPaid = engPaid; showDebt = engDebt; showSaved = engSaved;
+    showPaid = engPaid;
+    showDebt = engDebt;
+    showSaved = engSaved;
+    showEffCost = globalEngEffCost;
+    effLabel = 'за 1 урок англ. (ист.)';
   } else {
-    showPaid = gardenPaid + engPaid + extraTotal; showDebt = gardenDebt + engDebt; 
+    showPaid = gardenPaid + engPaid + extraTotal;
+    showDebt = gardenDebt + engDebt;
     showSaved = gardenSaved + engSaved;
+    const combinedVisits = totalGAttended + totalEAttended;
+    showEffCost = combinedVisits > 0 ? Math.round((totalGPaid + totalEPaid) / combinedVisits) : 0;
+    effLabel = 'средняя за любой визит';
   }
 
-  // 5. ГЕНЕРАЦИЯ UI УПРАВЛЕНИЯ ПЕРИОДОМ
-  const btnBase = "flex-1 lg:flex-none px-2 sm:px-3 py-1 text-center transition-colors rounded-md cursor-pointer font-bold";
+  let ringAttended = analFilter === 'english' ? eAttended : (analFilter === 'garden' ? gAttended : gAttended + eAttended);
+  let ringMissed = analFilter === 'english' ? eCanceled : (analFilter === 'garden' ? gMissed : gMissed + eCanceled);
+  let ringHoliday = analFilter === 'english' ? 0 : gHoliday;
+
+  const rTotal = ringAttended + ringMissed;
+  const rRate = rTotal > 0 ? Math.round((ringAttended / rTotal) * 100) : 0;
+
+  const btnBase = "flex-1 lg:flex-none px-2.5 sm:px-3 py-1.5 text-center transition-colors rounded-lg cursor-pointer font-bold";
   const btnAct = `${btnBase} bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-400 shadow-sm`;
   const btnInact = `${btnBase} text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white`;
 
@@ -870,7 +918,7 @@ function renderAnalytics(subStats, engStats, dayMap) {
   if (analPeriodType === 'month') {
     dateControlsHtml = `
       <button onclick="changeAnalyticMonth(-1)" class="p-1 text-slate-400 hover:text-indigo-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg></button>
-      <span class="text-xs font-black text-slate-700 dark:text-slate-200 min-w-[90px] text-center">${periodLabel}</span>
+      <span class="text-xs font-black text-slate-700 dark:text-slate-200 min-w-[105px] text-center">${periodLabel}</span>
       <button onclick="changeAnalyticMonth(1)" class="p-1 text-slate-400 hover:text-indigo-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg></button>
     `;
   } else if (analPeriodType === 'year') {
@@ -891,19 +939,50 @@ function renderAnalytics(subStats, engStats, dayMap) {
     dateControlsHtml = `<span class="text-xs font-black text-slate-500 dark:text-slate-400 text-center w-full block px-2">За всё время</span>`;
   }
 
-  // 6. ВЫВОД ДАШБОРДА
+  let historyHtml = '';
+  if (filteredExtra.length === 0) {
+    historyHtml = `<div class="p-4 text-center text-xs text-slate-400 font-medium bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">В выбранном периоде нет разовых доп. расходов.</div>`;
+  } else {
+    const listHtml = filteredExtra.map(exp => `
+      <div class="flex items-center justify-between p-3.5 sm:p-4 border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition cursor-pointer" onclick="openEditExpenseModal(${exp.id})">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 text-lg shrink-0 border border-amber-200/50 dark:border-amber-700/50">💸</div>
+          <div>
+            <div class="text-sm font-bold text-slate-900 dark:text-white">${exp.note || 'Доп. расход'}</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">${formatHumanDate(exp.date)}</div>
+          </div>
+        </div>
+        <div class="text-sm sm:text-base font-black text-slate-900 dark:text-white">
+          -${exp.amount.toLocaleString('ru-RU')} ₽
+        </div>
+      </div>
+    `).join('');
+
+    historyHtml = `
+      <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/60 px-4 py-3 border-b border-slate-200/60 dark:border-slate-800">
+          <h3 class="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">История доп. расходов</h3>
+          <button onclick="openExtraExpensesModal()" class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">+ Добавить</button>
+        </div>
+        <div>${listHtml}</div>
+      </div>
+    `;
+  }
+
   container.innerHTML = `
-    <!-- Компактная панель управления -->
-    <div class="flex flex-col lg:flex-row items-center justify-between gap-2 sm:gap-3 bg-white dark:bg-slate-800 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm mb-4">
-      <select onchange="changeAnalyticFilter(this.value)" class="w-full lg:w-auto bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-bold rounded-xl px-3 py-1.5 outline-none">
+    <!-- Компактная панель управления периодом -->
+    <div class="flex flex-col lg:flex-row items-center justify-between gap-2.5 bg-white dark:bg-slate-900 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <select onchange="changeAnalyticFilter(this.value)" class="w-full lg:w-auto bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl px-3 py-2 outline-none cursor-pointer">
         <option value="all" ${analFilter === 'all' ? 'selected' : ''}>📊 Все направления</option>
         <option value="garden" ${analFilter === 'garden' ? 'selected' : ''}>🐝 Только Сад</option>
         <option value="english" ${analFilter === 'english' ? 'selected' : ''}>🎓 Только Английский</option>
       </select>
-      <div class="flex items-center gap-1 bg-slate-50 dark:bg-slate-900/50 px-2 py-1 rounded-xl border border-slate-200 dark:border-slate-700 justify-center">
+
+      <div class="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 w-full lg:w-auto justify-center min-h-[36px]">
         ${dateControlsHtml}
       </div>
-      <div class="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-[10px] w-full lg:w-auto">
+
+      <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-[11px] w-full lg:w-auto">
         <button onclick="changeAnalyticPeriodType('month')" class="${analPeriodType === 'month' ? btnAct : btnInact}">Месяц</button>
         <button onclick="changeAnalyticPeriodType('year')" class="${analPeriodType === 'year' ? btnAct : btnInact}">Год</button>
         <button onclick="changeAnalyticPeriodType('custom')" class="${analPeriodType === 'custom' ? btnAct : btnInact}">Период</button>
@@ -911,60 +990,82 @@ function renderAnalytics(subStats, engStats, dayMap) {
       </div>
     </div>
 
-    <!-- Bento Grid (Стеклянные плитки) -->
-    <div class="grid grid-cols-2 gap-3">
-      
-      <div class="col-span-2 bg-gradient-to-br from-indigo-500 to-purple-600 p-5 rounded-3xl shadow-md text-white flex flex-col justify-between relative overflow-hidden group">
+    <!-- Плитки Bento Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <!-- Главная плитка -->
+      <div class="col-span-2 bg-gradient-to-br from-indigo-500 to-purple-600 p-5 rounded-3xl shadow-md text-white flex flex-col justify-between relative overflow-hidden">
         <div class="relative z-10">
           <span class="text-[10px] font-bold text-indigo-100 uppercase tracking-wider block mb-1">Оплачено за период</span>
           <span class="text-3xl sm:text-4xl font-black block">${showPaid.toLocaleString('ru-RU')} ₽</span>
-          ${(extraTotal > 0 && analFilter !== 'english') ? `<div class="mt-2 text-[10px] font-medium text-indigo-100/90 bg-black/10 inline-block px-2 py-1 rounded-lg backdrop-blur-sm border border-white/10">В т.ч. доп. траты: ${extraTotal.toLocaleString('ru-RU')} ₽</div>` : ''}
+          ${(extraTotal > 0 && analFilter !== 'english') ? `<div class="mt-2 text-[11px] font-semibold text-indigo-100 bg-black/15 inline-block px-2.5 py-1 rounded-lg border border-white/10">В т.ч. доп. расходы: ${extraTotal.toLocaleString('ru-RU')} ₽</div>` : ''}
         </div>
       </div>
 
-      <div class="bg-white dark:bg-slate-800 p-4 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col">
+      <!-- Долг -->
+      <div class="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-center">
         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Долг (по стартам)</span>
-        <span class="text-2xl font-black ${showDebt > 0 ? 'text-rose-600 dark:text-rose-500' : 'text-slate-800 dark:text-white'} block">${showDebt.toLocaleString('ru-RU')} ₽</span>
+        <span class="text-2xl font-black ${showDebt > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-white'} block">${showDebt.toLocaleString('ru-RU')} ₽</span>
       </div>
 
-      <div class="bg-emerald-50/50 dark:bg-emerald-900/20 p-4 rounded-3xl border border-emerald-100 dark:border-emerald-800/50 shadow-sm flex flex-col">
-        <span class="text-[10px] font-bold text-emerald-600/80 dark:text-emerald-400 uppercase tracking-wider block mb-1">Сэкономлено в окне</span>
+      <!-- Сэкономлено -->
+      <div class="bg-emerald-50/70 dark:bg-emerald-900/20 p-4 rounded-3xl border border-emerald-200 dark:border-emerald-800/50 shadow-sm flex flex-col justify-center">
+        <span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block mb-1">Сэкономлено в окне</span>
         <span class="text-2xl font-black text-emerald-700 dark:text-emerald-300 block">+${showSaved.toLocaleString('ru-RU')} ₽</span>
       </div>
-      
+
+      <!-- Реальная цена -->
+      <div class="col-span-1 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+        <div>
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Реальная цена</span>
+          <span class="text-lg sm:text-xl font-black text-slate-800 dark:text-white block mt-0.5">${showEffCost.toLocaleString('ru-RU')} ₽</span>
+        </div>
+        <span class="text-[10px] text-slate-400 font-medium pt-1">${effLabel}</span>
+      </div>
+
+      <!-- Рекорд серии -->
+      <div class="col-span-1 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-amber-200/70 dark:border-amber-800/40 shadow-sm flex flex-col justify-between">
+        <div>
+          <span class="text-[10px] font-bold text-amber-500 uppercase tracking-wider block">Рекорд серии</span>
+          <span class="text-lg sm:text-xl font-black text-slate-800 dark:text-white block mt-0.5">🔥 ${maxStreak} дн.</span>
+        </div>
+        <span class="text-[10px] text-slate-400 font-medium pt-1">В саду без пропусков</span>
+      </div>
+
+      <!-- Кольцевая статистика -->
+      <div class="col-span-2 bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+        <h3 class="text-xs font-extrabold text-slate-800 dark:text-slate-200 mb-3 uppercase tracking-wide">Посещаемость: ${periodLabel}</h3>
+        <div class="flex items-center gap-5">
+          <div class="relative w-16 h-16 shrink-0">
+            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+              <path class="text-slate-100 dark:text-slate-800" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="100, 100" />
+              <path class="${rRate >= 75 ? 'text-emerald-500' : (rRate >= 50 ? 'text-amber-500' : 'text-rose-500')}" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="${rRate}, 100" />
+            </svg>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="text-xs font-black text-slate-700 dark:text-slate-200">${rRate}%</span>
+            </div>
+          </div>
+
+          <div class="flex-1 space-y-1.5 text-xs">
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Отхожено</span>
+              <span class="font-black text-slate-800 dark:text-white">${ringAttended}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span>Пропусков</span>
+              <span class="font-black text-slate-800 dark:text-white">${ringMissed}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-purple-500"></span>Выходных</span>
+              <span class="font-black text-slate-800 dark:text-white">${ringHoliday}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+
+    ${historyHtml}
   `;
-
-  // Лента транзакций
-  let historyHtml = '';
-  if (filteredExtra.length === 0) {
-     historyHtml = `<div class="p-4 text-center text-xs text-slate-400 font-medium bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/50 dark:border-slate-700 shadow-sm mt-4">В этом периоде нет дополнительных расходов.</div>`;
-  } else {
-     const listHtml = filteredExtra.map(exp => `
-       <div class="flex items-center justify-between p-3 sm:p-4 border-b border-slate-100 dark:border-slate-700/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition cursor-pointer" onclick="openEditExpenseModal(${exp.id})">
-         <div class="flex items-center gap-3">
-           <div class="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 text-lg shrink-0 border border-amber-200/50 dark:border-amber-700/50 shadow-sm">💸</div>
-           <div>
-             <div class="text-sm font-bold text-slate-900 dark:text-white">${exp.note || 'Без названия'}</div>
-             <div class="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">${formatHumanDate(exp.date)}</div>
-           </div>
-         </div>
-         <div class="text-sm sm:text-base font-black text-slate-900 dark:text-white">
-           -${exp.amount.toLocaleString('ru-RU')} ₽
-         </div>
-       </div>
-     `).join('');
-     
-     historyHtml = `
-       <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/50 dark:border-slate-700 shadow-sm mt-4 overflow-hidden">
-         <h3 class="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-slate-900/50 px-4 py-3 border-b border-slate-200/50 dark:border-slate-700">История доп. расходов</h3>
-         <div>${listHtml}</div>
-       </div>
-     `;
-  }
-  container.innerHTML += historyHtml;
 }
-
 
 // =========================================================================
 // 7. ЛОГИКА ДЕТСКОГО САДА И КАЛЕНДАРЯ
@@ -1056,14 +1157,14 @@ function shiftWorkingDays(isoDate, offset) {
   let d = new Date(isoDate + 'T00:00:00');
   let steps = Math.abs(offset);
   const dir = offset > 0 ? 1 : -1;
-  
+
   while (steps > 0) {
     d.setDate(d.getDate() + dir);
     const day = d.getDay();
     const iso = toISODate(d);
     const isWeekend = (day === 0 || day === 6);
     const isHoliday = state.exceptions[iso] === 'holiday';
-    
+
     if (!isWeekend && !isHoliday) steps--;
   }
   return toISODate(d);
@@ -1071,21 +1172,19 @@ function shiftWorkingDays(isoDate, offset) {
 
 function toggleDayStatus(isoDate) {
   const d = new Date(isoDate + 'T00:00:00');
-  if (d.getDay() === 0 || d.getDay() === 6) return; 
+  if (d.getDay() === 0 || d.getDay() === 6) return;
 
   const { subStats } = calculateSchedule();
   const activeSub = subStats.find(s => !s.isPast);
 
   let isArchiveToggle = false;
-  if (!activeSub) {
-    isArchiveToggle = true; 
-  } else if (isoDate < activeSub.startDate) {
-    isArchiveToggle = true; 
+  if (!activeSub || isoDate < activeSub.startDate) {
+    isArchiveToggle = true;
   }
 
   const current = state.exceptions[isoDate] || 'attended';
   let toStatus = 'attended';
-  
+
   if (current === 'attended') toStatus = 'missed';
   else if (current === 'missed') toStatus = 'holiday';
   else delete state.exceptions[isoDate];
@@ -1100,8 +1199,7 @@ function toggleDayStatus(isoDate) {
 
     if (!wasConsuming && willConsume) {
       state.startDate = shiftWorkingDays(state.startDate, -1);
-    } 
-    else if (wasConsuming && !willConsume) {
+    } else if (wasConsuming && !willConsume) {
       state.startDate = shiftWorkingDays(state.startDate, 1);
     }
   }
@@ -1153,12 +1251,10 @@ function addArchivePeriod(type) {
         workdaysNeeded--;
       }
     }
-    
+
     state.startDate = toISODate(curD);
-    const newId = Date.now(); 
-    
     state.subscriptions.unshift({
-      id: newId,
+      id: Date.now(),
       price: state.defaultPrice || 28800,
       isPaid: true,
       hiddenManually: false,
@@ -1265,7 +1361,7 @@ function renderHiddenModalList() {
   }
 
   container.innerHTML = hiddenSubs.map(sub => `
-    <div class="p-3.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+    <div class="p-3.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
       <div>
         <div class="flex items-center gap-2">
           <span class="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded bg-slate-800 text-white">Период #${sub.index}</span>
@@ -1276,8 +1372,8 @@ function renderHiddenModalList() {
         </div>
       </div>
       <div class="flex items-center gap-1.5">
-        <button onclick="restoreSingleSubscription(${sub.id})" class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg">👁 Раскрыть</button>
-        <button onclick="deleteSubscription(${sub.id}, ${sub.index}, event)" class="px-2.5 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 text-xs font-bold rounded-lg">🗑</button>
+        <button onclick="restoreSingleSubscription(${sub.id})" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg">👁 Раскрыть</button>
+        <button onclick="deleteSubscription(${sub.id}, ${sub.index}, event)" class="px-2.5 py-1.5 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 text-xs font-bold rounded-lg">🗑</button>
       </div>
     </div>
   `).join('');
@@ -1291,13 +1387,12 @@ function showAllHiddenSubs() {
   saveState();
 }
 
-
 // =========================================================================
 // 8. СИСТЕМНЫЕ ФУНКЦИИ (УВЕДОМЛЕНИЯ, ОБЛАКО, ОТЧЕТЫ, ТЕЛЕГРАМ)
 // =========================================================================
-
 function checkPaymentNotifications(subStats) {
   const banner = document.getElementById('paymentAlertBanner');
+  if (!banner) return;
   banner.classList.add('hidden');
   const currentSub = subStats.find(s => s.startDate <= state.simulatedToday && s.endDate >= state.simulatedToday) || subStats.find(s => !s.isPast);
   if (!currentSub) return;
@@ -1310,7 +1405,9 @@ function checkPaymentNotifications(subStats) {
   if (currentUnpaid || (daysLeft <= 5 && needsPaymentForNext)) {
     const isMilestone = [5, 3, 1].includes(daysLeft);
     const targetSub = currentUnpaid ? currentSub : nextSub;
-    const urgencyColor = daysLeft <= 1 ? 'bg-rose-50 border-rose-600 text-rose-950' : (daysLeft <= 3 ? 'bg-amber-50 border-amber-500 text-amber-950' : 'bg-indigo-50 border-indigo-600 text-indigo-950');
+    const urgencyColor = daysLeft <= 1
+      ? 'bg-rose-50 dark:bg-rose-900/30 border-rose-600 text-rose-950 dark:text-rose-200'
+      : (daysLeft <= 3 ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-500 text-amber-950 dark:text-amber-200' : 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-600 text-indigo-950 dark:text-indigo-200');
 
     banner.className = `rounded-2xl p-3.5 shadow-sm border-l-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-2.5 ${urgencyColor}`;
     banner.innerHTML = `
@@ -1328,7 +1425,7 @@ function checkPaymentNotifications(subStats) {
           }
         </p>
       </div>
-      <button onclick="togglePaidStatus(${targetSub.id})" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg shadow shrink-0">
+      <button onclick="togglePaidStatus(${targetSub.id})" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow shrink-0">
         ✓ Отметить #${targetSub.index} оплаченным
       </button>
     `;
@@ -1349,6 +1446,7 @@ function checkPaymentNotifications(subStats) {
 
 function checkEnglishNotifications(engStats) {
   const banner = document.getElementById('englishAlertBanner');
+  if (!banner) return;
   banner.classList.add('hidden');
   if (!engStats || engStats.length === 0) return;
 
@@ -1360,7 +1458,7 @@ function checkEnglishNotifications(engStats) {
   const hasUnpaidBalance = activeSub.remainingToPay > 0;
 
   if (hasUnpaidBalance || isLastLessonRemaining || isFinishedUnpaidNext) {
-    banner.className = `rounded-2xl p-3.5 shadow-sm border-l-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-2.5 bg-sky-50 border-sky-600 text-sky-950`;
+    banner.className = `rounded-2xl p-3.5 shadow-sm border-l-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-2.5 bg-sky-50 dark:bg-sky-900/30 border-sky-600 text-sky-950 dark:text-sky-200`;
 
     let titleBadge = '🎓 Английский язык';
     let messageText = '';
@@ -1388,11 +1486,11 @@ function checkEnglishNotifications(engStats) {
       </div>
       <div class="flex items-center gap-2 shrink-0">
         ${hasUnpaidBalance ? `
-          <button onclick="toggleEngSubPaidAll(${activeSub.id})" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg shadow">
+          <button onclick="toggleEngSubPaidAll(${activeSub.id})" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow">
             ✓ Оплатить весь (#${activeSub.index})
           </button>
         ` : ''}
-        <button onclick="switchMainTab('english')" class="px-3 py-1.5 bg-white text-sky-900 border border-sky-300 text-xs font-bold rounded-lg">
+        <button onclick="switchMainTab('english')" class="px-3 py-1.5 bg-white dark:bg-slate-800 text-sky-900 dark:text-sky-300 border border-sky-300 dark:border-sky-700 text-xs font-bold rounded-lg">
           Открыть 🎓 EN
         </button>
       </div>
@@ -1422,7 +1520,230 @@ function getAlertDatesForSub(sub) {
   ];
 }
 
-// Telegram
+function updateCloudBadge(statusText, isOk = true) {
+  const badge = document.getElementById('cloudSyncBadge');
+  if (!badge) return;
+  if (!cloudConfig.apiKey || !cloudConfig.binId) {
+    badge.textContent = '☁️ Не подкл.';
+    badge.className = 'cursor-pointer px-2.5 py-1 text-[10px] sm:text-xs font-bold rounded-full bg-slate-100 text-slate-600 border border-slate-300';
+    return;
+  }
+  badge.textContent = statusText || '☁️ Синхр.';
+  badge.className = isOk
+    ? 'cursor-pointer px-2.5 py-1 text-[10px] sm:text-xs font-bold rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/50 hover:opacity-80 transition'
+    : 'cursor-pointer px-2.5 py-1 text-[10px] sm:text-xs font-bold rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-400 border border-rose-300 dark:border-rose-800/50 hover:opacity-80 transition';
+}
+
+function openCloudModal() {
+  document.getElementById('cloudApiKeyInput').value = cloudConfig.apiKey || '';
+  document.getElementById('cloudBinIdInput').value = cloudConfig.binId || '';
+  document.getElementById('cloudModal').classList.remove('hidden');
+  document.getElementById('cloudModal').classList.add('flex');
+}
+
+function closeCloudModal() {
+  document.getElementById('cloudModal').classList.add('hidden');
+  document.getElementById('cloudModal').classList.remove('flex');
+}
+
+function showCloudMessage(msg, isError = false) {
+  const el = document.getElementById('cloudStatusMsg');
+  el.textContent = msg;
+  el.className = `text-xs font-bold p-2.5 rounded-xl ${isError ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`;
+  el.classList.remove('hidden');
+}
+
+function saveCloudConfig() {
+  cloudConfig.apiKey = document.getElementById('cloudApiKeyInput').value.trim() || HARDCODED_CLOUD.apiKey;
+  cloudConfig.binId = document.getElementById('cloudBinIdInput').value.trim() || HARDCODED_CLOUD.binId;
+  localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(cloudConfig));
+  updateCloudBadge('☁️ Активно', true);
+  showCloudMessage('✓ Настройки сохранены!');
+  if (cloudConfig.apiKey && cloudConfig.binId) pushToCloud(true);
+}
+
+async function pushToCloud(silent = false) {
+  const apiKey = document.getElementById('cloudApiKeyInput')?.value.trim() || cloudConfig.apiKey;
+  const binId = document.getElementById('cloudBinIdInput')?.value.trim() || cloudConfig.binId;
+  if (!apiKey || !binId) return;
+  updateCloudBadge('☁️ Сохр...', true);
+  try {
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey },
+      body: JSON.stringify(state)
+    });
+    if (res.ok) {
+      updateCloudBadge('☁️ Синхр.', true);
+      if (!silent) showCloudMessage('✅ Отправлено в облако!');
+    } else {
+      updateCloudBadge('☁️ Ошибка', false);
+    }
+  } catch (e) {
+    updateCloudBadge('☁️ Офлайн', false);
+  }
+}
+
+async function pullFromCloud(silent = false) {
+  const apiKey = document.getElementById('cloudApiKeyInput')?.value.trim() || cloudConfig.apiKey;
+  const binId = document.getElementById('cloudBinIdInput')?.value.trim() || cloudConfig.binId;
+  if (!apiKey || !binId) return;
+  updateCloudBadge('☁️ Загр...', true);
+  try {
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+      headers: { 'X-Master-Key': apiKey }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.record && data.record.subscriptions) {
+        state = ensureDataIntegrity({ ...defaultState, ...data.record });
+        state.simulatedToday = toISODate(new Date());
+        await saveState(true);
+        updateCloudBadge('☁️ Синхр.', true);
+        if (!silent) showCloudMessage('✅ Данные загружены из облака!');
+      }
+    }
+  } catch (e) {
+    updateCloudBadge('☁️ Офлайн', false);
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && cloudConfig.apiKey && cloudConfig.binId) {
+    pullFromCloud(true);
+  }
+});
+
+function exportJsonFile() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `uley-data-${state.simulatedToday}.json`;
+  a.click();
+}
+
+function importJsonFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      state = ensureDataIntegrity({ ...defaultState, ...JSON.parse(e.target.result) });
+      saveState();
+    } catch (err) {
+      alert('Ошибка чтения файла.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function openReportModal() {
+  generateReportText();
+  document.getElementById('reportModal').classList.remove('hidden');
+  document.getElementById('reportModal').classList.add('flex');
+}
+
+function closeReportModal() {
+  document.getElementById('reportModal').classList.add('hidden');
+  document.getElementById('reportModal').classList.remove('flex');
+}
+
+function generateReportText() {
+  const { subStats } = calculateSchedule();
+  const engStats = enrichEnglishSubscriptions();
+  const scope = document.getElementById('reportScopeSelect').value;
+
+  let lines = [`📊 СВЕРКА ПОСЕЩЕНИЙ «УЛЕЙ» (на ${formatHumanDate(state.simulatedToday)})`, ''];
+
+  if (scope === 'all' || scope === 'garden') {
+    lines.push(`=== 🐝 ОСНОВНОЙ ДЕТСКИЙ САД ===`);
+    subStats.forEach(sub => {
+      lines.push(`🔹 Абонемент #${sub.index}: ${formatHumanDate(sub.startDate)} — ${formatHumanDate(sub.endDate)}`);
+      lines.push(`• Отхожено: ${sub.completedCount}/20 дн. | Пропусков: +${sub.missedCount} дн.`);
+      lines.push(`• Оплата: ${sub.isPaid ? '✅ ОПЛАЧЕН' : '⏳ НЕ ОПЛАЧЕН'} (${sub.price.toLocaleString('ru-RU')} ₽)`);
+      lines.push('');
+    });
+
+    if (state.extraExpenses && state.extraExpenses.length > 0) {
+      lines.push(`🔸 Разовые доп. расходы (Сад):`);
+      state.extraExpenses.forEach(e => {
+        lines.push(`  • ${formatHumanDate(e.date)}: ${e.note ? e.note + ' — ' : ''}${e.amount.toLocaleString('ru-RU')} ₽`);
+      });
+      lines.push('');
+    }
+  }
+
+  if (scope === 'all' || scope === 'english') {
+    lines.push(`=== 🎓 АНГЛИЙСКИЙ ЯЗЫК ===`);
+    engStats.forEach(es => {
+      lines.push(`🔸 Абонемент #${es.index} (${es.startDate ? formatHumanDate(es.startDate) : ''} — ${es.endDate ? formatHumanDate(es.endDate) : ''})`);
+      lines.push(`• Посещено: ${es.attendedCount} из ${es.activeTotal} | Оплачено: ${es.paidLessonsCount} из ${es.activeTotal} (${es.paidAmount.toLocaleString('ru-RU')} ₽)`);
+      lines.push(`• Остаток к доплате: ${es.remainingToPay.toLocaleString('ru-RU')} ₽`);
+      es.enrichedLessons.forEach(l => {
+        const st = l.status === 'canceled' ? '❌ Отмена/Перенос' : (l.effectiveCompleted ? '✅ Проведено' : '⏳ План');
+        const paySt = l.status === 'canceled' ? '' : (l.isPaid ? ' [💳 Оплачен]' : ' [Не оплачен]');
+        lines.push(`  ${l.lessonNumber ? `Урок ${l.lessonNumber}` : '—'}: ${formatHumanDate(l.date)} (${getWeekdayName(l.date, true)}) — ${st}${paySt} ${l.note ? `(${l.note})` : ''}`);
+      });
+      lines.push('');
+    });
+  }
+
+  document.getElementById('reportTextarea').value = lines.join('\n');
+}
+
+function copyReportToClipboard() {
+  const textarea = document.getElementById('reportTextarea');
+  textarea.select();
+  navigator.clipboard.writeText(textarea.value);
+  const btn = document.getElementById('copyReportBtn');
+  btn.textContent = '✓ Скопировано!';
+  setTimeout(() => btn.textContent = 'Скопировать текст', 2000);
+}
+
+function openNotificationsModal() {
+  ensureDataIntegrity(state);
+  updatePushBadge();
+  document.getElementById('tgBotTokenInput').value = state.telegram.botToken || '';
+  document.getElementById('tgChatIdInput').value = state.telegram.chatId || '';
+
+  const { subStats } = calculateSchedule();
+  const engStats = enrichEnglishSubscriptions();
+
+  let html = subStats.filter(s => !s.isPast).map(sub => `
+    <div class="py-1 border-b border-amber-200/60 dark:border-amber-800/40">
+      <div class="font-bold">🐝 Сад — Период #${sub.index} (${formatShortDate(sub.startDate)}–${formatShortDate(sub.endDate)}):</div>
+      <div class="grid grid-cols-3 gap-1 mt-1">
+        ${getAlertDatesForSub(sub).map(m => `
+          <div class="bg-white dark:bg-slate-800 px-1.5 py-1 rounded border border-amber-300 dark:border-amber-700 text-center">
+            <span class="font-extrabold text-indigo-700 dark:text-indigo-400 block">${formatShortDate(m.date)}</span>
+            <span class="text-[9px] text-slate-500 dark:text-slate-400">За ${m.daysLeft} дн.</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  engStats.forEach(es => {
+    if (es.endDate) {
+      html += `
+        <div class="py-1">
+          <div class="font-bold text-sky-900 dark:text-sky-300">🎓 Английский — Абонемент #${es.index}:</div>
+          <div class="text-[11px]">Последнее занятие и уведомление: <b class="text-indigo-700 dark:text-indigo-400">${formatHumanDate(es.endDate)}</b></div>
+        </div>
+      `;
+    }
+  });
+
+  document.getElementById('upcomingAlertsList').innerHTML = html;
+  document.getElementById('notificationsModal').classList.remove('hidden');
+  document.getElementById('notificationsModal').classList.add('flex');
+}
+
+function closeNotificationsModal() {
+  document.getElementById('notificationsModal').classList.add('hidden');
+  document.getElementById('notificationsModal').classList.remove('flex');
+}
+
 function saveTelegramConfig() {
   state.telegram.botToken = document.getElementById('tgBotTokenInput').value.trim() || HARDCODED_TELEGRAM.botToken;
   state.telegram.chatId = document.getElementById('tgChatIdInput').value.trim() || HARDCODED_TELEGRAM.chatId;
@@ -1463,17 +1784,16 @@ function sendTestTelegramMessage() {
   const activeEng = engStats[engStats.length - 1];
 
   const msg = `🐝 Детский клуб «Улей» (Сводка)\n\n` +
-    `1️⃣ Основной сад (Период #${activeSub?.index || 0}):\n` +
+    `1️⃣ Основной сад (Период #${activeSub?.index || 1}):\n` +
     `• Даты: ${formatHumanDate(activeSub?.startDate)} — ${formatHumanDate(activeSub?.endDate)}\n` +
     `• Отхожено: ${activeSub?.completedCount || 0}/20 (пропусков: ${activeSub?.missedCount || 0})\n\n` +
-    `2️⃣ 🎓 Английский язык (Абонемент #${activeEng?.index || 0}):\n` +
-    `• Посещено: ${activeEng?.attendedCount || 0}/${activeEng?.activeTotal || 0} зан.\n` +
-    `• Оплачено: ${activeEng?.paidLessonsCount || 0}/${activeEng?.activeTotal || 0} (${activeEng?.paidAmount.toLocaleString('ru-RU')} ₽)`;
+    `2️⃣ 🎓 Английский язык (Абонемент #${activeEng?.index || 1}):\n` +
+    `• Посещено: ${activeEng?.attendedCount || 0}/${activeEng?.activeTotal || 8} зан.\n` +
+    `• Оплачено: ${activeEng?.paidLessonsCount || 0}/${activeEng?.activeTotal || 8} (${(activeEng?.paidAmount || 0).toLocaleString('ru-RU')} ₽)`;
 
   sendTelegramText(msg, false);
 }
 
-// ICS
 function downloadICSReminders() {
   const { subStats } = calculateSchedule();
   const engStats = enrichEnglishSubscriptions();
@@ -1508,226 +1828,8 @@ function downloadICSReminders() {
   a.click();
 }
 
-// Отчеты
-function openReportModal() {
-  generateReportText();
-  document.getElementById('reportModal').classList.remove('hidden');
-  document.getElementById('reportModal').classList.add('flex');
-}
-
-function closeReportModal() {
-  document.getElementById('reportModal').classList.add('hidden');
-  document.getElementById('reportModal').classList.remove('flex');
-}
-
-function generateReportText() {
-  const { subStats } = calculateSchedule();
-  const engStats = enrichEnglishSubscriptions();
-  const scope = document.getElementById('reportScopeSelect').value;
-
-  let lines = [`📊 СВЕРКА ПОСЕЩЕНИЙ «УЛЕЙ» (на ${formatHumanDate(state.simulatedToday)})`, ''];
-
-  if (scope === 'all' || scope === 'garden') {
-    lines.push(`=== 🐝 ОСНОВНОЙ ДЕТСКИЙ САД ===`);
-    subStats.forEach(sub => {
-      lines.push(`🔹 Абонемент #${sub.index}: ${formatHumanDate(sub.startDate)} — ${formatHumanDate(sub.endDate)}`);
-      lines.push(`• Отхожено: ${sub.completedCount}/20 дн. | Пропусков: +${sub.missedCount} дн.`);
-      lines.push(`• Оплата: ${sub.isPaid ? '✅ ОПЛАЧЕН' : '⏳ НЕ ОПЛАЧЕН'} (${sub.price.toLocaleString('ru-RU')} ₽)`);
-      lines.push('');
-    });
-    
-    if (state.extraExpenses && state.extraExpenses.length > 0) {
-      lines.push(`🔸 Разовые доп. расходы (Сад):`);
-      state.extraExpenses.forEach(e => {
-        lines.push(`  • ${formatHumanDate(e.date)}: ${e.note ? e.note + ' — ' : ''}${e.amount.toLocaleString('ru-RU')} ₽`);
-      });
-      lines.push('');
-    }
-  }
-
-  if (scope === 'all' || scope === 'english') {
-    lines.push(`=== 🎓 АНГЛИЙСКИЙ ЯЗЫК ===`);
-    engStats.forEach(es => {
-      lines.push(`🔸 Абонемент #${es.index} (${es.startDate ? formatHumanDate(es.startDate) : ''} — ${es.endDate ? formatHumanDate(es.endDate) : ''})`);
-      lines.push(`• Посещено: ${es.attendedCount} из ${es.activeTotal} | Оплачено: ${es.paidLessonsCount} из ${es.activeTotal} (${es.paidAmount.toLocaleString('ru-RU')} ₽)`);
-      lines.push(`• Остаток к доплате: ${es.remainingToPay.toLocaleString('ru-RU')} ₽`);
-      es.enrichedLessons.forEach(l => {
-        const st = l.status === 'canceled' ? '❌ Отмена/Перенос' : (l.effectiveCompleted ? '✅ Проведено' : '⏳ План');
-        const paySt = l.status === 'canceled' ? '' : (l.isPaid ? ' [💳 Оплачен]' : ' [Не оплачен]');
-        lines.push(`  ${l.lessonNumber ? `Урок ${l.lessonNumber}` : '—'}: ${formatHumanDate(l.date)} (${getWeekdayName(l.date, true)}) — ${st}${paySt} ${l.note ? `(${l.note})` : ''}`);
-      });
-      lines.push('');
-    });
-  }
-
-  document.getElementById('reportTextarea').value = lines.join('\n');
-}
-
-function copyReportToClipboard() {
-  const textarea = document.getElementById('reportTextarea');
-  textarea.select();
-  navigator.clipboard.writeText(textarea.value);
-  const btn = document.getElementById('copyReportBtn');
-  btn.textContent = '✓ Скопировано!';
-  setTimeout(() => btn.textContent = 'Скопировать текст', 2000);
-}
-
-// Облако
-function updateCloudBadge(statusText, isOk = true) {
-  const badge = document.getElementById('cloudSyncBadge');
-  if (!badge) return;
-  if (!cloudConfig.apiKey || !cloudConfig.binId) {
-    badge.textContent = '☁️ Облако не подключено';
-    badge.className = 'cursor-pointer px-2.5 py-1 text-[10px] sm:text-xs font-bold rounded-full bg-slate-100 text-slate-600 border border-slate-300';
-    return;
-  }
-  badge.textContent = statusText || '☁️ Синхр.';
-  badge.className = isOk
-    ? 'cursor-pointer px-2.5 py-1 text-[10px] sm:text-xs font-bold rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/50 hover:opacity-80 transition'
-    : 'cursor-pointer px-2.5 py-1 text-[10px] sm:text-xs font-bold rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-400 border border-rose-300 dark:border-rose-800/50 hover:opacity-80 transition';
-}
-
-function openCloudModal() {
-  document.getElementById('cloudApiKeyInput').value = cloudConfig.apiKey || '';
-  document.getElementById('cloudBinIdInput').value = cloudConfig.binId || '';
-  document.getElementById('cloudModal').classList.remove('hidden');
-  document.getElementById('cloudModal').classList.add('flex');
-}
-
-function closeCloudModal() {
-  document.getElementById('cloudModal').classList.add('hidden');
-  document.getElementById('cloudModal').classList.remove('flex');
-}
-
-function showCloudMessage(msg, isError = false) {
-  const el = document.getElementById('cloudStatusMsg');
-  el.textContent = msg;
-  el.className = `text-xs font-bold p-2.5 rounded-lg ${isError ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`;
-  el.classList.remove('hidden');
-}
-
-function saveCloudConfig() {
-  cloudConfig.apiKey = document.getElementById('cloudApiKeyInput').value.trim() || HARDCODED_CLOUD.apiKey;
-  cloudConfig.binId = document.getElementById('cloudBinIdInput').value.trim() || HARDCODED_CLOUD.binId;
-  localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(cloudConfig));
-  updateCloudBadge('☁️ Облако активно', true);
-  showCloudMessage('✓ Настройки сохранены!');
-  if (cloudConfig.apiKey && cloudConfig.binId) pushToCloud(true);
-}
-
-async function pushToCloud(silent = false) {
-  const apiKey = document.getElementById('cloudApiKeyInput')?.value.trim() || cloudConfig.apiKey;
-  const binId = document.getElementById('cloudBinIdInput')?.value.trim() || cloudConfig.binId;
-  if (!apiKey || !binId) return;
-  updateCloudBadge('☁️ Сохранение...', true);
-  try {
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey },
-      body: JSON.stringify(state)
-    });
-    if (res.ok) {
-      updateCloudBadge('☁️ Синхр.', true);
-      if (!silent) showCloudMessage('✅ Отправлено в облако!');
-    } else { updateCloudBadge('☁️ Ошибка', false); }
-  } catch (e) { updateCloudBadge('☁️ Офлайн', false); }
-}
-
-async function pullFromCloud(silent = false) {
-  const apiKey = document.getElementById('cloudApiKeyInput')?.value.trim() || cloudConfig.apiKey;
-  const binId = document.getElementById('cloudBinIdInput')?.value.trim() || cloudConfig.binId;
-  if (!apiKey || !binId) return;
-  updateCloudBadge('☁️ Загрузка...', true);
-  try {
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
-      headers: { 'X-Master-Key': apiKey }
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.record && data.record.subscriptions) {
-        state = ensureDataIntegrity({ ...defaultState, ...data.record });
-        state.simulatedToday = toISODate(new Date());
-        await saveState(true);
-        updateCloudBadge('☁️ Синхр.', true);
-        if (!silent) showCloudMessage('✅ Данные загружены из облака!');
-      }
-    }
-  } catch (e) { updateCloudBadge('☁️ Офлайн', false); }
-}
-
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && cloudConfig.apiKey && cloudConfig.binId) {
-    pullFromCloud(true);
-  }
-});
-
-function exportJsonFile() {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `uley-data-${state.simulatedToday}.json`;
-  a.click();
-}
-
-function importJsonFile(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      state = ensureDataIntegrity({ ...defaultState, ...JSON.parse(e.target.result) });
-      saveState();
-    } catch (err) { alert('Ошибка чтения файла.'); }
-  };
-  reader.readAsText(file);
-}
-
-function openNotificationsModal() {
-  ensureDataIntegrity(state);
-  updatePushBadge();
-  document.getElementById('tgBotTokenInput').value = state.telegram.botToken || '';
-  document.getElementById('tgChatIdInput').value = state.telegram.chatId || '';
-  
-  const { subStats } = calculateSchedule();
-  const engStats = enrichEnglishSubscriptions();
-
-  let html = subStats.filter(s => !s.isPast).map(sub => `
-    <div class="py-1 border-b border-amber-200/60">
-      <div class="font-bold">🐝 Сад — Период #${sub.index} (${formatShortDate(sub.startDate)}–${formatShortDate(sub.endDate)}):</div>
-      <div class="grid grid-cols-3 gap-1 mt-1">
-        ${getAlertDatesForSub(sub).map(m => `
-          <div class="bg-white px-1.5 py-1 rounded border border-amber-300 text-center">
-            <span class="font-extrabold text-indigo-700 block">${formatShortDate(m.date)}</span>
-            <span class="text-[9px] text-slate-500">За ${m.daysLeft} дн.</span>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `).join('');
-
-  engStats.forEach(es => {
-    if (es.endDate) {
-      html += `
-        <div class="py-1">
-          <div class="font-bold text-sky-900">🎓 Английский — Абонемент #${es.index}:</div>
-          <div class="text-[11px]">Последнее занятие и уведомление: <b class="text-indigo-700">${formatHumanDate(es.endDate)}</b></div>
-        </div>
-      `;
-    }
-  });
-
-  document.getElementById('upcomingAlertsList').innerHTML = html;
-  document.getElementById('notificationsModal').classList.remove('hidden');
-  document.getElementById('notificationsModal').classList.add('flex');
-}
-
-function closeNotificationsModal() {
-  document.getElementById('notificationsModal').classList.add('hidden');
-  document.getElementById('notificationsModal').classList.remove('flex');
-}
-
 // =========================================================================
-// 9. ГЛАВНЫЙ РЕНДЕР ИНТЕРФЕЙСА (С БЕЗОШИБОЧНОЙ СЕТКОЙ И ТЕМНОЙ ТЕМОЙ)
+// 9. ГЛАВНЫЙ РЕНДЕР ИНТЕРФЕЙСА
 // =========================================================================
 function render() {
   document.getElementById('basePriceInput').value = state.defaultPrice;
@@ -1740,18 +1842,17 @@ function render() {
   const perDay = Math.round(state.defaultPrice / state.daysPerSub);
   document.getElementById('pricePerDayDisplay').textContent = perDay.toLocaleString('ru-RU') + ' ₽';
 
-  // 1. Вычисляем расписание
   const { subStats, dayMap, lastCalculatedDate } = calculateSchedule();
   const engStats = enrichEnglishSubscriptions();
 
-  // 2. Обновляем счетчик английского
+  // Счетчики английского
   const currentEngSub = engStats.find(s => s.remainingCount > 0) || engStats[engStats.length - 1];
   if (currentEngSub) {
     const engCountText = `${currentEngSub.attendedCount}`;
     const deskCounter = document.getElementById('engTabCounter');
     if (deskCounter) deskCounter.textContent = `${engCountText}/8`;
     const mobCounter = document.getElementById('engTabCounterMob');
-    if (mobCounter) mobCounter.textContent = engCountText;
+    if (mobCounter) mobCounter.textContent = `${engCountText}/8`;
   }
 
   const engPrice = state.english.defaultPrice || 5600;
@@ -1761,29 +1862,167 @@ function render() {
   checkPaymentNotifications(subStats);
   checkEnglishNotifications(engStats);
 
+  // Отрисовка Английского языка
   const visibleEngSubs = engStats.filter(es => !isEngSubCurrentlyHidden(es));
-  document.getElementById('engHiddenArchiveBtn').classList.toggle('hidden', engStats.filter(es => isEngSubCurrentlyHidden(es)).length === 0);
-  
-  // 3. Рендер Основного Сада (Сетка Карточек)
+  const hiddenEngSubs = engStats.filter(es => isEngSubCurrentlyHidden(es));
+  const engArchiveBtn = document.getElementById('engHiddenArchiveBtn');
+  if (hiddenEngSubs.length > 0) {
+    engArchiveBtn.textContent = `📦 Скрытые (${hiddenEngSubs.length})`;
+    engArchiveBtn.classList.remove('hidden');
+  } else {
+    engArchiveBtn.classList.add('hidden');
+  }
+
+  const engContainer = document.getElementById('englishSubscriptionsContainer');
+  engContainer.innerHTML = visibleEngSubs.map(es => {
+    const paySummaryBadge = es.isFullyPaid
+      ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700/50'
+      : (es.paidLessonsCount > 0 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-400 border-amber-300 dark:border-amber-700/50' : 'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-400 border-rose-300 dark:border-rose-700/50');
+
+    const paySummaryText = es.isFullyPaid
+      ? `✓ Оплачен полностью (${es.activeTotal}/${es.activeTotal})`
+      : (es.paidLessonsCount > 0 ? `Частично оплачен (${es.paidLessonsCount}/${es.activeTotal})` : `Не оплачен (0/${es.activeTotal})`);
+
+    const desktopRowsHtml = es.enrichedLessons.map(l => {
+      const isCanceled = l.status === 'canceled';
+      const isDone = l.effectiveCompleted;
+      const rowBg = isCanceled ? 'bg-amber-50/60 dark:bg-amber-900/10 text-slate-400 dark:text-slate-500' : (isDone ? 'bg-emerald-50/60 dark:bg-emerald-900/10' : 'bg-white dark:bg-slate-900');
+
+      return `
+        <tr class="border-b border-slate-100 dark:border-slate-800 last:border-none ${rowBg}">
+          <td class="py-2.5 px-3 font-extrabold text-xs text-center">
+            ${isCanceled ? '<span class="px-1.5 py-0.5 rounded bg-amber-200 dark:bg-amber-800/50 text-amber-900 dark:text-amber-200 text-[10px]">Отмена</span>' : `<span class="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200">${l.lessonNumber}</span>`}
+          </td>
+          <td class="py-2.5 px-3">
+            <input type="date" value="${l.date}" onchange="changeEngLessonDate(${es.id}, ${l.id}, this.value)"
+                   class="text-xs font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 focus:outline-none ${isCanceled ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-900 dark:text-slate-200'}">
+          </td>
+          <td class="py-2.5 px-3 text-xs font-semibold ${isCanceled ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-600 dark:text-slate-300'}">
+            ${getWeekdayName(l.date, false)}
+          </td>
+          <td class="py-2.5 px-3 text-center">
+            ${isCanceled ? '—' : `<button onclick="toggleEngLessonAttended(${es.id}, ${l.id})" class="px-2.5 py-1 rounded-lg text-xs font-extrabold border transition ${isDone ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700'}">${isDone ? '✓ Проведено' : '⏳ План'}</button>`}
+          </td>
+          <td class="py-2.5 px-3 text-center">
+            ${isCanceled ? '—' : `<button onclick="toggleEngLessonPaid(${es.id}, ${l.id})" class="px-2.5 py-1 rounded-lg text-xs font-extrabold border transition ${l.isPaid ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-700/50'}">${l.isPaid ? `💳 Оплачен (${l.unitPrice} ₽)` : `Не оплачен`}</button>`}
+          </td>
+          <td class="py-2.5 px-3">
+            <input type="text" value="${l.note || ''}" placeholder="Примечание..." onchange="changeEngLessonNote(${es.id}, ${l.id}, this.value)"
+                   class="w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-200 rounded-lg px-2.5 py-1 focus:outline-none">
+          </td>
+          <td class="py-2.5 px-3 text-right whitespace-nowrap">
+            <button onclick="toggleEngLessonCancel(${es.id}, ${l.id})" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition ${isCanceled ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-700/50' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-700/50'}">${isCanceled ? '↩ Вернуть' : 'Перенос (+1)'}</button>
+            <button onclick="deleteEngLessonRow(${es.id}, ${l.id})" class="ml-1.5 p-1 text-slate-300 dark:text-slate-500 hover:text-rose-600 text-sm font-bold">&times;</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    const mobileCardsHtml = es.enrichedLessons.map(l => {
+      const isCanceled = l.status === 'canceled';
+      const isDone = l.effectiveCompleted;
+      const cardBg = isCanceled
+        ? 'bg-amber-50/70 dark:bg-amber-900/10 border-amber-300 dark:border-amber-700/50 border-l-4 border-l-amber-500'
+        : (isDone ? 'bg-emerald-50/70 dark:bg-emerald-900/10 border-emerald-300 dark:border-emerald-700/50 border-l-4 border-l-emerald-500' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 border-l-4 border-l-indigo-500');
+
+      return `
+        <div class="p-3 rounded-xl border ${cardBg} space-y-2 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-1.5">
+            <div class="flex items-center gap-1.5">
+              ${isCanceled ? `<span class="px-1.5 py-0.5 rounded bg-amber-200 dark:bg-amber-800/50 text-amber-900 dark:text-amber-200 text-[10px] font-extrabold">Отмена</span>` : `<span class="px-2 py-0.5 rounded-lg bg-slate-800 dark:bg-slate-700 text-white text-xs font-extrabold">#${l.lessonNumber}</span>`}
+              <input type="date" value="${l.date}" onchange="changeEngLessonDate(${es.id}, ${l.id}, this.value)" class="text-xs font-extrabold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-200 rounded-lg px-2 py-1 focus:outline-none ${isCanceled ? 'line-through text-slate-400' : ''}">
+              <span class="px-1.5 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold">${getWeekdayName(l.date, true)}</span>
+            </div>
+            ${isCanceled ? '' : `
+              <div class="flex items-center gap-1">
+                <button onclick="toggleEngLessonAttended(${es.id}, ${l.id})" class="px-2 py-1 rounded-lg text-[11px] font-extrabold border transition ${isDone ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700'}">${isDone ? '✓ Был' : '⏳ План'}</button>
+                <button onclick="toggleEngLessonPaid(${es.id}, ${l.id})" class="px-2 py-1 rounded-lg text-[11px] font-extrabold border transition ${l.isPaid ? 'bg-indigo-600 text-white border-indigo-700' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-700/50'}">${l.isPaid ? `💳 ${l.unitPrice}₽` : 'Не опл.'}</button>
+              </div>
+            `}
+          </div>
+          <div class="flex items-center gap-1.5">
+            <input type="text" value="${l.note || ''}" placeholder="Примечание к уроку..." onchange="changeEngLessonNote(${es.id}, ${l.id}, this.value)" class="flex-1 min-w-0 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none">
+            <button onclick="toggleEngLessonCancel(${es.id}, ${l.id})" class="shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition ${isCanceled ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border-indigo-200' : 'bg-amber-100/80 dark:bg-amber-900/30 text-amber-900 dark:text-amber-400 border-amber-300'}">${isCanceled ? '↩ Вернуть' : 'Перенос (+1)'}</button>
+            <button onclick="deleteEngLessonRow(${es.id}, ${l.id})" class="shrink-0 px-2 py-1 text-slate-400 hover:text-rose-600 text-sm font-bold">&times;</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div class="p-4 sm:p-5 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="px-2.5 py-0.5 text-xs font-extrabold uppercase rounded bg-blue-600 text-white">Абонемент #${es.index}</span>
+              ${es.isPast ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400">Завершен ✓</span>` : ''}
+              <h3 class="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">${formatHumanDate(es.startDate)} — ${formatHumanDate(es.endDate)}</h3>
+              <button onclick="toggleEngSubPaidAll(${es.id})" class="px-3 py-0.5 rounded-full text-xs font-bold border ${paySummaryBadge} hover:opacity-80 transition">${paySummaryText}</button>
+              <button onclick="hideEngSubscription(${es.id}, event)" class="px-2 py-0.5 text-slate-500 dark:text-slate-400 hover:text-indigo-600 rounded text-xs font-bold transition">👁‍🗨 Скрыть</button>
+              <button onclick="deleteEngSubscription(${es.id}, ${es.index})" class="text-slate-400 hover:text-rose-600 text-xs font-bold ml-1">🗑</button>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full lg:w-auto text-xs">
+            <div class="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700"><span class="text-[10px] text-slate-400 block">Посещено</span><span class="font-extrabold text-emerald-700 dark:text-emerald-400 text-sm">${es.attendedCount} из ${es.activeTotal}</span></div>
+            <div class="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700"><span class="text-[10px] text-slate-400 block">Оплачено</span><span class="font-extrabold text-indigo-700 dark:text-indigo-400 text-sm">${es.paidLessonsCount} из ${es.activeTotal}</span></div>
+            <div class="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700"><span class="text-[10px] text-slate-400 block">Цена</span><div class="flex items-center gap-1"><input type="number" value="${es.price}" step="100" onchange="updateEngSubPrice(${es.id}, this.value)" class="w-16 font-extrabold text-sm text-slate-900 dark:text-white bg-transparent border-b border-slate-300 dark:border-slate-600 focus:outline-none"><span class="font-bold dark:text-white">₽</span></div></div>
+            <div class="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700"><span class="text-[10px] text-slate-400 block">Долг</span><span class="font-extrabold ${es.remainingToPay === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'} text-sm">${es.remainingToPay.toLocaleString('ru-RU')} ₽</span></div>
+          </div>
+        </div>
+        <div class="md:hidden p-3 space-y-2.5 bg-slate-50/50 dark:bg-slate-950/40">${mobileCardsHtml}</div>
+        <div class="hidden md:block overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-100/70 dark:bg-slate-800 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase border-b border-slate-200 dark:border-slate-700">
+                <th class="py-2 px-3 text-center w-12">№</th><th class="py-2 px-3">Дата урока</th><th class="py-2 px-3">День недели</th><th class="py-2 px-3 text-center">Посещение</th><th class="py-2 px-3 text-center">Оплата</th><th class="py-2 px-3">Примечание</th><th class="py-2 px-3 text-right">Корректировка</th>
+              </tr>
+            </thead>
+            <tbody>${desktopRowsHtml}</tbody>
+          </table>
+        </div>
+        <div class="p-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs">
+          <span class="text-slate-500 dark:text-slate-400 text-[11px]">Оплачивайте по одному уроку кнопкой «💳» или сразу весь период в шапке.</span>
+          <button onclick="addManualEngLessonRow(${es.id})" class="w-full sm:w-auto px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 text-indigo-700 dark:text-indigo-400 font-bold rounded-lg border border-slate-300 dark:border-slate-700 shrink-0 text-center transition">+ Добавить дату вручную</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  if (hiddenEngSubs.length > 0) {
+    engContainer.innerHTML += `
+      <div onclick="openEngHiddenModal()" class="bg-slate-200/70 dark:bg-slate-900/60 hover:bg-slate-200 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-5 flex flex-col items-center justify-center text-center gap-1.5 cursor-pointer transition">
+        <span class="text-xs font-extrabold text-slate-700 dark:text-slate-300">📦 В архиве скрыто абонементов английского: ${hiddenEngSubs.length}</span>
+        <span class="text-[11px] text-slate-500 dark:text-slate-400">Нажмите, чтобы посмотреть сводку или открыть нужный период</span>
+      </div>
+    `;
+  }
+
+  // Отрисовка Основного Сада
   const hiddenSubs = subStats.filter(s => isSubCurrentlyHidden(s));
   const hiddenSubIndices = new Set(hiddenSubs.map(s => s.index));
   const visibleSubs = subStats.filter(s => !hiddenSubIndices.has(s.index));
   const firstVisibleStartDate = visibleSubs.length > 0 ? visibleSubs[0].startDate : state.startDate;
 
-  document.getElementById('hiddenArchiveBtn').classList.toggle('hidden', hiddenSubs.length === 0);
+  const archiveBtn = document.getElementById('hiddenArchiveBtn');
+  if (hiddenSubs.length > 0) {
+    archiveBtn.textContent = `📦 Скрытые (${hiddenSubs.length})`;
+    archiveBtn.classList.remove('hidden');
+  } else {
+    archiveBtn.classList.add('hidden');
+  }
+
   document.getElementById('resetFiltersBtn').classList.toggle('hidden', !(highlightedSubIndex || state.hideWeekends || expandedMonthsOverride.size > 0));
 
   const subContainer = document.getElementById('subscriptionsContainer');
-  
-  // -- ИДЕАЛЬНАЯ СТРУКТУРА КАРТОЧКИ (С поддержкой темной темы) --
   subContainer.innerHTML = visibleSubs.map(sub => {
     const theme = SUB_THEMES[(sub.index - 1) % SUB_THEMES.length];
     const isSelected = highlightedSubIndex === sub.index;
-    const paidBadge = sub.isPaid ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700/50' : 'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-400 border-rose-300 dark:border-rose-700/50';
+    const paidBadge = sub.isPaid
+      ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700/50'
+      : 'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-400 border-rose-300 dark:border-rose-700/50';
 
     return `
-      <div onclick="selectSubHighlight(${sub.index})" class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border-l-8 ${theme.cardBorder} ${theme.cardBg} dark:!bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex flex-col justify-between cursor-pointer transition ${isSelected ? 'ring-2 ring-indigo-600 dark:ring-indigo-400 shadow-md' : 'hover:shadow-md'}">
-        
+      <div onclick="selectSubHighlight(${sub.index})" class="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border-l-8 ${theme.cardBorder} ${theme.cardBg} dark:!bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-col justify-between cursor-pointer transition ${isSelected ? 'ring-2 ring-indigo-600 dark:ring-indigo-400 shadow-md' : 'hover:shadow-md'}">
         <div>
           <div class="flex justify-between items-start gap-1.5">
             <div>
@@ -1791,60 +2030,49 @@ function render() {
                 <span class="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded ${theme.badge}">Период #${sub.index}</span>
                 ${sub.isPast ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400">Завершен ✓</span>` : ''}
               </div>
-              <h3 class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white mt-1">
-                ${formatHumanDate(sub.startDate)} — ${formatHumanDate(sub.endDate)}
-              </h3>
+              <h3 class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white mt-1">${formatHumanDate(sub.startDate)} — ${formatHumanDate(sub.endDate)}</h3>
             </div>
             <div class="flex items-center gap-1">
-              <button onclick="togglePaidStatus(${sub.id}, event)" class="px-2 py-0.5 rounded-full text-[11px] font-bold border ${paidBadge}">
-                ${sub.isPaid ? '✓ Оплачен' : 'Не оплачен'}
-              </button>
+              <button onclick="togglePaidStatus(${sub.id}, event)" class="px-2 py-0.5 rounded-full text-[11px] font-bold border ${paidBadge}">${sub.isPaid ? '✓ Оплачен' : 'Не оплачен'}</button>
               <button onclick="hideSubscription(${sub.id}, event)" class="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded text-xs font-bold">👁‍🗨</button>
               <button onclick="deleteSubscription(${sub.id}, ${sub.index}, event)" class="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded text-xs font-bold">🗑</button>
             </div>
           </div>
-
-          <div class="mt-3 grid grid-cols-3 gap-1.5 text-xs bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl border border-slate-200/80 dark:border-slate-700 text-center">
-            <div>
-              <span class="text-slate-400 block text-[10px]">Отхожено</span>
-              <span class="font-extrabold text-emerald-700 dark:text-emerald-400">✓ ${sub.completedCount}/${state.daysPerSub}</span>
-            </div>
-            <div>
-              <span class="text-slate-400 block text-[10px]">Пропусков</span>
-              <span class="font-extrabold ${sub.missedCount > 0 ? 'text-amber-600 dark:text-amber-500' : 'text-slate-700 dark:text-slate-300'}">+${sub.missedCount}</span>
-            </div>
-            <div>
-              <span class="text-slate-400 block text-[10px]">Осталось</span>
-              <span class="font-extrabold text-indigo-600 dark:text-indigo-400">${sub.remainingAfterToday} дн.</span>
-            </div>
+          <div class="mt-3 grid grid-cols-3 gap-1.5 text-xs bg-slate-50 dark:bg-slate-800/70 p-2 rounded-xl border border-slate-200/80 dark:border-slate-700 text-center">
+            <div><span class="text-slate-400 block text-[10px]">Отхожено</span><span class="font-extrabold text-emerald-700 dark:text-emerald-400">✓ ${sub.completedCount}/${state.daysPerSub}</span></div>
+            <div><span class="text-slate-400 block text-[10px]">Пропусков</span><span class="font-extrabold ${sub.missedCount > 0 ? 'text-amber-600 dark:text-amber-500' : 'text-slate-700 dark:text-slate-300'}">+${sub.missedCount}</span></div>
+            <div><span class="text-slate-400 block text-[10px]">Осталось</span><span class="font-extrabold text-indigo-600 dark:text-indigo-400">${sub.remainingAfterToday} дн.</span></div>
           </div>
         </div>
-
-        <div class="mt-3 pt-2 border-t border-slate-200/60 dark:border-slate-700 flex justify-between items-center text-xs" onclick="event.stopPropagation()">
+        <div class="mt-3 pt-2 border-t border-slate-200/60 dark:border-slate-800 flex justify-between items-center text-xs" onclick="event.stopPropagation()">
           <span class="text-slate-500 dark:text-slate-400 font-medium">Стоимость:</span>
           <div class="flex items-center gap-1">
-            <input type="number" value="${sub.price}" step="100" onchange="updateSubPrice(${sub.id}, this.value)"
-                   class="w-20 text-right font-extrabold bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 focus:outline-none">
+            <input type="number" value="${sub.price}" step="100" onchange="updateSubPrice(${sub.id}, this.value)" class="w-20 text-right font-extrabold bg-white dark:bg-slate-800 text-slate-900 dark:text-white px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-700 focus:outline-none">
             <span class="font-bold dark:text-white">₽</span>
           </div>
         </div>
-        
       </div>
     `;
   }).join('');
 
   if (hiddenSubs.length > 0) {
     subContainer.innerHTML += `
-      <div onclick="openHiddenModal()" class="bg-slate-200/70 dark:bg-slate-800/60 hover:bg-slate-200 dark:hover:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 cursor-pointer transition">
+      <div onclick="openHiddenModal()" class="bg-slate-200/70 dark:bg-slate-900/60 hover:bg-slate-200 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-1.5 cursor-pointer transition">
         <span class="text-xs font-extrabold text-slate-700 dark:text-slate-300">📦 В архиве скрыто периодов: ${hiddenSubs.length}</span>
         <span class="text-[11px] text-slate-500 dark:text-slate-400">Нажмите, чтобы раскрыть нужный период</span>
       </div>
     `;
   }
 
-  // 4. Рендер Календаря
+  // Отрисовка Календаря
   const englishDateMap = {};
-  engStats.forEach(es => { es.enrichedLessons.forEach(l => { if (l.status !== 'canceled') englishDateMap[l.date] = { subIndex: es.index, lessonNumber: l.lessonNumber, completed: l.effectiveCompleted, isPaid: l.isPaid }; }); });
+  engStats.forEach(es => {
+    es.enrichedLessons.forEach(l => {
+      if (l.status !== 'canceled') {
+        englishDateMap[l.date] = { subIndex: es.index, lessonNumber: l.lessonNumber, completed: l.effectiveCompleted, isPaid: l.isPaid };
+      }
+    });
+  });
 
   const calContainer = document.getElementById('calendarContainer');
   calContainer.innerHTML = '';
@@ -1864,7 +2092,8 @@ function render() {
     const monthKey = `${curY}-${String(curM + 1).padStart(2, '0')}`;
     const firstDayOfMonth = new Date(curY, curM, 1);
     const daysInMonth = new Date(curY, curM + 1, 0).getDate();
-    let startOffset = firstDayOfMonth.getDay() - 1; if (startOffset === -1) startOffset = 6;
+    let startOffset = firstDayOfMonth.getDay() - 1;
+    if (startOffset === -1) startOffset = 6;
 
     let weeks = [], currentWeekCells = [];
     for (let i = 0; i < startOffset; i++) currentWeekCells.push({ type: 'empty', colIndex: i });
@@ -1890,7 +2119,11 @@ function render() {
       return { cells: week, isWeekHidden };
     });
 
-    if (visibleWeeksCount === 0 && hiddenSubIndices.size > 0) { curM++; if (curM > 11) { curM = 0; curY++; } continue; }
+    if (visibleWeeksCount === 0 && hiddenSubIndices.size > 0) {
+      curM++; if (curM > 11) { curM = 0; curY++; }
+      continue;
+    }
+
     const isMonthForceExpanded = expandedMonthsOverride.has(monthKey);
     let weeksHtml = '';
 
@@ -1908,25 +2141,27 @@ function render() {
         const isSubHidden = info && info.subIndex && hiddenSubIndices.has(info.subIndex);
         const isDimmedByFilter = highlightedSubIndex && (!info || info.subIndex !== highlightedSubIndex);
 
-        let cellClasses = 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500';
+        let cellClasses = 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500';
         let topRightHtml = '', bottomBadgeHtml = '', englishPillHtml = '';
 
-        if (engInfo) { englishPillHtml = `<div class="w-full text-center px-1 py-0.5 rounded bg-blue-600 text-white text-[8px] sm:text-[10px] font-black tracking-tight shadow-sm truncate leading-none">🎓 EN <span class="hidden sm:inline">(${engInfo.lessonNumber}/8)</span></div>`; }
+        if (engInfo) {
+          englishPillHtml = `<div class="w-full text-center px-1 py-0.5 rounded bg-blue-600 text-white text-[8px] sm:text-[10px] font-black tracking-tight shadow-sm truncate leading-none">🎓 EN <span class="hidden sm:inline">(${engInfo.lessonNumber}/8)</span></div>`;
+        }
 
         if (isWeekend) {
-          cellClasses = 'bg-slate-100/80 dark:bg-slate-900/50 border-slate-200/80 dark:border-slate-700 text-slate-400 cursor-not-allowed';
+          cellClasses = 'bg-slate-100/80 dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed';
         } else if (iso < state.startDate || isSubHidden) {
-          cellClasses = 'bg-slate-50 dark:bg-slate-900/30 border-dashed border-slate-200 dark:border-slate-700 text-slate-300 opacity-45';
+          cellClasses = 'bg-slate-50 dark:bg-slate-900/40 border-dashed border-slate-200 dark:border-slate-800 text-slate-300 opacity-45';
         } else if (info) {
           const theme = info.subIndex ? SUB_THEMES[(info.subIndex - 1) % SUB_THEMES.length] : SUB_THEMES[0];
-          
+
           if (info.status === 'attended') {
             if (info.isCompletedVisit) {
               if (state.pastAttendedStyle === 'gray') {
-                cellClasses = `bg-slate-200/90 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600 ${theme.cellBorderAccent} text-slate-600 dark:text-slate-300 cursor-pointer hover:bg-slate-300/70 dark:hover:bg-slate-700`;
-                bottomBadgeHtml = `<span class="w-full text-center text-[9px] sm:text-[11px] font-bold px-0.5 py-0.5 rounded bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-slate-200 truncate leading-none">✓ ${info.dayNumberInSub}/20</span>`;
+                cellClasses = `bg-slate-200/90 dark:bg-slate-800 border-slate-300 dark:border-slate-700 ${theme.cellBorderAccent} text-slate-600 dark:text-slate-300 cursor-pointer`;
+                bottomBadgeHtml = `<span class="w-full text-center text-[9px] sm:text-[11px] font-bold px-0.5 py-0.5 rounded bg-slate-300 dark:bg-slate-700 text-slate-700 dark:text-slate-200 truncate leading-none">✓ ${info.dayNumberInSub}/20</span>`;
               } else {
-                cellClasses = `bg-emerald-50 dark:bg-emerald-900/10 border-emerald-400 dark:border-emerald-600/50 ${theme.cellBorderAccent} text-emerald-950 dark:text-emerald-100 cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-900/30`;
+                cellClasses = `bg-emerald-50 dark:bg-emerald-950/30 border-emerald-400 dark:border-emerald-700/60 ${theme.cellBorderAccent} text-emerald-950 dark:text-emerald-100 cursor-pointer`;
                 bottomBadgeHtml = `<span class="w-full text-center text-[9px] sm:text-[11px] font-extrabold px-0.5 py-0.5 rounded bg-emerald-200/90 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-50 truncate leading-none">✓ ${info.dayNumberInSub}/20</span>`;
               }
             } else {
@@ -1935,7 +2170,7 @@ function render() {
             }
 
             if (info.isSubStart) {
-              cellClasses += ' ring-1 sm:ring-2 ring-slate-900 dark:ring-white/50';
+              cellClasses += ' ring-1 sm:ring-2 ring-slate-900 dark:ring-white/60';
               topRightHtml = `<span class="px-1 py-0.2 text-[8px] sm:text-[10px] font-black rounded bg-slate-900 text-white leading-tight">🚀#${info.subIndex}</span>`;
             } else if (info.isSubEnd) {
               cellClasses += ' ring-1 sm:ring-2 ring-rose-600 dark:ring-rose-500';
@@ -1944,12 +2179,12 @@ function render() {
               topRightHtml = `<span class="px-1 py-0.2 text-[8px] sm:text-[10px] font-extrabold rounded ${theme.badge} leading-tight">#${info.subIndex}</span>`;
             }
           } else if (info.status === 'missed') {
-            cellClasses = `bg-amber-50 dark:bg-amber-900/10 border-amber-400 dark:border-amber-600/50 border-l-[3px] sm:border-l-4 border-l-amber-500 text-amber-950 dark:text-amber-100 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/30`;
-            topRightHtml = `<span class="px-1 py-0.2 text-[8px] sm:text-[10px] font-bold rounded bg-amber-200 dark:bg-amber-700/50 text-amber-900 dark:text-amber-100 leading-tight">#${info.subIndex}</span>`;
+            cellClasses = `bg-amber-50 dark:bg-amber-950/30 border-amber-400 dark:border-amber-700/60 border-l-[3px] sm:border-l-4 border-l-amber-500 text-amber-950 dark:text-amber-100 cursor-pointer`;
+            topRightHtml = `<span class="px-1 py-0.2 text-[8px] sm:text-[10px] font-bold rounded bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100 leading-tight">#${info.subIndex}</span>`;
             bottomBadgeHtml = `<span class="w-full text-center text-[9px] sm:text-[10px] font-extrabold px-0.5 py-0.5 rounded bg-amber-500 dark:bg-amber-600 text-white truncate leading-none"><span class="sm:hidden">Проп.+1</span><span class="hidden sm:inline">Пропуск (+1)</span></span>`;
           } else if (info.status === 'holiday') {
-            cellClasses = `bg-purple-50 dark:bg-purple-900/10 border-purple-300 dark:border-purple-600/50 border-l-[3px] sm:border-l-4 border-l-purple-500 text-purple-950 dark:text-purple-100 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30`;
-            bottomBadgeHtml = `<span class="w-full text-center text-[9px] sm:text-[10px] font-bold px-0.5 py-0.5 rounded bg-purple-200 dark:bg-purple-700/50 text-purple-900 dark:text-purple-100 truncate leading-none">Выходной</span>`;
+            cellClasses = `bg-purple-50 dark:bg-purple-950/30 border-purple-300 dark:border-purple-700/60 border-l-[3px] sm:border-l-4 border-l-purple-500 text-purple-950 dark:text-purple-100 cursor-pointer`;
+            bottomBadgeHtml = `<span class="w-full text-center text-[9px] sm:text-[10px] font-bold px-0.5 py-0.5 rounded bg-purple-200 dark:bg-purple-800 text-purple-900 dark:text-purple-100 truncate leading-none">Выходной</span>`;
           }
         }
         if (isDimmedByFilter) cellClasses += ' opacity-25 scale-95';
@@ -1964,10 +2199,10 @@ function render() {
       });
     });
 
-    const hiddenWeeksNoticeHtml = hiddenWeeksCount > 0 ? `<button onclick="toggleMonthHiddenWeeks('${monthKey}')" class="text-[11px] font-bold px-2.5 py-1 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700">${isMonthForceExpanded ? '▲ Свернуть прошедшие' : `▼ Скрыто недель: ${hiddenWeeksCount} (показать)`}</button>` : '';
+    const hiddenWeeksNoticeHtml = hiddenWeeksCount > 0 ? `<button onclick="toggleMonthHiddenWeeks('${monthKey}')" class="text-[11px] font-bold px-2.5 py-1 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">${isMonthForceExpanded ? '▲ Свернуть прошедшие' : `▼ Скрыто недель: ${hiddenWeeksCount} (показать)`}</button>` : '';
 
     calContainer.innerHTML += `
-      <div class="bg-white dark:bg-slate-800 p-3 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors duration-300">
+      <div class="bg-white dark:bg-slate-900 p-3 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 transition-colors duration-300">
         <div class="flex flex-wrap justify-between items-center gap-2 mb-2.5">
           <h2 class="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">${monthNames[curM]} ${curY}</h2>
           ${hiddenWeeksNoticeHtml}
@@ -1982,8 +2217,9 @@ function render() {
   renderAnalytics(subStats, engStats, dayMap);
 }
 
-// Запуск при загрузке
+// Старт приложения
 updateCloudBadge();
+updatePushBadge();
 render();
 if (cloudConfig.apiKey && cloudConfig.binId) {
   pullFromCloud(true);
