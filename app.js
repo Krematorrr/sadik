@@ -823,16 +823,16 @@ function deleteExpenseFromEdit() {
 }
 
 // =========================================================================
-// 6. АНАЛИТИКА И ФИНАНСЫ (С ГРАФИКАМИ ПО ПЕРИОДАМ)
+// 6. АНАЛИТИКА И ФИНАНСЫ
 // =========================================================================
 function renderAnalytics(subStats, engStats, dayMap) {
   const container = document.getElementById('analyticsContainer');
   if (!container) return;
 
-  // Если выбран режим по абонементам, но индекс не задан - берем текущий активный
-  if (analPeriodType === 'sub') {
-    const optionsHtml = subStats.map(s => `<option value="${s.index}" class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" ${s.index === analSubIndex ? 'selected' : ''}>Период #${s.index} (${formatShortDate(s.startDate)} - ${formatShortDate(s.endDate)})</option>`).reverse().join('');
-    dateControlsHtml = `<select onchange="changeAnalyticSub(this.value)" class="bg-transparent text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200 outline-none w-full text-center cursor-pointer">${optionsHtml}</select>`;
+  // Автовыбор активного абонемента, если индекс еще не задан
+  if (analPeriodType === 'sub' && analSubIndex === null && subStats.length > 0) {
+    const activeSub = subStats.find(s => !s.isPast) || subStats[subStats.length - 1];
+    analSubIndex = activeSub.index;
   }
 
   let dateStart = '2000-01-01', dateEnd = '2100-12-31', periodLabel = '';
@@ -860,36 +860,60 @@ function renderAnalytics(subStats, engStats, dayMap) {
 
   const gardenDayPrice = Math.round(state.defaultPrice / state.daysPerSub) || 0;
   const filteredSubs = subStats.filter(s => s.startDate >= dateStart && s.startDate <= dateEnd);
-  const gardenPaid = filteredSubs.filter(s => s.isPaid).reduce((sum, s) => sum + s.price, 0), gardenDebt = filteredSubs.filter(s => !s.isPaid).reduce((sum, s) => sum + s.price, 0);
+  const gardenPaid = filteredSubs.filter(s => s.isPaid).reduce((sum, s) => sum + s.price, 0);
+  const gardenDebt = filteredSubs.filter(s => !s.isPaid).reduce((sum, s) => sum + s.price, 0);
 
   const engLessonPrice = engStats[0]?.unitPrice || 700;
   const filteredEng = engStats.filter(s => s.startDate >= dateStart && s.startDate <= dateEnd);
-  const engPaid = filteredEng.reduce((sum, s) => sum + s.paidAmount, 0), engDebt = filteredEng.reduce((sum, s) => sum + s.remainingToPay, 0);
+  const engPaid = filteredEng.reduce((sum, s) => sum + s.paidAmount, 0);
+  const engDebt = filteredEng.reduce((sum, s) => sum + s.remainingToPay, 0);
 
   const filteredExtra = (state.extraExpenses || []).filter(e => e.date >= dateStart && e.date <= dateEnd);
   const extraTotal = filteredExtra.reduce((sum, e) => sum + e.amount, 0);
 
-  const totalGPaid = subStats.filter(s => s.isPaid).reduce((sum, s) => sum + s.price, 0), totalGAttended = subStats.reduce((sum, s) => sum + s.completedCount, 0);
+  const totalGPaid = subStats.filter(s => s.isPaid).reduce((sum, s) => sum + s.price, 0);
+  const totalGAttended = subStats.reduce((sum, s) => sum + s.completedCount, 0);
   const globalGardenEffCost = totalGAttended > 0 ? Math.round(totalGPaid / totalGAttended) : 0;
-  const totalEPaid = engStats.reduce((sum, s) => sum + s.paidAmount, 0), totalEAttended = engStats.reduce((sum, s) => sum + s.attendedCount, 0);
+  
+  const totalEPaid = engStats.reduce((sum, s) => sum + s.paidAmount, 0);
+  const totalEAttended = engStats.reduce((sum, s) => sum + s.attendedCount, 0);
   const globalEngEffCost = totalEAttended > 0 ? Math.round(totalEPaid / totalEAttended) : 0;
 
   let gAttended = 0, gMissed = 0, gHoliday = 0, currentStreak = 0, maxStreak = 0;
   Object.keys(dayMap).sort().forEach(iso => {
     const item = dayMap[iso]; if (iso > state.simulatedToday || iso < state.startDate) return;
-    if (item.status === 'attended' && item.isCompletedVisit) { currentStreak++; if (currentStreak > maxStreak) maxStreak = currentStreak; } else if (item.status === 'missed') { currentStreak = 0; }
-    if (iso >= dateStart && iso <= dateEnd) { if (item.status === 'attended' && item.isCompletedVisit) gAttended++; else if (item.status === 'missed') gMissed++; else if (item.status === 'holiday') gHoliday++; }
+    if (item.status === 'attended' && item.isCompletedVisit) { currentStreak++; if (currentStreak > maxStreak) maxStreak = currentStreak; } 
+    else if (item.status === 'missed') { currentStreak = 0; }
+    if (iso >= dateStart && iso <= dateEnd) { 
+      if (item.status === 'attended' && item.isCompletedVisit) gAttended++; 
+      else if (item.status === 'missed') gMissed++; 
+      else if (item.status === 'holiday') gHoliday++; 
+    }
   });
 
   let eAttended = 0, eCanceled = 0;
-  engStats.forEach(es => { es.enrichedLessons.forEach(l => { if (l.date >= dateStart && l.date <= dateEnd && l.date <= state.simulatedToday) { if (l.effectiveCompleted) eAttended++; if (l.status === 'canceled') eCanceled++; } }); });
+  engStats.forEach(es => { 
+    es.enrichedLessons.forEach(l => { 
+      if (l.date >= dateStart && l.date <= dateEnd && l.date <= state.simulatedToday) { 
+        if (l.effectiveCompleted) eAttended++; 
+        if (l.status === 'canceled') eCanceled++; 
+      } 
+    }); 
+  });
 
   let showPaid = 0, showDebt = 0, showSaved = 0, showEffCost = 0, effLabel = '';
   const gardenSaved = gMissed * gardenDayPrice, engSaved = eCanceled * engLessonPrice;
 
-  if (analFilter === 'garden') { showPaid = gardenPaid + extraTotal; showDebt = gardenDebt; showSaved = gardenSaved; showEffCost = globalGardenEffCost; effLabel = 'за 1 визит сада (ист.)'; }
-  else if (analFilter === 'english') { showPaid = engPaid; showDebt = engDebt; showSaved = engSaved; showEffCost = globalEngEffCost; effLabel = 'за 1 урок англ. (ист.)'; }
-  else { showPaid = gardenPaid + engPaid + extraTotal; showDebt = gardenDebt + engDebt; showSaved = gardenSaved + engSaved; const combinedVisits = totalGAttended + totalEAttended; showEffCost = combinedVisits > 0 ? Math.round((totalGPaid + totalEPaid) / combinedVisits) : 0; effLabel = 'средняя за любой визит'; }
+  if (analFilter === 'garden') { 
+    showPaid = gardenPaid + extraTotal; showDebt = gardenDebt; showSaved = gardenSaved; showEffCost = globalGardenEffCost; effLabel = 'за 1 визит сада (ист.)'; 
+  } else if (analFilter === 'english') { 
+    showPaid = engPaid; showDebt = engDebt; showSaved = engSaved; showEffCost = globalEngEffCost; effLabel = 'за 1 урок англ. (ист.)'; 
+  } else { 
+    showPaid = gardenPaid + engPaid + extraTotal; showDebt = gardenDebt + engDebt; showSaved = gardenSaved + engSaved; 
+    const combinedVisits = totalGAttended + totalEAttended; 
+    showEffCost = combinedVisits > 0 ? Math.round((totalGPaid + totalEPaid) / combinedVisits) : 0; 
+    effLabel = 'средняя за любой визит'; 
+  }
 
   let ringAttended = analFilter === 'english' ? eAttended : (analFilter === 'garden' ? gAttended : gAttended + eAttended);
   let ringMissed = analFilter === 'english' ? eCanceled : (analFilter === 'garden' ? gMissed : gMissed + eCanceled);
@@ -902,7 +926,7 @@ function renderAnalytics(subStats, engStats, dayMap) {
 
   let dateControlsHtml = '';
   if (analPeriodType === 'sub') {
-    const optionsHtml = subStats.map(s => `<option value="${s.index}" ${s.index === analSubIndex ? 'selected' : ''}>Период #${s.index} (${formatShortDate(s.startDate)} - ${formatShortDate(s.endDate)})</option>`).reverse().join('');
+    const optionsHtml = subStats.map(s => `<option value="${s.index}" class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" ${s.index === analSubIndex ? 'selected' : ''}>Период #${s.index} (${formatShortDate(s.startDate)} - ${formatShortDate(s.endDate)})</option>`).reverse().join('');
     dateControlsHtml = `<select onchange="changeAnalyticSub(this.value)" class="bg-transparent text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200 outline-none w-full text-center cursor-pointer">${optionsHtml}</select>`;
   } else if (analPeriodType === 'month') { 
     dateControlsHtml = `<button onclick="changeAnalyticMonth(-1)" class="p-1 text-slate-400 hover:text-indigo-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg></button><span class="text-xs font-black text-slate-700 dark:text-slate-200 min-w-[105px] text-center">${periodLabel}</span><button onclick="changeAnalyticMonth(1)" class="p-1 text-slate-400 hover:text-indigo-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg></button>`; 
@@ -912,7 +936,7 @@ function renderAnalytics(subStats, engStats, dayMap) {
     dateControlsHtml = `<span class="text-xs font-black text-slate-500 dark:text-slate-400 text-center w-full block px-2">За всё время</span>`; 
   }
 
-  // HTML Графика
+// HTML Графика
   const chartHtml = `
     <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm mt-4">
       <div class="flex justify-between items-center mb-4">
@@ -930,8 +954,9 @@ function renderAnalytics(subStats, engStats, dayMap) {
   `;
 
   let historyHtml = '';
-  if (filteredExtra.length === 0) { historyHtml = `<div class="p-4 text-center text-xs text-slate-400 font-medium bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm mt-4">В выбранном окне нет разовых доп. расходов.</div>`; }
-  else {
+  if (filteredExtra.length === 0) { 
+    historyHtml = `<div class="p-4 text-center text-xs text-slate-400 font-medium bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm mt-4">В выбранном окне нет разовых доп. расходов.</div>`; 
+  } else {
     const listHtml = filteredExtra.map(exp => `<div class="flex items-center justify-between p-3.5 sm:p-4 border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition cursor-pointer" onclick="openEditExpenseModal(${exp.id})"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 text-lg shrink-0 border border-amber-200/50 dark:border-amber-700/50">💸</div><div><div class="text-sm font-bold text-slate-900 dark:text-white">${escapeHtml(exp.note) || 'Доп. расход'}</div><div class="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">${formatHumanDate(exp.date)}</div></div></div><div class="text-sm sm:text-base font-black text-slate-900 dark:text-white">-${exp.amount.toLocaleString('ru-RU')} ₽</div></div>`).join('');
     historyHtml = `<div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden mt-4"><div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/60 px-4 py-3 border-b border-slate-200/60 dark:border-slate-800"><h3 class="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">История доп. расходов</h3><button onclick="openExtraExpensesModal()" class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">+ Добавить</button></div><div>${listHtml}</div></div>`;
   }
@@ -951,7 +976,7 @@ function renderAnalytics(subStats, engStats, dayMap) {
         <button onclick="changeAnalyticPeriodType('all')" class="${analPeriodType === 'all' ? btnAct : btnInact}">Всё время</button>
       </div>
     </div>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
       <div class="col-span-2 bg-gradient-to-br from-indigo-500 to-purple-600 p-5 rounded-3xl shadow-md text-white flex flex-col justify-between relative overflow-hidden">
         <div class="relative z-10">
           <span class="text-[10px] font-bold text-indigo-100 uppercase tracking-wider block mb-1">Оплачено в этом окне</span>
@@ -1051,27 +1076,25 @@ function drawExpensesChart(subStats, engStats) {
       responsive: true,
       maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
-      
+
       // ИНТЕРАКТИВ: Клик по столбцу графика
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
           const clickedSub = lastSubs[index];
           if (clickedSub) {
-            // Имитируем выбор периода из выпадающего списка
             analPeriodType = 'sub';
             analSubIndex = clickedSub.index;
             render();
-            // Прокручиваем вверх к дашборду для удобства на мобилках
             document.getElementById('analyticsContainer').scrollIntoView({ behavior: 'smooth' });
           }
         }
       },
-      // Меняем курсор при наведении, чтобы показать кликабельность
       onHover: (event, chartElement) => {
-        event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+        if (event.native && event.native.target) {
+          event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+        }
       },
-
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -1086,19 +1109,8 @@ function drawExpensesChart(subStats, engStats) {
         }
       },
       scales: {
-        x: { 
-          stacked: true, 
-          grid: { display: false }, 
-          border: { display: false }, 
-          ticks: { color: textColor, font: { family: 'sans-serif', weight: 'bold', size: 10 } } 
-        },
-        y: { 
-          stacked: true, 
-          grid: { color: gridColor }, 
-          border: { display: false }, 
-          ticks: { color: textColor, font: { family: 'sans-serif', size: 10 }, callback: (value) => value > 0 ? (value / 1000) + 'k' : 0 }, 
-          beginAtZero: true 
-        }
+        x: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { color: textColor, font: { family: 'sans-serif', weight: 'bold', size: 10 } } },
+        y: { stacked: true, grid: { color: gridColor }, border: { display: false }, ticks: { color: textColor, font: { family: 'sans-serif', size: 10 }, callback: (value) => value > 0 ? (value / 1000) + 'k' : 0 }, beginAtZero: true }
       }
     }
   });
