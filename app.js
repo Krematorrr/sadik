@@ -830,9 +830,9 @@ function renderAnalytics(subStats, engStats, dayMap) {
   if (!container) return;
 
   // Если выбран режим по абонементам, но индекс не задан - берем текущий активный
-  if (analPeriodType === 'sub' && analSubIndex === null && subStats.length > 0) {
-    const activeSub = subStats.find(s => !s.isPast) || subStats[subStats.length - 1];
-    analSubIndex = activeSub.index;
+  if (analPeriodType === 'sub') {
+    const optionsHtml = subStats.map(s => `<option value="${s.index}" class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" ${s.index === analSubIndex ? 'selected' : ''}>Период #${s.index} (${formatShortDate(s.startDate)} - ${formatShortDate(s.endDate)})</option>`).reverse().join('');
+    dateControlsHtml = `<select onchange="changeAnalyticSub(this.value)" class="bg-transparent text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200 outline-none w-full text-center cursor-pointer">${optionsHtml}</select>`;
   }
 
   let dateStart = '2000-01-01', dateEnd = '2100-12-31', periodLabel = '';
@@ -1016,17 +1016,20 @@ function drawExpensesChart(subStats, engStats) {
   const lastSubs = subStats.filter(s => s.startDate).slice(-6); 
 
   lastSubs.forEach(sub => {
-    labels.push(`Пер #${sub.index}`);
+    // Двойная подпись: Период + Даты
+    const startStr = formatShortDate(sub.startDate);
+    const endStr = formatShortDate(sub.endDate) || '...';
+    labels.push([`Пер #${sub.index}`, `${startStr} - ${endStr}`]);
     
     // Цена сада за этот период
     gardenData.push(sub.isPaid ? sub.price : 0);
     
     // Английский: суммируем только те абонементы, которые начались в даты этого периода
-    const ePaid = engStats.filter(es => es.startDate >= sub.startDate && es.startDate <= sub.endDate).reduce((sum, es) => sum + es.paidAmount, 0);
+    const ePaid = engStats.filter(es => es.startDate >= sub.startDate && es.startDate <= (sub.endDate || state.simulatedToday)).reduce((sum, es) => sum + es.paidAmount, 0);
     engData.push(ePaid);
     
     // Доп. расходы в окне этого абонемента
-    const exPaid = state.extraExpenses.filter(e => e.date >= sub.startDate && e.date <= sub.endDate).reduce((sum, e) => sum + e.amount, 0);
+    const exPaid = state.extraExpenses.filter(e => e.date >= sub.startDate && e.date <= (sub.endDate || state.simulatedToday)).reduce((sum, e) => sum + e.amount, 0);
     extraData.push(exPaid);
   });
 
@@ -1048,6 +1051,27 @@ function drawExpensesChart(subStats, engStats) {
       responsive: true,
       maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
+      
+      // ИНТЕРАКТИВ: Клик по столбцу графика
+      onClick: (event, elements) => {
+        if (elements.length > 0) {
+          const index = elements[0].index;
+          const clickedSub = lastSubs[index];
+          if (clickedSub) {
+            // Имитируем выбор периода из выпадающего списка
+            analPeriodType = 'sub';
+            analSubIndex = clickedSub.index;
+            render();
+            // Прокручиваем вверх к дашборду для удобства на мобилках
+            document.getElementById('analyticsContainer').scrollIntoView({ behavior: 'smooth' });
+          }
+        }
+      },
+      // Меняем курсор при наведении, чтобы показать кликабельность
+      onHover: (event, chartElement) => {
+        event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+      },
+
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -1062,8 +1086,19 @@ function drawExpensesChart(subStats, engStats) {
         }
       },
       scales: {
-        x: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { color: textColor, font: { family: 'sans-serif', weight: 'bold', size: 10 } } },
-        y: { stacked: true, grid: { color: gridColor }, border: { display: false }, ticks: { color: textColor, font: { family: 'sans-serif', size: 10 }, callback: (value) => value > 0 ? (value / 1000) + 'k' : 0 }, beginAtZero: true }
+        x: { 
+          stacked: true, 
+          grid: { display: false }, 
+          border: { display: false }, 
+          ticks: { color: textColor, font: { family: 'sans-serif', weight: 'bold', size: 10 } } 
+        },
+        y: { 
+          stacked: true, 
+          grid: { color: gridColor }, 
+          border: { display: false }, 
+          ticks: { color: textColor, font: { family: 'sans-serif', size: 10 }, callback: (value) => value > 0 ? (value / 1000) + 'k' : 0 }, 
+          beginAtZero: true 
+        }
       }
     }
   });
