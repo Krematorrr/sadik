@@ -45,12 +45,13 @@ function escapeHtml(str) {
 
 // --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ АНАЛИТИКИ ---
 let analYear = new Date().getFullYear(), analMonth = new Date().getMonth();
-let analFilter = 'all', analPeriodType = 'sub', analSubIndex = null; // 'sub' - это по абонементам сада
+let analFilter = 'all', analPeriodType = 'sub', analSubIndex = null, analEngSubIndex = null;
 
 function changeAnalyticMonth(offset) { const d = new Date(analYear, analMonth + offset, 1); analYear = d.getFullYear(); analMonth = d.getMonth(); render(); }
 function changeAnalyticYear(offset) { analYear += offset; render(); }
 function changeAnalyticPeriodType(type) { analPeriodType = type; render(); }
 function changeAnalyticSub(idx) { analSubIndex = Number(idx); render(); }
+function changeAnalyticEngSub(idx) { analEngSubIndex = Number(idx); render(); }
 function changeAnalyticFilter(val) { analFilter = val; render(); }
 
 function changeAnalyticMonth(offset) {
@@ -823,27 +824,44 @@ function deleteExpenseFromEdit() {
 }
 
 // =========================================================================
-// 6. АНАЛИТИКА И ФИНАНСЫ
+// 6. АНАЛИТИКА И ФИНАНСЫ (КОНТЕКСТНЫЙ УЧЕТ + DUAL PROGRESS)
 // =========================================================================
 function renderAnalytics(subStats, engStats, dayMap) {
   const container = document.getElementById('analyticsContainer');
   if (!container) return;
 
-  // Автовыбор активного абонемента, если индекс еще не задан
-  if (analPeriodType === 'sub' && analSubIndex === null && subStats.length > 0) {
+  // Инициализация активных индексов по умолчанию
+  if (analSubIndex === null && subStats.length > 0) {
     const activeSub = subStats.find(s => !s.isPast) || subStats[subStats.length - 1];
     analSubIndex = activeSub.index;
+  }
+  if (analEngSubIndex === null && engStats.length > 0) {
+    const activeEng = engStats.find(s => s.remainingCount > 0) || engStats[engStats.length - 1];
+    analEngSubIndex = activeEng.index;
   }
 
   let dateStart = '2000-01-01', dateEnd = '2100-12-31', periodLabel = '';
   const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 
+  // Определение временных границ
+  let targetGardenSub = null;
+  let targetEngSub = null;
+
   if (analPeriodType === 'sub') {
-    const targetSub = subStats.find(s => s.index === analSubIndex);
-    if (targetSub) {
-      dateStart = targetSub.startDate || '2000-01-01';
-      dateEnd = targetSub.endDate || '2100-12-31';
-      periodLabel = `Период #${targetSub.index} Сада`;
+    if (analFilter === 'english') {
+      targetEngSub = engStats.find(s => s.index === analEngSubIndex) || engStats[engStats.length - 1];
+      if (targetEngSub) {
+        dateStart = targetEngSub.startDate || '2000-01-01';
+        dateEnd = targetEngSub.endDate || '2100-12-31';
+        periodLabel = `Абонемент #${targetEngSub.index} EN`;
+      }
+    } else {
+      targetGardenSub = subStats.find(s => s.index === analSubIndex) || subStats[subStats.length - 1];
+      if (targetGardenSub) {
+        dateStart = targetGardenSub.startDate || '2000-01-01';
+        dateEnd = targetGardenSub.endDate || '2100-12-31';
+        periodLabel = `Период #${targetGardenSub.index} Сада`;
+      }
     }
   } else if (analPeriodType === 'month') { 
     const lastDay = new Date(analYear, analMonth + 1, 0).getDate(); 
@@ -858,19 +876,78 @@ function renderAnalytics(subStats, engStats, dayMap) {
     periodLabel = 'За всё время'; 
   }
 
+  // Расчет данных Сада
   const gardenDayPrice = Math.round(state.defaultPrice / state.daysPerSub) || 0;
-  const filteredSubs = subStats.filter(s => s.startDate >= dateStart && s.startDate <= dateEnd);
-  const gardenPaid = filteredSubs.filter(s => s.isPaid).reduce((sum, s) => sum + s.price, 0);
-  const gardenDebt = filteredSubs.filter(s => !s.isPaid).reduce((sum, s) => sum + s.price, 0);
+  let gardenPaid = 0, gardenDebt = 0, gAttended = 0, gMissed = 0, gHoliday = 0;
 
+  if (analPeriodType === 'sub' && targetGardenSub && analFilter !== 'english') {
+    gardenPaid = targetGardenSub.isPaid ? targetGardenSub.price : 0;
+    gardenDebt = targetGardenSub.isPaid ? 0 : targetGardenSub.price;
+    gAttended = targetGardenSub.completedCount;
+    gMissed = targetGardenSub.missedCount;
+    gHoliday = targetGardenSub.holidayDates ? targetGardenSub.holidayDates.length : 0;
+  } else {
+    const filteredSubs = subStats.filter(s => s.startDate >= dateStart && s.startDate <= dateEnd);
+    gardenPaid = filteredSubs.filter(s => s.isPaid).reduce((sum, s) => sum + s.price, 0);
+    gardenDebt = filteredSubs.filter(s => !s.isPaid).reduce((sum, s) => sum + s.price, 0);
+    
+    Object.keys(dayMap).sort().forEach(iso => {
+      const item = dayMap[iso];
+      if (iso > state.simulatedToday || iso < state.startDate) return;
+      if (iso >= dateStart && iso <= dateEnd) {
+        if (item.status === 'attended' && item.isCompletedVisit) gAttended++;
+        else if (item.status === 'missed') gMissed++;
+        else if (item.status === 'holiday') gHoliday++;
+      }
+    });
+  }
+
+  // Расчет данных Английского
   const engLessonPrice = engStats[0]?.unitPrice || 700;
-  const filteredEng = engStats.filter(s => s.startDate >= dateStart && s.startDate <= dateEnd);
-  const engPaid = filteredEng.reduce((sum, s) => sum + s.paidAmount, 0);
-  const engDebt = filteredEng.reduce((sum, s) => sum + s.remainingToPay, 0);
+  let engPaid = 0, engDebt = 0, eAttended = 0, eCanceled = 0, ePaidCount = 0, eTotalLessons = 8;
 
+  if (analPeriodType === 'sub' && analFilter === 'english' && targetEngSub) {
+    engPaid = targetEngSub.paidAmount;
+    engDebt = targetEngSub.remainingToPay;
+    eAttended = targetEngSub.attendedCount;
+    eCanceled = targetEngSub.canceledCount;
+    ePaidCount = targetEngSub.paidLessonsCount;
+    eTotalLessons = targetEngSub.activeTotal || 8;
+  } else {
+    engStats.forEach(es => {
+      es.enrichedLessons.forEach(l => {
+        if (l.date >= dateStart && l.date <= dateEnd) {
+          if (l.effectiveCompleted) eAttended++;
+          if (l.status === 'canceled') eCanceled++;
+          if (l.isPaid && l.status !== 'canceled') {
+            engPaid += l.unitPrice;
+            ePaidCount++;
+          }
+        }
+      });
+    });
+    const filteredEng = engStats.filter(s => s.startDate >= dateStart && s.startDate <= dateEnd);
+    engDebt = filteredEng.reduce((sum, s) => sum + s.remainingToPay, 0);
+  }
+
+  // Дополнительные расходы
   const filteredExtra = (state.extraExpenses || []).filter(e => e.date >= dateStart && e.date <= dateEnd);
   const extraTotal = filteredExtra.reduce((sum, e) => sum + e.amount, 0);
 
+  // Стрик без пропусков (для сада)
+  let currentStreak = 0, maxStreak = 0;
+  Object.keys(dayMap).sort().forEach(iso => {
+    const item = dayMap[iso];
+    if (iso > state.simulatedToday || iso < state.startDate) return;
+    if (item.status === 'attended' && item.isCompletedVisit) {
+      currentStreak++;
+      if (currentStreak > maxStreak) maxStreak = currentStreak;
+    } else if (item.status === 'missed') {
+      currentStreak = 0;
+    }
+  });
+
+  // Эффективная стоимость визита (историческая)
   const totalGPaid = subStats.filter(s => s.isPaid).reduce((sum, s) => sum + s.price, 0);
   const totalGAttended = subStats.reduce((sum, s) => sum + s.completedCount, 0);
   const globalGardenEffCost = totalGAttended > 0 ? Math.round(totalGPaid / totalGAttended) : 0;
@@ -879,73 +956,238 @@ function renderAnalytics(subStats, engStats, dayMap) {
   const totalEAttended = engStats.reduce((sum, s) => sum + s.attendedCount, 0);
   const globalEngEffCost = totalEAttended > 0 ? Math.round(totalEPaid / totalEAttended) : 0;
 
-  let gAttended = 0, gMissed = 0, gHoliday = 0, currentStreak = 0, maxStreak = 0;
-  Object.keys(dayMap).sort().forEach(iso => {
-    const item = dayMap[iso]; if (iso > state.simulatedToday || iso < state.startDate) return;
-    if (item.status === 'attended' && item.isCompletedVisit) { currentStreak++; if (currentStreak > maxStreak) maxStreak = currentStreak; } 
-    else if (item.status === 'missed') { currentStreak = 0; }
-    if (iso >= dateStart && iso <= dateEnd) { 
-      if (item.status === 'attended' && item.isCompletedVisit) gAttended++; 
-      else if (item.status === 'missed') gMissed++; 
-      else if (item.status === 'holiday') gHoliday++; 
-    }
-  });
-
-  let eAttended = 0, eCanceled = 0;
-  engStats.forEach(es => { 
-    es.enrichedLessons.forEach(l => { 
-      if (l.date >= dateStart && l.date <= dateEnd && l.date <= state.simulatedToday) { 
-        if (l.effectiveCompleted) eAttended++; 
-        if (l.status === 'canceled') eCanceled++; 
-      } 
-    }); 
-  });
-
+  // Итоговые показатели в зависимости от фильтра
   let showPaid = 0, showDebt = 0, showSaved = 0, showEffCost = 0, effLabel = '';
-  const gardenSaved = gMissed * gardenDayPrice, engSaved = eCanceled * engLessonPrice;
+  const gardenSaved = gMissed * gardenDayPrice;
+  const engSaved = eCanceled * engLessonPrice;
 
-  if (analFilter === 'garden') { 
-    showPaid = gardenPaid + extraTotal; showDebt = gardenDebt; showSaved = gardenSaved; showEffCost = globalGardenEffCost; effLabel = 'за 1 визит сада (ист.)'; 
-  } else if (analFilter === 'english') { 
-    showPaid = engPaid; showDebt = engDebt; showSaved = engSaved; showEffCost = globalEngEffCost; effLabel = 'за 1 урок англ. (ист.)'; 
-  } else { 
-    showPaid = gardenPaid + engPaid + extraTotal; showDebt = gardenDebt + engDebt; showSaved = gardenSaved + engSaved; 
-    const combinedVisits = totalGAttended + totalEAttended; 
-    showEffCost = combinedVisits > 0 ? Math.round((totalGPaid + totalEPaid) / combinedVisits) : 0; 
-    effLabel = 'средняя за любой визит'; 
+  if (analFilter === 'garden') {
+    showPaid = gardenPaid + extraTotal;
+    showDebt = gardenDebt;
+    showSaved = gardenSaved;
+    showEffCost = globalGardenEffCost;
+    effLabel = 'за 1 визит сада (ист.)';
+  } else if (analFilter === 'english') {
+    showPaid = engPaid;
+    showDebt = engDebt;
+    showSaved = engSaved;
+    showEffCost = globalEngEffCost;
+    effLabel = 'за 1 урок англ. (ист.)';
+  } else {
+    showPaid = gardenPaid + engPaid + extraTotal;
+    showDebt = gardenDebt + engDebt;
+    showSaved = gardenSaved + engSaved;
+    const combinedVisits = totalGAttended + totalEAttended;
+    showEffCost = combinedVisits > 0 ? Math.round((totalGPaid + totalEPaid) / combinedVisits) : 0;
+    effLabel = 'средняя за любой визит';
   }
 
-  let ringAttended = analFilter === 'english' ? eAttended : (analFilter === 'garden' ? gAttended : gAttended + eAttended);
-  let ringMissed = analFilter === 'english' ? eCanceled : (analFilter === 'garden' ? gMissed : gMissed + eCanceled);
-  let ringHoliday = analFilter === 'english' ? 0 : gHoliday;
-  const rTotal = ringAttended + ringMissed, rRate = rTotal > 0 ? Math.round((ringAttended / rTotal) * 100) : 0;
+  // Расчет процентов прогресса
+  const gTarget = state.daysPerSub || 20;
+  const gRate = Math.min(100, Math.round((gAttended / gTarget) * 100));
+  const eRate = Math.min(100, Math.round((eAttended / (eTotalLessons || 8)) * 100));
 
-  const btnBase = "flex-1 lg:flex-none px-2 sm:px-3 py-1.5 text-center transition-colors rounded-lg cursor-pointer font-bold";
+  // Кнопки управления периодом
+  const btnBase = "flex-1 lg:flex-none px-2.5 sm:px-3 py-1.5 text-center transition-colors rounded-lg cursor-pointer font-bold";
   const btnAct = `${btnBase} bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-400 shadow-sm`;
   const btnInact = `${btnBase} text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white`;
 
   let dateControlsHtml = '';
   if (analPeriodType === 'sub') {
-    const optionsHtml = subStats.map(s => `<option value="${s.index}" class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" ${s.index === analSubIndex ? 'selected' : ''}>Период #${s.index} (${formatShortDate(s.startDate)} - ${formatShortDate(s.endDate)})</option>`).reverse().join('');
-    dateControlsHtml = `<select onchange="changeAnalyticSub(this.value)" class="bg-transparent text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200 outline-none w-full text-center cursor-pointer">${optionsHtml}</select>`;
+    if (analFilter === 'english') {
+      const optionsHtml = engStats.map(s => `
+        <option value="${s.index}" class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold" ${s.index === analEngSubIndex ? 'selected' : ''}>
+          Абонемент #${s.index} (${formatShortDate(s.startDate)} - ${formatShortDate(s.endDate)})
+        </option>
+      `).reverse().join('');
+      dateControlsHtml = `<select onchange="changeAnalyticEngSub(this.value)" class="bg-transparent text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200 outline-none w-full text-center cursor-pointer">${optionsHtml}</select>`;
+    } else {
+      const optionsHtml = subStats.map(s => `
+        <option value="${s.index}" class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold" ${s.index === analSubIndex ? 'selected' : ''}>
+          Период #${s.index} (${formatShortDate(s.startDate)} - ${formatShortDate(s.endDate)})
+        </option>
+      `).reverse().join('');
+      dateControlsHtml = `<select onchange="changeAnalyticSub(this.value)" class="bg-transparent text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200 outline-none w-full text-center cursor-pointer">${optionsHtml}</select>`;
+    }
   } else if (analPeriodType === 'month') { 
-    dateControlsHtml = `<button onclick="changeAnalyticMonth(-1)" class="p-1 text-slate-400 hover:text-indigo-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg></button><span class="text-xs font-black text-slate-700 dark:text-slate-200 min-w-[105px] text-center">${periodLabel}</span><button onclick="changeAnalyticMonth(1)" class="p-1 text-slate-400 hover:text-indigo-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg></button>`; 
+    dateControlsHtml = `
+      <button onclick="changeAnalyticMonth(-1)" class="p-1 text-slate-400 hover:text-indigo-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg></button>
+      <span class="text-xs font-black text-slate-700 dark:text-slate-200 min-w-[105px] text-center">${periodLabel}</span>
+      <button onclick="changeAnalyticMonth(1)" class="p-1 text-slate-400 hover:text-indigo-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg></button>
+    `; 
   } else if (analPeriodType === 'year') { 
-    dateControlsHtml = `<button onclick="changeAnalyticYear(-1)" class="p-1 text-slate-400 hover:text-indigo-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg></button><span class="text-xs font-black text-slate-700 dark:text-slate-200 min-w-[90px] text-center">${periodLabel}</span><button onclick="changeAnalyticYear(1)" class="p-1 text-slate-400 hover:text-indigo-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg></button>`; 
+    dateControlsHtml = `
+      <button onclick="changeAnalyticYear(-1)" class="p-1 text-slate-400 hover:text-indigo-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg></button>
+      <span class="text-xs font-black text-slate-700 dark:text-slate-200 min-w-[90px] text-center">${periodLabel}</span>
+      <button onclick="changeAnalyticYear(1)" class="p-1 text-slate-400 hover:text-indigo-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg></button>
+    `; 
   } else { 
     dateControlsHtml = `<span class="text-xs font-black text-slate-500 dark:text-slate-400 text-center w-full block px-2">За всё время</span>`; 
   }
 
-// HTML Графика
+  // Карточка 5: Рекорд серии (для Сада/Всех) или Поурочная оплата (для Английского)
+  let card5Html = '';
+  if (analFilter === 'english') {
+    card5Html = `
+      <div class="col-span-1 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-blue-200/70 dark:border-blue-800/40 shadow-sm flex flex-col justify-between">
+        <div>
+          <span class="text-[10px] font-bold text-blue-500 uppercase tracking-wider block">Оплата уроков</span>
+          <span class="text-lg sm:text-xl font-black text-slate-800 dark:text-white block mt-0.5">💳 ${ePaidCount} / ${eTotalLessons} ур.</span>
+        </div>
+        <span class="text-[10px] text-slate-400 font-medium pt-1">Внесено: ${engPaid.toLocaleString('ru-RU')} ₽</span>
+      </div>
+    `;
+  } else {
+    card5Html = `
+      <div class="col-span-1 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-amber-200/70 dark:border-amber-800/40 shadow-sm flex flex-col justify-between">
+        <div>
+          <span class="text-[10px] font-bold text-amber-500 uppercase tracking-wider block">Рекорд серии</span>
+          <span class="text-lg sm:text-xl font-black text-slate-800 dark:text-white block mt-0.5">🔥 ${maxStreak} дн.</span>
+        </div>
+        <span class="text-[10px] text-slate-400 font-medium pt-1">В саду без пропусков</span>
+      </div>
+    `;
+  }
+
+  // Карточка 6: Посещаемость (Dual Progress для "Все направления", либо профильная)
+  let attendanceCardHtml = '';
+  if (analFilter === 'all') {
+    attendanceCardHtml = `
+      <div class="col-span-2 bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+        <h3 class="text-xs font-extrabold text-slate-800 dark:text-slate-200 mb-3 uppercase tracking-wide flex justify-between items-center">
+          <span>Посещаемость: ${periodLabel}</span>
+          <span class="text-[10px] text-slate-400 font-semibold lowercase">раздельный учет</span>
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-800">
+          
+          <div class="flex items-center gap-3.5 sm:pr-3">
+            <div class="relative w-14 h-14 shrink-0">
+              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                <path class="text-slate-100 dark:text-slate-800" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="100, 100" />
+                <path class="${gRate >= 75 ? 'text-emerald-500' : (gRate >= 50 ? 'text-amber-500' : 'text-rose-500')}" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="${gRate}, 100" />
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-[11px] font-black text-slate-700 dark:text-slate-200">${gRate}%</span>
+              </div>
+            </div>
+            <div class="flex-1 space-y-1 text-xs">
+              <div class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">🐝 Детский сад</div>
+              <div class="flex justify-between items-center">
+                <span class="text-slate-500 dark:text-slate-400 text-[11px]">Отхожено</span>
+                <span class="font-black text-slate-800 dark:text-white">${gAttended} / ${gTarget} дн.</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-slate-500 dark:text-slate-400 text-[11px]">Пропусков</span>
+                <span class="font-bold text-amber-600 dark:text-amber-400">+${gMissed} дн.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3.5 pt-3 sm:pt-0 sm:pl-3">
+            <div class="relative w-14 h-14 shrink-0">
+              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                <path class="text-slate-100 dark:text-slate-800" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="100, 100" />
+                <path class="text-blue-500" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="${eRate}, 100" />
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-[11px] font-black text-slate-700 dark:text-slate-200">${eRate}%</span>
+              </div>
+            </div>
+            <div class="flex-1 space-y-1 text-xs">
+              <div class="text-[11px] font-bold text-blue-600 dark:text-blue-400">🎓 Английский язык</div>
+              <div class="flex justify-between items-center">
+                <span class="text-slate-500 dark:text-slate-400 text-[11px]">Проведено</span>
+                <span class="font-black text-slate-800 dark:text-white">${eAttended} / ${eTotalLessons} ур.</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-slate-500 dark:text-slate-400 text-[11px]">Переносов</span>
+                <span class="font-bold text-amber-600 dark:text-amber-400">+${eCanceled} ур.</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    `;
+  } else if (analFilter === 'english') {
+    attendanceCardHtml = `
+      <div class="col-span-2 bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+        <h3 class="text-xs font-extrabold text-slate-800 dark:text-slate-200 mb-3 uppercase tracking-wide">Посещаемость: ${periodLabel}</h3>
+        <div class="flex items-center gap-5">
+          <div class="relative w-16 h-16 shrink-0">
+            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+              <path class="text-slate-100 dark:text-slate-800" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="100, 100" />
+              <path class="text-blue-500" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="${eRate}, 100" />
+            </svg>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="text-xs font-black text-slate-700 dark:text-slate-200">${eRate}%</span>
+            </div>
+          </div>
+          <div class="flex-1 space-y-1.5 text-xs">
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-500"></span>Проведено уроков</span>
+              <span class="font-black text-slate-800 dark:text-white">${eAttended} из ${eTotalLessons}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span>Переносов (+1)</span>
+              <span class="font-black text-slate-800 dark:text-white">${eCanceled}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-indigo-500"></span>Оплачено уроков</span>
+              <span class="font-black text-slate-800 dark:text-white">${ePaidCount} из ${eTotalLessons}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    attendanceCardHtml = `
+      <div class="col-span-2 bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+        <h3 class="text-xs font-extrabold text-slate-800 dark:text-slate-200 mb-3 uppercase tracking-wide">Посещаемость: ${periodLabel}</h3>
+        <div class="flex items-center gap-5">
+          <div class="relative w-16 h-16 shrink-0">
+            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+              <path class="text-slate-100 dark:text-slate-800" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="100, 100" />
+              <path class="${gRate >= 75 ? 'text-emerald-500' : (gRate >= 50 ? 'text-amber-500' : 'text-rose-500')}" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="${gRate}, 100" />
+            </svg>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="text-xs font-black text-slate-700 dark:text-slate-200">${gRate}%</span>
+            </div>
+          </div>
+          <div class="flex-1 space-y-1.5 text-xs">
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Отхожено в саду</span>
+              <span class="font-black text-slate-800 dark:text-white">${gAttended} из ${gTarget}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span>Пропусков</span>
+              <span class="font-black text-slate-800 dark:text-white">${gMissed}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-purple-500"></span>Выходных</span>
+              <span class="font-black text-slate-800 dark:text-white">${gHoliday}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // HTML Графика
+  const chartTitle = analFilter === 'english' ? 'Затраты по абонементам английского' : 'Затраты по периодам сада';
+  const chartLegendHtml = analFilter === 'english' 
+    ? `<span class="flex items-center gap-1 text-slate-600 dark:text-slate-300 font-bold"><span class="w-2 h-2 rounded-full bg-blue-500"></span>Английский</span>`
+    : `
+      <span class="flex items-center gap-1 text-slate-600 dark:text-slate-300"><span class="w-2 h-2 rounded-full bg-indigo-500"></span>Сад</span>
+      <span class="flex items-center gap-1 text-slate-600 dark:text-slate-300"><span class="w-2 h-2 rounded-full bg-blue-500"></span>Англ</span>
+      <span class="flex items-center gap-1 text-slate-600 dark:text-slate-300"><span class="w-2 h-2 rounded-full bg-amber-500"></span>Доп</span>
+    `;
+
   const chartHtml = `
     <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm mt-4">
       <div class="flex justify-between items-center mb-4">
-        <h3 class="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Затраты по периодам сада</h3>
-        <div class="flex gap-2 text-[9px] font-bold">
-          <span class="flex items-center gap-1 text-slate-600 dark:text-slate-300"><span class="w-2 h-2 rounded-full bg-indigo-500"></span>Сад</span>
-          <span class="flex items-center gap-1 text-slate-600 dark:text-slate-300"><span class="w-2 h-2 rounded-full bg-blue-500"></span>Англ</span>
-          <span class="flex items-center gap-1 text-slate-600 dark:text-slate-300"><span class="w-2 h-2 rounded-full bg-amber-500"></span>Доп</span>
-        </div>
+        <h3 class="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">${chartTitle}</h3>
+        <div class="flex gap-2 text-[9px] font-bold">${chartLegendHtml}</div>
       </div>
       <div class="relative w-full h-48 sm:h-56">
         <canvas id="expensesChart"></canvas>
@@ -953,14 +1195,35 @@ function renderAnalytics(subStats, engStats, dayMap) {
     </div>
   `;
 
+  // История доп. расходов
   let historyHtml = '';
   if (filteredExtra.length === 0) { 
     historyHtml = `<div class="p-4 text-center text-xs text-slate-400 font-medium bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm mt-4">В выбранном окне нет разовых доп. расходов.</div>`; 
   } else {
-    const listHtml = filteredExtra.map(exp => `<div class="flex items-center justify-between p-3.5 sm:p-4 border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition cursor-pointer" onclick="openEditExpenseModal(${exp.id})"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 text-lg shrink-0 border border-amber-200/50 dark:border-amber-700/50">💸</div><div><div class="text-sm font-bold text-slate-900 dark:text-white">${escapeHtml(exp.note) || 'Доп. расход'}</div><div class="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">${formatHumanDate(exp.date)}</div></div></div><div class="text-sm sm:text-base font-black text-slate-900 dark:text-white">-${exp.amount.toLocaleString('ru-RU')} ₽</div></div>`).join('');
-    historyHtml = `<div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden mt-4"><div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/60 px-4 py-3 border-b border-slate-200/60 dark:border-slate-800"><h3 class="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">История доп. расходов</h3><button onclick="openExtraExpensesModal()" class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">+ Добавить</button></div><div>${listHtml}</div></div>`;
+    const listHtml = filteredExtra.map(exp => `
+      <div class="flex items-center justify-between p-3.5 sm:p-4 border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition cursor-pointer" onclick="openEditExpenseModal(${exp.id})">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 text-lg shrink-0 border border-amber-200/50 dark:border-amber-700/50">💸</div>
+          <div>
+            <div class="text-sm font-bold text-slate-900 dark:text-white">${escapeHtml(exp.note) || 'Доп. расход'}</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">${formatHumanDate(exp.date)}</div>
+          </div>
+        </div>
+        <div class="text-sm sm:text-base font-black text-slate-900 dark:text-white">-${exp.amount.toLocaleString('ru-RU')} ₽</div>
+      </div>
+    `).join('');
+    historyHtml = `
+      <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden mt-4">
+        <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/60 px-4 py-3 border-b border-slate-200/60 dark:border-slate-800">
+          <h3 class="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">История доп. расходов</h3>
+          <button onclick="openExtraExpensesModal()" class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">+ Добавить</button>
+        </div>
+        <div>${listHtml}</div>
+      </div>
+    `;
   }
 
+  // Сборка полного контейнера
   container.innerHTML = `
     <div class="flex flex-col lg:flex-row items-center justify-between gap-2.5 bg-white dark:bg-slate-900 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
       <select onchange="changeAnalyticFilter(this.value)" class="w-full lg:w-auto bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl px-3 py-2 outline-none cursor-pointer">
@@ -997,27 +1260,8 @@ function renderAnalytics(subStats, engStats, dayMap) {
         <div><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Реальная цена</span><span class="text-lg sm:text-xl font-black text-slate-800 dark:text-white block mt-0.5">${showEffCost.toLocaleString('ru-RU')} ₽</span></div>
         <span class="text-[10px] text-slate-400 font-medium pt-1">${effLabel}</span>
       </div>
-      <div class="col-span-1 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-amber-200/70 dark:border-amber-800/40 shadow-sm flex flex-col justify-between">
-        <div><span class="text-[10px] font-bold text-amber-500 uppercase tracking-wider block">Рекорд серии</span><span class="text-lg sm:text-xl font-black text-slate-800 dark:text-white block mt-0.5">🔥 ${maxStreak} дн.</span></div>
-        <span class="text-[10px] text-slate-400 font-medium pt-1">В саду без пропусков</span>
-      </div>
-      <div class="col-span-2 bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
-        <h3 class="text-xs font-extrabold text-slate-800 dark:text-slate-200 mb-3 uppercase tracking-wide">Посещаемость: ${periodLabel}</h3>
-        <div class="flex items-center gap-5">
-          <div class="relative w-16 h-16 shrink-0">
-            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-              <path class="text-slate-100 dark:text-slate-800" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="100, 100" />
-              <path class="${rRate >= 75 ? 'text-emerald-500' : (rRate >= 50 ? 'text-amber-500' : 'text-rose-500')}" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="${rRate}, 100" />
-            </svg>
-            <div class="absolute inset-0 flex items-center justify-center"><span class="text-xs font-black text-slate-700 dark:text-slate-200">${rRate}%</span></div>
-          </div>
-          <div class="flex-1 space-y-1.5 text-xs">
-            <div class="flex justify-between items-center"><span class="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Отхожено</span><span class="font-black text-slate-800 dark:text-white">${ringAttended}</span></div>
-            <div class="flex justify-between items-center"><span class="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span>Пропусков</span><span class="font-black text-slate-800 dark:text-white">${ringMissed}</span></div>
-            <div class="flex justify-between items-center"><span class="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-purple-500"></span>Выходных</span><span class="font-black text-slate-800 dark:text-white">${ringHoliday}</span></div>
-          </div>
-        </div>
-      </div>
+      ${card5Html}
+      ${attendanceCardHtml}
     </div>
     ${chartHtml}
     ${historyHtml}
@@ -1026,7 +1270,7 @@ function renderAnalytics(subStats, engStats, dayMap) {
   drawExpensesChart(subStats, engStats);
 }
 
-// Функция сборки графика (Анализирует последние 6 абонементов)
+// Отрисовка интерактивного графика (Chart.js)
 function drawExpensesChart(subStats, engStats) {
   const ctx = document.getElementById('expensesChart');
   if (!ctx || typeof Chart === 'undefined') return;
@@ -1035,58 +1279,77 @@ function drawExpensesChart(subStats, engStats) {
     window.analyticsChartInstance.destroy();
   }
 
-  const labels = [], gardenData = [], engData = [], extraData = [];
-  
-  // Берем до 6 последних активных (или прошедших) абонементов сада
-  const lastSubs = subStats.filter(s => s.startDate).slice(-6); 
-
-  lastSubs.forEach(sub => {
-    // Двойная подпись: Период + Даты
-    const startStr = formatShortDate(sub.startDate);
-    const endStr = formatShortDate(sub.endDate) || '...';
-    labels.push([`Пер #${sub.index}`, `${startStr} - ${endStr}`]);
-    
-    // Цена сада за этот период
-    gardenData.push(sub.isPaid ? sub.price : 0);
-    
-    // Английский: суммируем только те абонементы, которые начались в даты этого периода
-    const ePaid = engStats.filter(es => es.startDate >= sub.startDate && es.startDate <= (sub.endDate || state.simulatedToday)).reduce((sum, es) => sum + es.paidAmount, 0);
-    engData.push(ePaid);
-    
-    // Доп. расходы в окне этого абонемента
-    const exPaid = state.extraExpenses.filter(e => e.date >= sub.startDate && e.date <= (sub.endDate || state.simulatedToday)).reduce((sum, e) => sum + e.amount, 0);
-    extraData.push(exPaid);
-  });
-
   const isDark = document.documentElement.classList.contains('dark');
   const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
   const textColor = isDark ? '#94a3b8' : '#64748b';
 
+  let labels = [], datasets = [], currentEntities = [];
+
+  if (analFilter === 'english') {
+    // График по абонементам Английского
+    const lastEng = engStats.slice(-6);
+    currentEntities = lastEng;
+    const paidData = [], debtData = [];
+
+    lastEng.forEach(es => {
+      const startStr = formatShortDate(es.startDate);
+      const endStr = formatShortDate(es.endDate) || '...';
+      labels.push([`Абон #${es.index}`, `${startStr} - ${endStr}`]);
+      paidData.push(es.paidAmount);
+      debtData.push(es.remainingToPay);
+    });
+
+    datasets = [
+      { label: 'Оплачено', data: paidData, backgroundColor: '#3b82f6', borderRadius: 4, barPercentage: 0.45 },
+      { label: 'Долг', data: debtData, backgroundColor: '#f43f5e', borderRadius: 4, barPercentage: 0.45 }
+    ];
+  } else {
+    // График по периодам Сада (со сводным учетом)
+    const lastSubs = subStats.filter(s => s.startDate).slice(-6);
+    currentEntities = lastSubs;
+    const gardenData = [], engData = [], extraData = [];
+
+    lastSubs.forEach(sub => {
+      const startStr = formatShortDate(sub.startDate);
+      const endStr = formatShortDate(sub.endDate) || '...';
+      labels.push([`Пер #${sub.index}`, `${startStr} - ${endStr}`]);
+      
+      gardenData.push(sub.isPaid ? sub.price : 0);
+      
+      const ePaid = engStats.filter(es => es.startDate >= sub.startDate && es.startDate <= (sub.endDate || state.simulatedToday)).reduce((sum, es) => sum + es.paidAmount, 0);
+      engData.push(ePaid);
+      
+      const exPaid = state.extraExpenses.filter(e => e.date >= sub.startDate && e.date <= (sub.endDate || state.simulatedToday)).reduce((sum, e) => sum + e.amount, 0);
+      extraData.push(exPaid);
+    });
+
+    datasets = [
+      { label: 'Детский сад', data: gardenData, backgroundColor: '#6366f1', borderRadius: 4, barPercentage: 0.5 },
+      { label: 'Английский', data: engData, backgroundColor: '#3b82f6', borderRadius: 4, barPercentage: 0.5 },
+      { label: 'Доп. расходы', data: extraData, backgroundColor: '#f59e0b', borderRadius: 4, barPercentage: 0.5 }
+    ];
+  }
+
   window.analyticsChartInstance = new Chart(ctx, {
     type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [
-        { label: 'Детский сад', data: gardenData, backgroundColor: '#6366f1', borderRadius: 4, barPercentage: 0.5 },
-        { label: 'Английский', data: engData, backgroundColor: '#3b82f6', borderRadius: 4, barPercentage: 0.5 },
-        { label: 'Доп. расходы', data: extraData, backgroundColor: '#f59e0b', borderRadius: 4, barPercentage: 0.5 }
-      ]
-    },
+    data: { labels, datasets },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
-
-      // ИНТЕРАКТИВ: Клик по столбцу графика
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
-          const clickedSub = lastSubs[index];
-          if (clickedSub) {
+          const entity = currentEntities[index];
+          if (entity) {
             analPeriodType = 'sub';
-            analSubIndex = clickedSub.index;
+            if (analFilter === 'english') {
+              analEngSubIndex = entity.index;
+            } else {
+              analSubIndex = entity.index;
+            }
             render();
-            document.getElementById('analyticsContainer').scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('analyticsContainer')?.scrollIntoView({ behavior: 'smooth' });
           }
         }
       },
@@ -1105,12 +1368,25 @@ function drawExpensesChart(subStats, engStats) {
           borderWidth: 1,
           padding: 10,
           boxPadding: 4,
-          callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString('ru-RU')} ₽` }
+          callbacks: {
+            label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString('ru-RU')} ₽`
+          }
         }
       },
       scales: {
-        x: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { color: textColor, font: { family: 'sans-serif', weight: 'bold', size: 10 } } },
-        y: { stacked: true, grid: { color: gridColor }, border: { display: false }, ticks: { color: textColor, font: { family: 'sans-serif', size: 10 }, callback: (value) => value > 0 ? (value / 1000) + 'k' : 0 }, beginAtZero: true }
+        x: { 
+          stacked: true, 
+          grid: { display: false }, 
+          border: { display: false }, 
+          ticks: { color: textColor, font: { family: 'sans-serif', weight: 'bold', size: 10 } } 
+        },
+        y: { 
+          stacked: true, 
+          grid: { color: gridColor }, 
+          border: { display: false }, 
+          ticks: { color: textColor, font: { family: 'sans-serif', size: 10 }, callback: (v) => v > 0 ? (v / 1000) + 'k' : 0 }, 
+          beginAtZero: true 
+        }
       }
     }
   });
