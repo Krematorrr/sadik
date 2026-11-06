@@ -1516,7 +1516,7 @@ function checkPaymentNotifications(subStats) {
       if (!state.telegram.sentAlertsLog[alertKey]) {
         const msg = `🐝 Детский сад («Улей»): до окончания Периода #${currentSub.index} (${formatHumanDate(currentSub.endDate)}) осталось ровно ${daysLeft} раб. дн.!\nК оплате за Период #${targetSub.index}: ${targetSub.price.toLocaleString('ru-RU')} ₽ (старт ${formatHumanDate(targetSub.startDate)}).`;
         triggerSystemPush('🐝 Детский клуб «Улей»', `До конца Периода сада #${currentSub.index} осталось ${daysLeft} раб. дн.!`);
-        sendTelegramText(msg, true);
+        // sendTelegramText(msg, true);
         state.telegram.sentAlertsLog[alertKey] = true;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       }
@@ -1583,7 +1583,7 @@ function checkEnglishNotifications(engStats) {
       if (!state.telegram.sentAlertsLog[alertKey]) {
         const tgMsg = `🎓 🔔 Английский язык («Улей»): в Абонементе #${activeSub.index} осталось ПОСЛЕДНЕЕ занятие (${formatHumanDate(activeSub.endDate)})!\nОплачено уроков: ${activeSub.paidLessonsCount}/${activeSub.activeTotal}. Не забудьте оплатить следующий период!`;
         triggerSystemPush('🎓 Английский язык («Улей»)', `Осталось последнее занятие (${formatHumanDate(activeSub.endDate)})!`);
-        sendTelegramText(tgMsg, true);
+        // sendTelegramText(tgMsg, true);
         state.telegram.sentAlertsLog[alertKey] = true;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       }
