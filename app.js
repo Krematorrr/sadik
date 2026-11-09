@@ -2614,6 +2614,10 @@ function render() {
   }
 
   renderAnalytics(subStats, engStats, dayMap);
+
+  checkPaymentNotifications(subStats, currentSub);
+  checkEnglishNotifications(engStats);
+  updateMainBanner();
 }
 
 // ПРАВИЛЬНЫЙ СТАРТ ПРИЛОЖЕНИЯ
