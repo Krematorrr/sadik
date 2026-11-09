@@ -2243,7 +2243,7 @@ function render() {
 
   cachedSubStats = subStats;
   cachedEngStats = engStats;
-  cachedCurrentSub = currentSub;
+  cachedCurrentSub = currentGardenSub;
 
   // Счетчики английского
   const currentEngSub = engStats.find(s => s.remainingCount > 0) || engStats[engStats.length - 1];
