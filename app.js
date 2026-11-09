@@ -2238,9 +2238,10 @@ function render() {
   const { subStats, dayMap, lastCalculatedDate } = calculateSchedule();
   const engStats = enrichEnglishSubscriptions();
 
+  const currentGardenSub = subStats.find(s => !s.isPast) || subStats[subStats.length - 1];
   cachedSubStats = subStats;
   cachedEngStats = engStats;
-  cachedCurrentSub = currentSub;
+  cachedCurrentSub = currentGardenSub;
 
   // Счетчики английского
   const currentEngSub = engStats.find(s => s.remainingCount > 0) || engStats[engStats.length - 1];
@@ -2615,7 +2616,8 @@ function render() {
 
   renderAnalytics(subStats, engStats, dayMap);
 
-  checkPaymentNotifications(subStats, currentSub);
+  // Вызов плашек
+  checkPaymentNotifications(subStats, currentGardenSub);
   checkEnglishNotifications(engStats);
   updateMainBanner();
 }
