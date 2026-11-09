@@ -366,7 +366,12 @@ function switchMainTab(tab) {
     if (el) el.classList.toggle('hidden', s !== tab);
   });
 
-  const titles = { garden: '🐝 Детский сад', english: '🎓 Английский язык', analytics: '📊 Аналитика и Финансы', settings: '⚙️ Настройки' };
+  const titles = { 
+    garden: '🐝 Детский сад', 
+    english: '🎓 Английский язык', 
+    analytics: '📊 Аналитика и Финансы', 
+    settings: '⚙️ Настройки' 
+  };
   const headerTitle = document.getElementById('headerTitle');
   if (headerTitle) headerTitle.textContent = titles[tab] || 'Улей';
 
@@ -380,7 +385,7 @@ function switchMainTab(tab) {
       if (s === 'english') { deskBtn.className = deskBtn.className.replace('gap-3', 'justify-between'); }
     }
 
-    // Мобильное меню (Новый Pill-дизайн)
+    // Мобильное меню (Pill-дизайн)
     const mobBg = document.getElementById('mobNavBg-' + s);
     const mobText = document.getElementById('mobNavText-' + s);
     if (mobBg && mobText) {
@@ -388,11 +393,9 @@ function switchMainTab(tab) {
       mobText.className = `text-[10px] font-bold transition-colors mt-1 ${isAct ? 'text-indigo-700 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`;
     }
   });
-  // Вызываем обновление плашек под активную вкладку:
-  if (typeof renderTabBanners === 'function') {
-    renderTabBanners();
-  }
-  render();
+
+  // Мгновенно переключаем плашку под открытую вкладку
+  updateMainBanner();
 }
 
 // =========================================================================
@@ -1752,99 +1755,131 @@ function showAllHiddenSubs() {
 // =========================================================================
 
 // Кэш данных для мгновенного переключения между вкладками
-let cachedSubStats = null;
-let cachedEngStats = null;
-let cachedCurrentSub = null;
+window._cachedGardenBannerHtml = '';
+window._cachedEnglishBannerHtml = '';
 
-// Универсальная функция отрисовки плашек по активной вкладке
-function renderTabBanners() {
+// Функция переключения плашки в зависимости от активной вкладки
+function updateMainBanner() {
   const container = document.getElementById('paymentAlertContainer') || document.getElementById('notificationBanner');
   if (!container) return;
 
-  // 1. ВКЛАДКА "САД"
-  if (currentTab === 'garden' && cachedSubStats && cachedCurrentSub) {
-    const daysLeft = cachedCurrentSub.remainingWorkDays ?? cachedCurrentSub.remainingDays ?? 0;
-    const targetIndex = cachedCurrentSub.isPaid ? cachedCurrentSub.index + 1 : cachedCurrentSub.index;
-    const targetSub = cachedSubStats.find(s => s.index === targetIndex) || { index: targetIndex, price: state.defaultPrice, startDate: cachedCurrentSub.endDate, isPaid: false };
+  const currentTab = typeof activeMainTab !== 'undefined' ? activeMainTab : 'garden';
 
-    // Показываем плашку, если осталось <= 5 рабочих дней и период еще не оплачен
-    if (daysLeft <= 5 && !targetSub.isPaid) {
-      container.innerHTML = `
-        <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 border-l-4 border-indigo-500 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+  // На вкладках Аналитика и Настройки плашка всегда скрыта
+  if (currentTab !== 'garden' && currentTab !== 'english') {
+    container.innerHTML = '';
+    container.classList.add('hidden');
+    return;
+  }
+
+  // Вкладка Сад
+  if (currentTab === 'garden') {
+    if (window._cachedGardenBannerHtml) {
+      container.innerHTML = window._cachedGardenBannerHtml;
+      container.classList.remove('hidden');
+    } else {
+      container.innerHTML = '';
+      container.classList.add('hidden');
+    }
+    return;
+  }
+
+  // Вкладка Английский
+  if (currentTab === 'english') {
+    if (window._cachedEnglishBannerHtml) {
+      container.innerHTML = window._cachedEnglishBannerHtml;
+      container.classList.remove('hidden');
+    } else {
+      container.innerHTML = '';
+      container.classList.add('hidden');
+    }
+    return;
+  }
+}
+
+// Генерация баннера Сада (вызывается из render)
+function checkPaymentNotifications(subStats, currentSub) {
+  window._cachedGardenBannerHtml = '';
+  if (!currentSub || !Array.isArray(subStats)) return;
+
+  const daysLeft = currentSub.remainingWorkDays ?? currentSub.remainingDays ?? 0;
+  const targetIndex = currentSub.isPaid ? currentSub.index + 1 : currentSub.index;
+  const targetSub = subStats.find(s => s.index === targetIndex) || { 
+    index: targetIndex, 
+    price: state.defaultPrice || 28800, 
+    startDate: currentSub.endDate, 
+    isPaid: false 
+  };
+
+  if (daysLeft <= 5 && !targetSub.isPaid) {
+    window._cachedGardenBannerHtml = `
+      <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 border-l-4 border-indigo-500 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+        <div>
+          <div class="text-[11px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">🐝 Детский сад: напоминание</div>
+          <div class="text-sm font-bold text-slate-800 dark:text-white mt-1">Конец периода #${currentSub.index}: ${formatHumanDate(currentSub.endDate)}</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">К оплате Период сада #${targetSub.index} с ${formatHumanDate(targetSub.startDate)}: ${targetSub.price.toLocaleString('ru-RU')} ₽.</div>
+        </div>
+        <button onclick="if(typeof toggleSubPaid==='function')toggleSubPaid(${targetSub.index});else{state.paidSubscriptions[${targetSub.index}]=true;saveState();render();}" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition shadow-sm shrink-0 cursor-pointer">
+          ✓ Отметить #${targetSub.index} оплаченным
+        </button>
+      </div>
+    `;
+  }
+}
+
+// Генерация баннера Английского (вызывается из render)
+function checkEnglishNotifications(engStats) {
+  window._cachedEnglishBannerHtml = '';
+  if (!Array.isArray(engStats) || engStats.length === 0) return;
+
+  const activeEngSub = engStats.find(s => s.remainingCount > 0) || engStats[engStats.length - 1];
+  if (!activeEngSub) return;
+
+  // 1. Неоплаченные уроки в текущем абонементе
+  if (activeEngSub.remainingToPay > 0) {
+    const unpaidCount = (activeEngSub.activeTotal || 8) - (activeEngSub.paidLessonsCount || 0);
+    window._cachedEnglishBannerHtml = `
+      <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 border-l-4 border-blue-500 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+        <div>
+          <div class="text-[11px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">🎓 Английский язык: напоминание</div>
+          <div class="text-sm font-bold text-slate-800 dark:text-white mt-1">В Абонементе #${activeEngSub.index} не оплачено ${unpaidCount} ур.</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">К доплате: ${activeEngSub.remainingToPay.toLocaleString('ru-RU')} ₽ (${activeEngSub.unitPrice || 700} ₽/ур.).</div>
+        </div>
+        <button onclick="quickPayEnglishDebt(${activeEngSub.index})" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition shadow-sm shrink-0 cursor-pointer">
+          ✓ Оплатить долг (${activeEngSub.remainingToPay.toLocaleString('ru-RU')} ₽)
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  // 2. Осталось 1-2 занятия — напоминание о следующем абонементе
+  if (activeEngSub.remainingCount <= 2) {
+    const nextIndex = activeEngSub.index + 1;
+    const nextSub = engStats.find(s => s.index === nextIndex);
+    const nextIsPaid = nextSub && nextSub.remainingToPay === 0 && nextSub.paidLessonsCount >= nextSub.activeTotal;
+
+    if (!nextIsPaid) {
+      const defaultPrice = (activeEngSub.unitPrice || 700) * 8;
+      window._cachedEnglishBannerHtml = `
+        <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 border-l-4 border-blue-500 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
           <div>
-            <div class="text-[11px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">🐝 Детский сад: напоминание</div>
-            <div class="text-sm font-bold text-slate-800 dark:text-white mt-1">Конец периода #${cachedCurrentSub.index}: ${formatHumanDate(cachedCurrentSub.endDate)}</div>
-            <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">К оплате Период сада #${targetSub.index} с ${formatHumanDate(targetSub.startDate)}: ${targetSub.price.toLocaleString('ru-RU')} ₽.</div>
+            <div class="text-[11px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">🎓 Английский язык: напоминание</div>
+            <div class="text-sm font-bold text-slate-800 dark:text-white mt-1">В Абонементе #${activeEngSub.index} осталось ${activeEngSub.remainingCount} ${activeEngSub.remainingCount === 1 ? 'занятие' : 'занятия'}</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Подготовьте оплату за Абонемент #${nextIndex}: ${defaultPrice.toLocaleString('ru-RU')} ₽ (8 ур.).</div>
           </div>
-          <button onclick="toggleSubPaid(${targetSub.index})" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition shadow-sm shrink-0">
-            ✓ Отметить #${targetSub.index} оплаченным
+          <button onclick="quickPayNextEnglishSub(${nextIndex})" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition shadow-sm shrink-0 cursor-pointer">
+            ✓ Отметить #${nextIndex} оплаченным
           </button>
         </div>
       `;
-      container.classList.remove('hidden');
-      return;
     }
   }
-
-  // 2. ВКЛАДКА "АНГЛИЙСКИЙ ЯЗЫК"
-  if (currentTab === 'english' && cachedEngStats && cachedEngStats.length > 0) {
-    const activeEngSub = cachedEngStats.find(s => s.remainingCount > 0) || cachedEngStats[cachedEngStats.length - 1];
-    
-    if (activeEngSub) {
-      // Сценарий А: В текущем абонементе есть неоплаченные уроки
-      if (activeEngSub.remainingToPay > 0) {
-        const unpaidCount = activeEngSub.activeTotal - activeEngSub.paidLessonsCount;
-        container.innerHTML = `
-          <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 border-l-4 border-blue-500 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-            <div>
-              <div class="text-[11px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">🎓 Английский язык: напоминание</div>
-              <div class="text-sm font-bold text-slate-800 dark:text-white mt-1">В Абонементе #${activeEngSub.index} не оплачено ${unpaidCount} ур.</div>
-              <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">К доплате: ${activeEngSub.remainingToPay.toLocaleString('ru-RU')} ₽ (${activeEngSub.unitPrice || 700} ₽/ур.).</div>
-            </div>
-            <button onclick="quickPayEnglishCurrentSub(${activeEngSub.index})" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition shadow-sm shrink-0">
-              ✓ Оплатить долг (${activeEngSub.remainingToPay.toLocaleString('ru-RU')} ₽)
-            </button>
-          </div>
-        `;
-        container.classList.remove('hidden');
-        return;
-      }
-
-      // Сценарий Б: Осталось 1 или 2 занятия, проверяем следующий абонемент
-      if (activeEngSub.remainingCount <= 2) {
-        const nextIndex = activeEngSub.index + 1;
-        const nextSub = cachedEngStats.find(s => s.index === nextIndex);
-        const nextIsPaid = nextSub && nextSub.remainingToPay === 0 && nextSub.paidLessonsCount >= nextSub.activeTotal;
-
-        if (!nextIsPaid) {
-          const defaultPrice = (activeEngSub.unitPrice || 700) * 8;
-          container.innerHTML = `
-            <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 border-l-4 border-blue-500 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-              <div>
-                <div class="text-[11px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">🎓 Английский язык: напоминание</div>
-                <div class="text-sm font-bold text-slate-800 dark:text-white mt-1">В Абонементе #${activeEngSub.index} осталось ${activeEngSub.remainingCount} ${activeEngSub.remainingCount === 1 ? 'занятие' : 'занятия'} (до ${formatHumanDate(activeEngSub.endDate)})</div>
-                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Подготовьте оплату за Абонемент #${nextIndex}: ${defaultPrice.toLocaleString('ru-RU')} ₽ (8 ур.).</div>
-              </div>
-              <button onclick="quickPayNextEnglishSub(${nextIndex})" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition shadow-sm shrink-0">
-                ✓ Отметить #${nextIndex} оплаченным
-              </button>
-            </div>
-          `;
-          container.classList.remove('hidden');
-          return;
-        }
-      }
-    }
-  }
-
-  // На других вкладках (Аналитика, Настройки) или если нет долгов — скрываем плашку
-  container.innerHTML = '';
-  container.classList.add('hidden');
 }
 
 // Быстрая оплата долга текущего абонемента английского
-function quickPayEnglishCurrentSub(subIndex) {
-  const sub = state.englishSubscriptions.find(s => s.index === subIndex);
+function quickPayEnglishDebt(subIndex) {
+  const sub = (state.englishSubscriptions || []).find(s => s.index === subIndex);
   if (sub && Array.isArray(sub.lessons)) {
     sub.lessons.forEach(l => { if (l.status !== 'canceled') l.isPaid = true; });
     saveState();
@@ -1854,19 +1889,16 @@ function quickPayEnglishCurrentSub(subIndex) {
 
 // Оплата следующего абонемента английского
 function quickPayNextEnglishSub(nextIndex) {
-  let sub = state.englishSubscriptions.find(s => s.index === nextIndex);
-  if (!sub) {
-    // Если абонемент еще не создан в массиве, создаем его через стандартную логику
-    if (typeof addEnglishSubscription === 'function') {
-      addEnglishSubscription();
-      sub = state.englishSubscriptions.find(s => s.index === nextIndex);
-    }
+  let sub = (state.englishSubscriptions || []).find(s => s.index === nextIndex);
+  if (!sub && typeof addEnglishSubscription === 'function') {
+    addEnglishSubscription();
+    sub = (state.englishSubscriptions || []).find(s => s.index === nextIndex);
   }
   if (sub && Array.isArray(sub.lessons)) {
     sub.lessons.forEach(l => { if (l.status !== 'canceled') l.isPaid = true; });
-    saveState();
-    render();
   }
+  saveState();
+  render();
 }
 
 function getAlertDatesForSub(sub) {
