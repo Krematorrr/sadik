@@ -2238,10 +2238,9 @@ function render() {
   const { subStats, dayMap, lastCalculatedDate } = calculateSchedule();
   const engStats = enrichEnglishSubscriptions();
 
-  const currentGardenSub = subStats.find(s => !s.isPast) || subStats[subStats.length - 1];
   cachedSubStats = subStats;
   cachedEngStats = engStats;
-  cachedCurrentSub = currentGardenSub;
+  cachedCurrentSub = currentSub;
 
   // Счетчики английского
   const currentEngSub = engStats.find(s => s.remainingCount > 0) || engStats[engStats.length - 1];
@@ -2257,7 +2256,7 @@ function render() {
   document.getElementById('engBasePriceInput').value = engPrice;
   document.getElementById('engLessonPriceDisplay').textContent = Math.round(engPrice / 8).toLocaleString('ru-RU') + ' ₽';
 
-  renderTabBanners();
+  updateMainBanner();
 
   // Отрисовка Английского языка
   const visibleEngSubs = engStats.filter(es => !isEngSubCurrentlyHidden(es));
@@ -2616,8 +2615,7 @@ function render() {
 
   renderAnalytics(subStats, engStats, dayMap);
 
-  // Вызов плашек
-  checkPaymentNotifications(subStats, currentGardenSub);
+  checkPaymentNotifications(subStats, currentSub);
   checkEnglishNotifications(engStats);
   updateMainBanner();
 }
