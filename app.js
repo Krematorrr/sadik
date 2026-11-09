@@ -388,7 +388,10 @@ function switchMainTab(tab) {
       mobText.className = `text-[10px] font-bold transition-colors mt-1 ${isAct ? 'text-indigo-700 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`;
     }
   });
-  renderTabBanners();
+  // Вызываем обновление плашек под активную вкладку:
+  if (typeof renderTabBanners === 'function') {
+    renderTabBanners();
+  }
   render();
 }
 
