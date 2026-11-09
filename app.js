@@ -2238,6 +2238,9 @@ function render() {
   const { subStats, dayMap, lastCalculatedDate } = calculateSchedule();
   const engStats = enrichEnglishSubscriptions();
 
+  // Находим активный абонемент сада (восстановили потерянную переменную)
+  const currentGardenSub = subStats.find(s => !s.isPast) || subStats[subStats.length - 1];
+
   cachedSubStats = subStats;
   cachedEngStats = engStats;
   cachedCurrentSub = currentSub;
@@ -2615,7 +2618,7 @@ function render() {
 
   renderAnalytics(subStats, engStats, dayMap);
 
-  checkPaymentNotifications(subStats, currentSub);
+  checkPaymentNotifications(subStats, currentGardenSub);
   checkEnglishNotifications(engStats);
   updateMainBanner();
 }
