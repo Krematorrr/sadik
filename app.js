@@ -1817,24 +1817,38 @@ function checkPaymentNotifications(subStats, currentSub) {
   window._cachedGardenBannerHtml = '';
   if (!currentSub || !Array.isArray(subStats)) return;
 
-  const daysLeft = currentSub.remainingWorkDays ?? currentSub.remainingDays ?? currentSub.remainingAfterToday ?? 0;
+  const daysLeft = currentSub.remainingAfterToday ?? 0;
+  
+  // Определяем, за какой абонемент мы сейчас должны платить
+  // Если текущий не оплачен — платим за него. Если текущий оплачен — смотрим на следующий.
   const targetIndex = currentSub.isPaid ? currentSub.index + 1 : currentSub.index;
   const targetSub = subStats.find(s => s.index === targetIndex) || { 
     index: targetIndex, 
     price: state.defaultPrice || 28800, 
-    startDate: currentSub.endDate, 
+    startDate: currentSub.endDate, // Для нового абонемента ставим условную дату старта
     isPaid: false 
   };
 
-  if (daysLeft <= 5 && !targetSub.isPaid) {
+  // Показывать плашку, если:
+  // 1. Текущий абонемент не оплачен (долг)
+  // ИЛИ
+  // 2. Текущий оплачен, но до его конца осталось <= 5 рабочих дней (готовим оплату за следующий)
+  const isDebt = !currentSub.isPaid;
+  const isTimeToPayNext = currentSub.isPaid && daysLeft <= 5 && !targetSub.isPaid;
+
+  if (isDebt || isTimeToPayNext) {
+    const alertMessage = isDebt 
+      ? `Не оплачен текущий Период сада #${targetSub.index} с ${formatHumanDate(targetSub.startDate)}`
+      : `Конец периода #${currentSub.index}: ${formatHumanDate(currentSub.endDate)}`;
+
     window._cachedGardenBannerHtml = `
       <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 border-l-4 border-indigo-500 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
         <div>
           <div class="text-[11px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">🐝 Детский сад: напоминание</div>
-          <div class="text-sm font-bold text-slate-800 dark:text-white mt-1">Конец периода #${currentSub.index}: ${formatHumanDate(currentSub.endDate)}</div>
-          <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">К оплате Период сада #${targetSub.index} с ${formatHumanDate(targetSub.startDate)}: ${targetSub.price.toLocaleString('ru-RU')} ₽.</div>
+          <div class="text-sm font-bold text-slate-800 dark:text-white mt-1">${alertMessage}</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">К оплате Период сада #${targetSub.index}: ${targetSub.price.toLocaleString('ru-RU')} ₽.</div>
         </div>
-        <button onclick="if(typeof toggleSubPaid==='function')toggleSubPaid(${targetSub.index});else{state.paidSubscriptions[${targetSub.index}]=true;saveState();render();}" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition shadow-sm shrink-0 cursor-pointer">
+        <button onclick="if(typeof toggleSubPaid==='function')toggleSubPaid(${targetSub.index});else{state.subscriptions.find(s=>s.id===${targetSub.id} || s.index===${targetSub.index}).isPaid=true;saveState();render();}" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition shadow-sm shrink-0 cursor-pointer">
           ✓ Отметить #${targetSub.index} оплаченным
         </button>
       </div>
