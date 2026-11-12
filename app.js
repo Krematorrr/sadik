@@ -1760,8 +1760,23 @@ window._cachedEnglishBannerHtml = '';
 
 // Функция переключения плашки в зависимости от активной вкладки
 function updateMainBanner() {
-  const container = document.getElementById('paymentAlertContainer') || document.getElementById('notificationBanner');
-  if (!container) return;
+  // 1. Ищем глобальный контейнер
+  let container = document.getElementById('paymentAlertContainer');
+  
+  // 2. Если контейнера нет — создаем его автоматически и ставим в самый верх <main>
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'paymentAlertContainer';
+    container.className = 'w-full mb-4 shrink-0 transition-all';
+    
+    // Ищем главный блок, куда сложить плашку (чтобы она не пряталась при смене вкладок)
+    const mainContent = document.querySelector('main') || document.querySelector('.flex-1.overflow-y-auto');
+    if (mainContent) {
+      mainContent.prepend(container); // Вставляем в самый верх
+    } else {
+      return; // Если уж вообще нет структуры, тогда сдаемся
+    }
+  }
 
   const currentTab = typeof activeMainTab !== 'undefined' ? activeMainTab : 'garden';
 
@@ -1802,7 +1817,7 @@ function checkPaymentNotifications(subStats, currentSub) {
   window._cachedGardenBannerHtml = '';
   if (!currentSub || !Array.isArray(subStats)) return;
 
-  const daysLeft = currentSub.remainingWorkDays ?? currentSub.remainingDays ?? 0;
+  const daysLeft = currentSub.remainingWorkDays ?? currentSub.remainingDays ?? currentSub.remainingAfterToday ?? 0;
   const targetIndex = currentSub.isPaid ? currentSub.index + 1 : currentSub.index;
   const targetSub = subStats.find(s => s.index === targetIndex) || { 
     index: targetIndex, 
@@ -1878,28 +1893,30 @@ function checkEnglishNotifications(engStats) {
 }
 
 // Быстрая оплата долга текущего абонемента английского
-function quickPayEnglishDebt(subIndex) {
-  const sub = (state.englishSubscriptions || []).find(s => s.index === subIndex);
+window.quickPayEnglishDebt = function(subIndex) {
+  const sub = (state.englishSubscriptions || state.english.subscriptions || []).find(s => s.index === subIndex || s.id === subIndex);
   if (sub && Array.isArray(sub.lessons)) {
     sub.lessons.forEach(l => { if (l.status !== 'canceled') l.isPaid = true; });
+    sub.isPaid = true;
     saveState();
     render();
   }
-}
+};
 
 // Оплата следующего абонемента английского
-function quickPayNextEnglishSub(nextIndex) {
-  let sub = (state.englishSubscriptions || []).find(s => s.index === nextIndex);
+window.quickPayNextEnglishSub = function(nextIndex) {
+  let sub = (state.englishSubscriptions || state.english.subscriptions || []).find(s => s.index === nextIndex || s.id === nextIndex);
   if (!sub && typeof addEnglishSubscription === 'function') {
     addEnglishSubscription();
-    sub = (state.englishSubscriptions || []).find(s => s.index === nextIndex);
+    sub = (state.englishSubscriptions || state.english.subscriptions || []).find(s => s.index === nextIndex || s.id === nextIndex);
   }
   if (sub && Array.isArray(sub.lessons)) {
     sub.lessons.forEach(l => { if (l.status !== 'canceled') l.isPaid = true; });
+    sub.isPaid = true;
   }
   saveState();
   render();
-}
+};
 
 function getAlertDatesForSub(sub) {
   const dates = sub.attendedDates;
@@ -1909,315 +1926,6 @@ function getAlertDatesForSub(sub) {
     { daysLeft: 3, date: dates[dates.length - 3] },
     { daysLeft: 1, date: dates[dates.length - 1] }
   ];
-}
-
-function updateCloudBadge(statusText, isOk = true) {
-  const badge = document.getElementById('cloudSyncBadge');
-  if (!badge) return;
-  if (!cloudConfig.apiKey || !cloudConfig.binId) {
-    badge.textContent = '☁️ Не подкл.';
-    badge.className = 'cursor-pointer px-2.5 py-1 text-[10px] sm:text-xs font-bold rounded-full bg-slate-100 text-slate-600 border border-slate-300';
-    return;
-  }
-  badge.textContent = statusText || '☁️ Синхр.';
-  badge.className = isOk
-    ? 'cursor-pointer px-2.5 py-1 text-[10px] sm:text-xs font-bold rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/50 hover:opacity-80 transition'
-    : 'cursor-pointer px-2.5 py-1 text-[10px] sm:text-xs font-bold rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-400 border border-rose-300 dark:border-rose-800/50 hover:opacity-80 transition';
-}
-
-function openCloudModal() {
-  document.getElementById('cloudApiKeyInput').value = cloudConfig.apiKey || '';
-  document.getElementById('cloudBinIdInput').value = cloudConfig.binId || '';
-  document.getElementById('cloudModal').classList.remove('hidden');
-  document.getElementById('cloudModal').classList.add('flex');
-}
-
-function closeCloudModal() {
-  document.getElementById('cloudModal').classList.add('hidden');
-  document.getElementById('cloudModal').classList.remove('flex');
-}
-
-function showCloudMessage(msg, isError = false) {
-  const el = document.getElementById('cloudStatusMsg');
-  el.textContent = msg;
-  el.className = `text-xs font-bold p-2.5 rounded-xl ${isError ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`;
-  el.classList.remove('hidden');
-}
-
-function saveCloudConfig() {
-  cloudConfig.apiKey = document.getElementById('cloudApiKeyInput').value.trim() || HARDCODED_CLOUD.apiKey;
-  cloudConfig.binId = document.getElementById('cloudBinIdInput').value.trim() || HARDCODED_CLOUD.binId;
-  localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(cloudConfig));
-  updateCloudBadge('☁️ Активно', true);
-  showCloudMessage('✓ Настройки сохранены!');
-  if (cloudConfig.apiKey && cloudConfig.binId) pushToCloud(true);
-}
-
-async function pushToCloud(silent = false) {
-  const apiKey = document.getElementById('cloudApiKeyInput')?.value.trim() || cloudConfig.apiKey;
-  const binId = document.getElementById('cloudBinIdInput')?.value.trim() || cloudConfig.binId;
-  if (!apiKey || !binId) return;
-  updateCloudBadge('☁️ Сохр...', true);
-  try {
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey },
-      body: JSON.stringify(state)
-    });
-    if (res.ok) {
-      updateCloudBadge('☁️ Синхр.', true);
-      if (!silent) showCloudMessage('✅ Отправлено в облако!');
-    } else {
-      updateCloudBadge('☁️ Ошибка', false);
-    }
-  } catch (e) {
-    updateCloudBadge('☁️ Офлайн', false);
-  }
-}
-
-async function pullFromCloud(silent = false) {
-  const apiKey = document.getElementById('cloudApiKeyInput')?.value.trim() || cloudConfig.apiKey;
-  const binId = document.getElementById('cloudBinIdInput')?.value.trim() || cloudConfig.binId;
-  if (!apiKey || !binId) return;
-  updateCloudBadge('☁️ Загр...', true);
-  try {
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
-      headers: { 'X-Master-Key': apiKey }
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.record && data.record.subscriptions) {
-        const currentSimDate = state.simulatedToday; // Сохраняем текущую дату пользователя
-        state = ensureDataIntegrity({ ...defaultState, ...data.record });
-        state.simulatedToday = currentSimDate || toISODate(new Date());
-        await saveState(true);
-        updateCloudBadge('☁️ Синхр.', true);
-        if (!silent) showCloudMessage('✅ Данные загружены из облака!');
-      }
-    }
-  } catch (e) {
-    updateCloudBadge('☁️ Офлайн', false);
-  }
-}
-
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && cloudConfig.apiKey && cloudConfig.binId) {
-    pullFromCloud(true);
-  }
-});
-
-function exportJsonFile() {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `uley-data-${state.simulatedToday}.json`;
-  a.click();
-}
-
-function importJsonFile(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      state = ensureDataIntegrity({ ...defaultState, ...JSON.parse(e.target.result) });
-      saveState();
-    } catch (err) {
-      alert('Ошибка чтения файла.');
-    }
-  };
-  reader.readAsText(file);
-}
-
-function openReportModal() {
-  generateReportText();
-  document.getElementById('reportModal').classList.remove('hidden');
-  document.getElementById('reportModal').classList.add('flex');
-}
-
-function closeReportModal() {
-  document.getElementById('reportModal').classList.add('hidden');
-  document.getElementById('reportModal').classList.remove('flex');
-}
-
-function generateReportText() {
-  const { subStats } = calculateSchedule();
-  const engStats = enrichEnglishSubscriptions();
-  const scope = document.getElementById('reportScopeSelect').value;
-
-  let lines = [`📊 СВЕРКА ПОСЕЩЕНИЙ «УЛЕЙ» (на ${formatHumanDate(state.simulatedToday)})`, ''];
-
-  if (scope === 'all' || scope === 'garden') {
-    lines.push(`=== 🐝 ОСНОВНОЙ ДЕТСКИЙ САД ===`);
-    subStats.forEach(sub => {
-      lines.push(`🔹 Абонемент #${sub.index}: ${formatHumanDate(sub.startDate)} — ${formatHumanDate(sub.endDate)}`);
-      lines.push(`• Отхожено: ${sub.completedCount}/20 дн. | Пропусков: +${sub.missedCount} дн.`);
-      lines.push(`• Оплата: ${sub.isPaid ? '✅ ОПЛАЧЕН' : '⏳ НЕ ОПЛАЧЕН'} (${sub.price.toLocaleString('ru-RU')} ₽)`);
-      lines.push('');
-    });
-
-    if (state.extraExpenses && state.extraExpenses.length > 0) {
-      lines.push(`🔸 Разовые доп. расходы (Сад):`);
-      state.extraExpenses.forEach(e => {
-        lines.push(`  • ${formatHumanDate(e.date)}: ${e.note ? e.note + ' — ' : ''}${e.amount.toLocaleString('ru-RU')} ₽`);
-      });
-      lines.push('');
-    }
-  }
-
-  if (scope === 'all' || scope === 'english') {
-    lines.push(`=== 🎓 АНГЛИЙСКИЙ ЯЗЫК ===`);
-    engStats.forEach(es => {
-      lines.push(`🔸 Абонемент #${es.index} (${es.startDate ? formatHumanDate(es.startDate) : ''} — ${es.endDate ? formatHumanDate(es.endDate) : ''})`);
-      lines.push(`• Посещено: ${es.attendedCount} из ${es.activeTotal} | Оплачено: ${es.paidLessonsCount} из ${es.activeTotal} (${es.paidAmount.toLocaleString('ru-RU')} ₽)`);
-      lines.push(`• Остаток к доплате: ${es.remainingToPay.toLocaleString('ru-RU')} ₽`);
-      es.enrichedLessons.forEach(l => {
-        const st = l.status === 'canceled' ? '❌ Отмена/Перенос' : (l.effectiveCompleted ? '✅ Проведено' : '⏳ План');
-        const paySt = l.status === 'canceled' ? '' : (l.isPaid ? ' [💳 Оплачен]' : ' [Не оплачен]');
-        lines.push(`  ${l.lessonNumber ? `Урок ${l.lessonNumber}` : '—'}: ${formatHumanDate(l.date)} (${getWeekdayName(l.date, true)}) — ${st}${paySt} ${l.note ? `(${l.note})` : ''}`);
-      });
-      lines.push('');
-    });
-  }
-
-  document.getElementById('reportTextarea').value = lines.join('\n');
-}
-
-function copyReportToClipboard() {
-  const textarea = document.getElementById('reportTextarea');
-  textarea.select();
-  navigator.clipboard.writeText(textarea.value);
-  const btn = document.getElementById('copyReportBtn');
-  btn.textContent = '✓ Скопировано!';
-  setTimeout(() => btn.textContent = 'Скопировать текст', 2000);
-}
-
-function openNotificationsModal() {
-  ensureDataIntegrity(state);
-  updatePushBadge();
-  document.getElementById('tgBotTokenInput').value = state.telegram.botToken || '';
-  document.getElementById('tgChatIdInput').value = state.telegram.chatId || '';
-
-  const { subStats } = calculateSchedule();
-  const engStats = enrichEnglishSubscriptions();
-
-  let html = subStats.filter(s => !s.isPast).map(sub => `
-    <div class="py-1 border-b border-amber-200/60 dark:border-amber-800/40">
-      <div class="font-bold">🐝 Сад — Период #${sub.index} (${formatShortDate(sub.startDate)}–${formatShortDate(sub.endDate)}):</div>
-      <div class="grid grid-cols-3 gap-1 mt-1">
-        ${getAlertDatesForSub(sub).map(m => `
-          <div class="bg-white dark:bg-slate-800 px-1.5 py-1 rounded border border-amber-300 dark:border-amber-700 text-center">
-            <span class="font-extrabold text-indigo-700 dark:text-indigo-400 block">${formatShortDate(m.date)}</span>
-            <span class="text-[9px] text-slate-500 dark:text-slate-400">За ${m.daysLeft} дн.</span>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `).join('');
-
-  engStats.forEach(es => {
-    if (es.endDate) {
-      html += `
-        <div class="py-1">
-          <div class="font-bold text-sky-900 dark:text-sky-300">🎓 Английский — Абонемент #${es.index}:</div>
-          <div class="text-[11px]">Последнее занятие и уведомление: <b class="text-indigo-700 dark:text-indigo-400">${formatHumanDate(es.endDate)}</b></div>
-        </div>
-      `;
-    }
-  });
-
-  document.getElementById('upcomingAlertsList').innerHTML = html;
-  document.getElementById('notificationsModal').classList.remove('hidden');
-  document.getElementById('notificationsModal').classList.add('flex');
-}
-
-function closeNotificationsModal() {
-  document.getElementById('notificationsModal').classList.add('hidden');
-  document.getElementById('notificationsModal').classList.remove('flex');
-}
-
-function saveTelegramConfig() {
-  state.telegram.botToken = document.getElementById('tgBotTokenInput').value.trim() || HARDCODED_TELEGRAM.botToken;
-  state.telegram.chatId = document.getElementById('tgChatIdInput').value.trim() || HARDCODED_TELEGRAM.chatId;
-  saveState();
-  const el = document.getElementById('tgStatusMsg');
-  el.textContent = '✓ Сохранено!';
-  el.classList.remove('hidden');
-  setTimeout(() => el.classList.add('hidden'), 3000);
-}
-
-async function sendTelegramText(text, silent = false) {
-  const botToken = (state.telegram?.botToken || HARDCODED_TELEGRAM.botToken || '').trim();
-  const rawChatIds = (state.telegram?.chatId || HARDCODED_TELEGRAM.chatId || '').trim();
-  const chatIdList = rawChatIds.split(/[\s,;]+/).map(id => id.trim()).filter(Boolean);
-
-  if (!botToken || chatIdList.length === 0) return;
-
-  let successCount = 0;
-  for (const chatId of chatIdList) {
-    try {
-      const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: chatId, text })
-      });
-      const data = await res.json();
-      if (data.ok) successCount++;
-    } catch (e) {}
-  }
-  if (!silent) alert(`✅ Сообщение отправлено получателям (${successCount} из ${chatIdList.length})!`);
-}
-
-function sendTestTelegramMessage() {
-  saveTelegramConfig();
-  const { subStats } = calculateSchedule();
-  const engStats = enrichEnglishSubscriptions();
-  const activeSub = subStats.find(s => !s.isPast) || subStats[0];
-  const activeEng = engStats[engStats.length - 1];
-
-  const msg = `🐝 Детский клуб «Улей» (Сводка)\n\n` +
-    `1️⃣ Основной сад (Период #${activeSub?.index || 1}):\n` +
-    `• Даты: ${formatHumanDate(activeSub?.startDate)} — ${formatHumanDate(activeSub?.endDate)}\n` +
-    `• Отхожено: ${activeSub?.completedCount || 0}/20 (пропусков: ${activeSub?.missedCount || 0})\n\n` +
-    `2️⃣ 🎓 Английский язык (Абонемент #${activeEng?.index || 1}):\n` +
-    `• Посещено: ${activeEng?.attendedCount || 0}/${activeEng?.activeTotal || 8} зан.\n` +
-    `• Оплачено: ${activeEng?.paidLessonsCount || 0}/${activeEng?.activeTotal || 8} (${(activeEng?.paidAmount || 0).toLocaleString('ru-RU')} ₽)`;
-
-  sendTelegramText(msg, false);
-}
-
-function downloadICSReminders() {
-  const { subStats } = calculateSchedule();
-  const engStats = enrichEnglishSubscriptions();
-  let icsLines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Uley Tracker PRO//RU', 'CALSCALE:GREGORIAN'];
-  subStats.filter(s => !s.isPast).forEach(sub => {
-    getAlertDatesForSub(sub).forEach(m => {
-      const cleanDate = m.date.replace(/-/g, '');
-      icsLines.push(
-        'BEGIN:VEVENT', `UID:kg-${sub.index}-${m.daysLeft}-${cleanDate}@local`,
-        `DTSTAMP:${cleanDate}T060000Z`, `DTSTART;VALUE=DATE:${cleanDate}`,
-        `SUMMARY:🐝 Детский сад «Улей»: осталось ${m.daysLeft} раб. дн. (Период #${sub.index})`,
-        'BEGIN:VALARM', 'TRIGGER:PT9H', 'ACTION:DISPLAY', 'DESCRIPTION:Оплата сада', 'END:VALARM', 'END:VEVENT'
-      );
-    });
-  });
-  engStats.forEach(es => {
-    if (es.endDate) {
-      const cleanDate = es.endDate.replace(/-/g, '');
-      icsLines.push(
-        'BEGIN:VEVENT', `UID:eng-${es.index}-${cleanDate}@local`,
-        `DTSTAMP:${cleanDate}T060000Z`, `DTSTART;VALUE=DATE:${cleanDate}`,
-        `SUMMARY:🎓 Английский «Улей»: сегодня 8-е заключительное занятие (Абонемент #${es.index})`,
-        'BEGIN:VALARM', 'TRIGGER:PT9H', 'ACTION:DISPLAY', 'DESCRIPTION:Оплата английского', 'END:VALARM', 'END:VEVENT'
-      );
-    }
-  });
-  icsLines.push('END:VCALENDAR');
-  const blob = new Blob([icsLines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'uley-reminders.ics';
-  a.click();
 }
 
 // =========================================================================
@@ -2636,5 +2344,42 @@ async function bootApp() {
   disableAlerts = false; // Снимаем замок
   render(); // Финальная отрисовка — теперь уведомления сработают только по реальным датам
 }
+
+// =========================================================================
+// 10. ЖЕСТЫ (СВАЙПЫ МЕЖДУ ВКЛАДКАМИ)
+// =========================================================================
+let touchStartX = 0;
+let touchStartY = 0;
+
+document.addEventListener('touchstart', e => {
+  touchStartX = e.changedTouches[0].screenX;
+  touchStartY = e.changedTouches[0].screenY;
+}, {passive: true});
+
+document.addEventListener('touchend', e => {
+  const touchEndX = e.changedTouches[0].screenX;
+  const touchEndY = e.changedTouches[0].screenY;
+  
+  // Игнорируем свайпы, если пользователь листает горизонтальную таблицу, нажимает инпуты или графики
+  if (e.target.closest('.overflow-x-auto') || e.target.closest('canvas') || e.target.closest('input')) return;
+
+  const deltaX = touchEndX - touchStartX;
+  const deltaY = touchEndY - touchStartY;
+  
+  // Свайп должен быть уверенным (более 60px) и горизонтальным (X больше Y)
+  if (Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY)) {
+    const tabs = ['garden', 'english', 'analytics', 'settings'];
+    const currentIdx = tabs.indexOf(activeMainTab);
+    if (currentIdx === -1) return;
+    
+    if (deltaX > 0) {
+      // Свайп вправо -> предыдущая вкладка
+      if (currentIdx > 0) switchMainTab(tabs[currentIdx - 1]);
+    } else {
+      // Свайп влево -> следующая вкладка
+      if (currentIdx < tabs.length - 1) switchMainTab(tabs[currentIdx + 1]);
+    }
+  }
+}, {passive: true});
 
 bootApp();
