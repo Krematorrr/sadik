@@ -16,7 +16,12 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-self.addEventListener('fetch', (event) => {
+self.addEventListener('fetch', event => {
+  // Игнорируем запросы к внешним API (Telegram, JSONBin)
+  if (event.request.url.includes('api.telegram.org') || event.request.url.includes('api.jsonbin.io')) {
+    return; // Браузер выполнит запрос напрямую, в обход Service Worker'а
+  }
+  
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
   );
