@@ -2097,8 +2097,7 @@ function generateReportText() {
     });
   }
 
-  document.getElementById('reportTextarea').value = lines.join('
-');
+  document.getElementById('reportTextarea').value = lines.join('\n');
 }
 
 function copyReportToClipboard() {
