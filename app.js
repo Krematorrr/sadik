@@ -2,12 +2,12 @@
 // 1. КОНФИГУРАЦИЯ И ЖЕСТКО ЗАШИТЫЕ КЛЮЧИ (CLOUD + TELEGRAM)
 // =========================================================================
 const HARDCODED_CLOUD = {
-  apiKey: '$2a$10$3lkyakUsPN81u2apeDoRQefljytEcqIsM2W8Q8.XB6XQ6AHzlmhO6',
-  binId: '6ad15ca5ffd5d160536f384a'
+  apiKey: '',
+  binId: ''
 };
 
 const HARDCODED_TELEGRAM = {
-  botToken: '8792131173:AAHdFMBq-qlh-uB6pbpGTMUC6HXmM-u04Bw',
+  botToken: '',
   chatId: '340778976, 413769416'
 };
 
