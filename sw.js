@@ -10,18 +10,7 @@ firebase.initializeApp({
   appId: "1:113329898258:web:bbeb4f2bfa8cfc234b69cb"
 });
 
-const messaging = firebase.messaging();
-
-messaging.onBackgroundMessage((payload) => {
-  const title = payload.notification?.title || '🐝 Детский клуб «Улей»';
-  const options = {
-    body: payload.notification?.body || '',
-    icon: './icon.jpg',
-    badge: './icon.jpg',
-    vibrate: [200, 100, 200]
-  };
-  self.registration.showNotification(title, options);
-});
+firebase.messaging();
 
 const CACHE_NAME = 'uley-pwa-v7';
 const ASSETS = ['./', './index.html', './app.js', './manifest.json', './icon.jpg'];
@@ -53,5 +42,27 @@ self.addEventListener('fetch', event => {
   
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
+  );
+});
+
+// Обработка клика по Push-уведомлению
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close(); // Закрываем шторку уведомления
+
+  const targetUrl = new URL('./', self.location.origin).href;
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Ищем, не открыто ли уже приложение во вкладке
+      for (const client of clientList) {
+        if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // Если приложение не открыто, открываем его в новом окне/вкладке
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
   );
 });
