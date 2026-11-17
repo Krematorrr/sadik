@@ -1,4 +1,5 @@
 {
+  "id": "com.krematorrr.uley",
   "name": "Улей — Трекер детского клуба",
   "short_name": "Улей Сад",
   "description": "Учет посещений детского сада и английского языка",
@@ -10,16 +11,16 @@
   "theme_color": "#4f46e5",
   "icons": [
     {
-      "src": "./icon.jpg",
+      "src": "./icon-192.png",
       "sizes": "192x192",
-      "type": "image/jpeg",
-      "purpose": "any"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "./icon.jpg",
+      "src": "./icon-512.png",
       "sizes": "512x512",
-      "type": "image/jpeg",
-      "purpose": "any"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
