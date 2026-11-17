@@ -357,13 +357,36 @@ async function saveState(skipCloudPush = false) {
   render();
 }
 
+// Внедряем стили для плавной анимации вкладок (один раз)
+if (!document.getElementById('swipeAnimationStyles')) {
+  const style = document.createElement('style');
+  style.id = 'swipeAnimationStyles';
+  style.textContent = `
+    @keyframes tabFadeIn {
+      0% { opacity: 0; transform: translateX(15px); }
+      100% { opacity: 1; transform: translateX(0); }
+    }
+    .tab-animated { animation: tabFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+  `;
+  document.head.appendChild(style);
+}
+
 function switchMainTab(tab) {
   activeMainTab = tab;
   const sections = ['garden', 'english', 'analytics', 'settings'];
 
   sections.forEach(s => {
     const el = document.getElementById(s + 'Section');
-    if (el) el.classList.toggle('hidden', s !== tab);
+    if (el) {
+      if (s === tab) {
+        el.classList.remove('hidden');
+        el.classList.remove('tab-animated');
+        void el.offsetWidth; // Принудительный reflow браузера для перезапуска анимации
+        el.classList.add('tab-animated');
+      } else {
+        el.classList.add('hidden');
+      }
+    }
   });
 
   const titles = { 
@@ -394,7 +417,6 @@ function switchMainTab(tab) {
     }
   });
 
-  // Мгновенно переключаем плашку под открытую вкладку
   updateMainBanner();
 }
 
