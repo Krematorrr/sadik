@@ -12,7 +12,7 @@ firebase.initializeApp({
 
 firebase.messaging();
 
-const CACHE_NAME = 'uley-pwa-v7';
+const CACHE_NAME = 'uley-pwa-v8';
 const ASSETS = ['./', './index.html', './app.js', './manifest.json', './icon.jpg'];
 
 self.addEventListener('install', (event) => {
