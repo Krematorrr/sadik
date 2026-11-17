@@ -11,6 +11,21 @@ const HARDCODED_TELEGRAM = {
   chatId: '340778976, 413769416'
 };
 
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDeUCJf9UCJOlrLzDhb10EgDJdc-C68Avs",
+  authDomain: "appulei.firebaseapp.com",
+  projectId: "appulei",
+  storageBucket: "appulei.firebasestorage.app",
+  messagingSenderId: "113329898258",
+  appId: "1:113329898258:web:bbeb4f2bfa8cfc234b69cb"
+};
+
+let fcmMessaging = null;
+if (typeof firebase !== 'undefined') {
+  if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+  fcmMessaging = firebase.messaging();
+}
+
 let disableAlerts = true; // Блокируем отправку уведомлений до загрузки облака
 
 const STORAGE_KEY = 'kg_tracker_state_v6';
@@ -161,7 +176,24 @@ async function requestSystemPushPermission() {
   const perm = await Notification.requestPermission();
   updatePushBadge();
   if (perm === 'granted') {
-    triggerSystemPush('Детский клуб «Улей»', '✅ Системные Push-уведомления успешно активированы!');
+    try {
+      if (!fcmMessaging) throw new Error('Firebase SDK не загружен');
+      const reg = await navigator.serviceWorker.ready;
+      const token = await fcmMessaging.getToken({
+        serviceWorkerRegistration: reg,
+        vapidKey: 'BF_ukmnhgqHr1HY-xk549x3bIsZ0zUHbpEcWGl7P6Zhc8gGoN8YN3ADuNhouifDem_PSiTz2T10bDBxWRhxNccA'
+      });
+
+      if (token) {
+        if (!Array.isArray(state.fcmTokens)) state.fcmTokens = [];
+        if (!state.fcmTokens.includes(token)) state.fcmTokens.push(token);
+        state.fcmToken = token;
+        saveState();
+      }
+      triggerSystemPush('Детский клуб «Улей»', '✅ Push-уведомления успешно подключены!');
+    } catch (e) {
+      alert('Ошибка получения Push-токена: ' + e.message);
+    }
   } else {
     alert('Разрешение не получено.');
   }
