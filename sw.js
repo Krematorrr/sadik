@@ -12,7 +12,7 @@ firebase.initializeApp({
 
 firebase.messaging();
 
-const CACHE_NAME = 'uley-pwa-v8';
+const CACHE_NAME = 'uley-pwa-v9';
 const ASSETS = ['./', './index.html', './app.js', './manifest.json', './icon.jpg'];
 
 self.addEventListener('install', (event) => {
@@ -49,7 +49,7 @@ self.addEventListener('fetch', event => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close(); // Закрываем шторку уведомления
 
-  const targetUrl = new URL('./', self.location.origin).href;
+  const targetUrl = new URL('./', self.registration.scope).href;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {

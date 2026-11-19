@@ -62,6 +62,9 @@ function escapeHtml(str) {
 let analYear = new Date().getFullYear(), analMonth = new Date().getMonth();
 let analFilter = 'all', analPeriodType = 'sub', analSubIndex = null, analEngSubIndex = null;
 
+let analCustomStart = null, analCustomEnd = null;
+let cachedSubStats = [], cachedEngStats = [], cachedCurrentSub = null;
+
 function changeAnalyticMonth(offset) { const d = new Date(analYear, analMonth + offset, 1); analYear = d.getFullYear(); analMonth = d.getMonth(); render(); }
 function changeAnalyticYear(offset) { analYear += offset; render(); }
 function changeAnalyticPeriodType(type) { analPeriodType = type; render(); }
